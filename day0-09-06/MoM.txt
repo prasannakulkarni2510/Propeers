@@ -1,0 +1,13 @@
+What is tested?
+1. AI fluency, python, (basics -> Pandas or Numpy)
+2. Coding,DBMS, Cloud Basics, API FUndamentals, Errors, Dockers, Git
+3. Eval Metrics (Traditional and RAG)
+4. Coding FUndamentals
+
+BLinklist
+TO learn--> Decorators, Generators, OOPs (Classes, Objects)
+
+---------------
+Activities->
+1. Post on LinkedIn
+2. Check Luma
