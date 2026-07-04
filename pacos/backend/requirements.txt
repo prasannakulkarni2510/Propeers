@@ -1,0 +1,3 @@
+# Backend API deps (in addition to the core `pacos` package, installed via `pip install -e .`)
+fastapi>=0.110
+uvicorn[standard]>=0.29

@@ -1,0 +1,6 @@
+full_name,job_title,company_name,city,linkedin_url,persona_tag,email,company_size,industry,company_website,funding_stage
+Aarav Mehta,Head of Machine Learning,Nurix AI,Bengaluru,https://www.linkedin.com/in/aarav-mehta-ml,manager,aarav@nurix.example,35,Applied AI,https://nurix.example,Seed
+Priya Nair,Engineering Manager - Data Platform,Razorpay,Bengaluru,https://www.linkedin.com/in/priya-nair-data,manager,,900,Fintech,https://razorpay.example,Series F
+Rohan Desai,Senior ML Engineer,PeakFlow Labs,Pune,https://www.linkedin.com/in/rohan-desai-ml,engineer,rohan.desai@peakflow.example,120,GenAI Product,https://peakflow.example,Series B
+Ananya Rao,Director of AI Research,Fractal Analytics,Hyderabad,https://www.linkedin.com/in/ananya-rao-ai,cto,ananya.rao@fractal.example,4000,AI Services,https://fractal.example,Public
+Karthik Iyer,Founder & CEO,VerbaAI,Gurugram,https://www.linkedin.com/in/karthik-iyer-verba,ceo,karthik@verba.example,8,Voice AI,https://verba.example,Pre-seed
