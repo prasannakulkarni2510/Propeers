@@ -1,0 +1,23 @@
+# Secrets & credentials
+.env
+credentials.json
+token.json
+
+# Generated per-lead assets and state
+output/
+tracker.csv
+new_jobs.csv
+
+# Real lead data (user-supplied; never commit)
+data/leads.csv
+data/leads_raw.csv
+data/leads_enriched.csv
+data/base_cv.txt
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
