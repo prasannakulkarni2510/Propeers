@@ -11,7 +11,7 @@ from pacos.config import Config, load
 from pacos.discovery import build_searches
 from pacos.inbox_monitor import run_monitor
 from pacos.jd_parser import parse_jd
-from pacos.leads import append_lead_to_csv, build_lead, load_leads
+from pacos.leads import Lead, append_lead_to_csv, build_lead, load_leads
 from pacos.llm import NemotronClient
 from pacos.pipeline import Pipeline
 from pacos.store import PacosStore
@@ -93,11 +93,19 @@ class Service:
                 "generated": folder.exists(), "files": files}
 
     # ── generation ───────────────────────────────────────────────────────
+    def _leads_for_generation(self) -> list[Lead]:
+        """Leads to generate for — from the tracker store, the source of truth
+        (ADR 0003). The lead sheet is re-ingested first when present so hand
+        edits are picked up, but its absence is fine: on cloud hosts the CSV
+        is ephemeral while the store persists."""
+        if self.cfg.leads_csv.exists():
+            self.store.ingest_leads(load_leads(self.cfg.leads_csv))
+        return [build_lead(row) for row in self.store.get_leads()]
+
     def generate(self, *, dry_run: bool, limit: int, lead_id: str | None,
                  review_hooks: bool = False) -> dict:
         with self._lock:
-            self.store.ingest_leads(load_leads(self.cfg.leads_csv))
-            leads = load_leads(self.cfg.leads_csv)
+            leads = self._leads_for_generation()
             if lead_id:
                 leads = [ld for ld in leads if ld.lead_id == lead_id]
             elif limit:

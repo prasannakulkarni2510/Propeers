@@ -71,6 +71,19 @@ def test_discovery_unknown_lead_is_404(client):
     assert client.get("/api/discovery/nope").status_code == 404
 
 
+def test_generate_works_without_lead_sheet(client, tmp_path):
+    """Cloud regression: leads.csv is ephemeral and may be gone after a
+    restart — generation must still run from the tracker store."""
+    assert len(client.get("/api/leads").json()) == 5  # ingested at startup
+    (tmp_path / "leads.csv").unlink()  # simulate the post-restart filesystem
+    r = client.post("/api/agents/generate", json={"dry_run": True})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["requested"] == 5
+    assert body["generated"] == 5
+    assert body["errors"] == []
+
+
 # ── auth middleware (token is read per request, so setenv is enough) ───────
 @pytest.fixture
 def auth_client(client, monkeypatch):
