@@ -83,7 +83,7 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
             "NEMOTRON_BASE_URL", "https://integrate.api.nvidia.com/v1"
         ).strip(),
         nemotron_model=os.getenv(
-            "NEMOTRON_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"
+            "NEMOTRON_MODEL", "nvidia/nemotron-3-super-120b-a12b"
         ).strip(),
         database_url=os.getenv("DATABASE_URL", "").strip(),
         embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3").strip(),
