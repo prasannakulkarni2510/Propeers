@@ -4,8 +4,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..deps import get_service
-from ..models import (AddLeadRequest, AddLeadResult, LeadOut, ParseJDRequest,
-                      ParseJDResult, StatsOut)
+from ..models import (ActionResult, AddLeadRequest, AddLeadResult, LeadOut,
+                      ParseJDRequest, ParseJDResult, StatsOut)
 from ..service import Service
 
 router = APIRouter(prefix="/api", tags=["leads"])
@@ -44,6 +44,15 @@ def get_lead(lead_id: str, svc: Service = Depends(get_service)):
         if row["lead_id"] == lead_id:
             return row
     raise HTTPException(status_code=404, detail="lead not found")
+
+
+@router.delete("/leads/{lead_id}", response_model=ActionResult)
+def delete_lead(lead_id: str, svc: Service = Depends(get_service)):
+    """Remove a lead from the tracker, the lead sheet, and its assets."""
+    ok, message = svc.delete_lead(lead_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail=message)
+    return ActionResult(ok=True, lead_id=lead_id, message=message)
 
 
 @router.get("/stats", response_model=StatsOut)

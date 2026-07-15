@@ -11,7 +11,8 @@ from pacos.config import Config, load
 from pacos.discovery import build_searches
 from pacos.inbox_monitor import run_monitor
 from pacos.jd_parser import parse_jd
-from pacos.leads import Lead, append_lead_to_csv, build_lead, load_leads
+from pacos.leads import (Lead, append_lead_to_csv, build_lead, load_leads,
+                         remove_lead_from_csv)
 from pacos.llm import NemotronClient
 from pacos.pipeline import Pipeline
 from pacos.store import PacosStore
@@ -78,6 +79,22 @@ class Service:
             else:
                 msg = f"Lead {lead.lead_id} already exists — details updated in tracker."
             return row, created, msg, lead.warnings
+
+    def delete_lead(self, lead_id: str) -> tuple[bool, str]:
+        """Remove a lead everywhere: store (tracker + assets), the lead sheet
+        (so re-ingest can't resurrect it), and its output folder."""
+        import shutil
+
+        with self._lock:
+            lead = self.store.get_lead(lead_id)
+            if lead is None:
+                return False, "lead not found"
+            remove_lead_from_csv(self.cfg.leads_csv, lead_id)
+            self.store.delete_lead(lead_id)
+            folder = self.cfg.output_dir / lead["folder_name"]
+            if lead["folder_name"] and folder.is_dir():
+                shutil.rmtree(folder, ignore_errors=True)
+            return True, f"Lead {lead_id} removed (tracker, lead sheet, assets)."
 
     def assets_for(self, lead_id: str) -> dict | None:
         lead = self.store.get_lead(lead_id)

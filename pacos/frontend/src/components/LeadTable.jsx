@@ -1,5 +1,59 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useStore } from "../store";
 import StatusBadge from "./StatusBadge.jsx";
+
+// Per-row actions: discovery jump + delete with an inline two-click confirm
+// (no native dialogs). Deleting removes the lead from the tracker, the lead
+// sheet, and its generated assets.
+function RowActions({ lead }) {
+  const navigate = useNavigate();
+  const deleteLead = useStore((s) => s.deleteLead);
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const remove = async (e) => {
+    e.stopPropagation();
+    if (!confirming) {
+      setConfirming(true);
+      setTimeout(() => setConfirming(false), 4000); // auto-cancel
+      return;
+    }
+    setBusy(true);
+    try {
+      await deleteLead(lead.lead_id);
+    } catch (_) {
+      setBusy(false);
+      setConfirming(false);
+    }
+  };
+
+  return (
+    <div className="btn-row" style={{ flexWrap: "nowrap" }}>
+      <button
+        className="btn btn-ghost btn-sm"
+        title={`Boolean searches for hiring people at ${lead.company_name}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          const q = new URLSearchParams({
+            company: lead.company_name, role: lead.job_title, city: lead.city,
+          });
+          navigate(`/discovery?${q}`);
+        }}
+      >
+        Find people
+      </button>
+      <button
+        className={`btn btn-sm ${confirming ? "btn-accent" : "btn-ghost"}`}
+        title="Remove this lead from the tracker, lead sheet, and assets"
+        disabled={busy}
+        onClick={remove}
+      >
+        {busy ? "Removing…" : confirming ? "Confirm?" : "Remove"}
+      </button>
+    </div>
+  );
+}
 
 // CSV lead list view (docx: LeadTable.jsx). Click a row to view its assets.
 export default function LeadTable({ leads }) {
@@ -19,7 +73,7 @@ export default function LeadTable({ leads }) {
             <th>Channel</th>
             <th>Assets</th>
             <th>Status</th>
-            <th>People</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -38,21 +92,7 @@ export default function LeadTable({ leads }) {
               <td>{l.has_email ? "email + dm" : "dm-only"}</td>
               <td>{l.assets_generated === "true" ? "✓" : "—"}</td>
               <td><StatusBadge status={l.status} /></td>
-              <td>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  title={`Boolean searches for hiring people at ${l.company_name}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const q = new URLSearchParams({
-                      company: l.company_name, role: l.job_title, city: l.city,
-                    });
-                    navigate(`/discovery?${q}`);
-                  }}
-                >
-                  Find people
-                </button>
-              </td>
+              <td><RowActions lead={l} /></td>
             </tr>
           ))}
         </tbody>

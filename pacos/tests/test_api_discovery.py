@@ -98,6 +98,21 @@ def test_generate_works_without_lead_sheet(client, tmp_path):
     assert body["errors"] == []
 
 
+def test_delete_lead_everywhere(client):
+    assert len(client.get("/api/leads").json()) == 5
+    r = client.delete("/api/leads/nurix-ai-aarav")
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert client.get("/api/leads/nurix-ai-aarav").status_code == 404
+    assert len(client.get("/api/leads").json()) == 4
+    # re-ingest (runs inside generate) must not resurrect the deleted lead
+    client.post("/api/agents/generate", json={"dry_run": True})
+    assert len(client.get("/api/leads").json()) == 4
+
+
+def test_delete_unknown_lead_is_404(client):
+    assert client.delete("/api/leads/nope").status_code == 404
+
+
 # ── auth middleware (token is read per request, so setenv is enough) ───────
 @pytest.fixture
 def auth_client(client, monkeypatch):

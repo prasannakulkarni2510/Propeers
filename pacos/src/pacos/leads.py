@@ -195,6 +195,23 @@ def append_lead_to_csv(csv_path: str | Path, raw: dict) -> bool:
     return True
 
 
+def remove_lead_from_csv(csv_path: str | Path, lead_id: str) -> bool:
+    """Rewrite leads.csv without the given lead, keeping the input file in
+    sync with the store on delete (the mirror of append_lead_to_csv).
+    Returns True if a row was removed; a missing file is nothing to do."""
+    csv_path = Path(csv_path)
+    if not csv_path.exists():
+        return False
+    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False).fillna("")
+    df.columns = [c.strip() for c in df.columns]
+    keep = [i for i, row in df.iterrows()
+            if build_lead(row.to_dict()).lead_id != lead_id]
+    if len(keep) == len(df):
+        return False
+    df.loc[keep].to_csv(csv_path, index=False)
+    return True
+
+
 def load_leads(csv_path: str | Path) -> list[Lead]:
     csv_path = Path(csv_path)
     if not csv_path.exists():

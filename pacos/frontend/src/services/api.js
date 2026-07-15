@@ -47,6 +47,7 @@ export const api = {
 
   addLead: (body) =>
     req("/api/leads", { method: "POST", body: JSON.stringify(body) }),
+  deleteLead: (id) => req(`/api/leads/${id}`, { method: "DELETE" }),
   parseJd: (text) =>
     req("/api/leads/parse-jd", { method: "POST", body: JSON.stringify({ text }) }),
   chat: (messages) =>

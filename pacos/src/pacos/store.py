@@ -343,6 +343,15 @@ class PacosStore:
             for n, _ in AGENT_NODES
         ]
 
+    def delete_lead(self, lead_id: str) -> bool:
+        """Remove a lead and all its state (tracker row, stored assets).
+        Returns True if the lead existed."""
+        with self._conn() as c:
+            c.execute("DELETE FROM assets WHERE lead_id=?", (lead_id,))
+            c.execute("DELETE FROM tracker WHERE lead_id=?", (lead_id,))
+            cur = c.execute("DELETE FROM leads WHERE lead_id=?", (lead_id,))
+            return cur.rowcount > 0
+
     # ── generated assets ─────────────────────────────────────────────────
     def save_assets(self, lead_id: str, files: dict[str, str]) -> None:
         now = datetime.now().isoformat(timespec="seconds")
