@@ -10,10 +10,15 @@ export const authToken = {
   set: (t) => (t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)),
 };
 
+// Header values must be ISO-8859-1. A pasted masked value ("••••") would make
+// fetch itself throw before any request — treat such a token as absent so the
+// 401 flow (and the AuthGate) can recover instead of bricking every call.
+const headerSafe = (t) => /^[\x21-\x7E]+$/.test(t);
+
 async function req(path, options = {}) {
   const headers = { "Content-Type": "application/json" };
   const token = authToken.get();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  if (token && headerSafe(token)) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${BASE}${path}`, { headers, ...options });
   if (!res.ok) {
     let detail = res.statusText;

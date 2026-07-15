@@ -26,7 +26,16 @@ export default function AuthGate({ children }) {
 
   const unlock = async (e) => {
     e.preventDefault();
-    authToken.set(token.trim());
+    const t = token.trim();
+    if (!/^[\x21-\x7E]+$/.test(t)) {
+      setError(
+        "That looks like the masked •••• value, not the token itself. " +
+        "In Render, click the eye icon next to PACOS_AUTH_TOKEN to reveal " +
+        "the real text, copy that, and paste it here."
+      );
+      return;
+    }
+    authToken.set(t);
     setError("");
     try {
       await api.stats();
