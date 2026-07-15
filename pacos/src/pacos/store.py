@@ -77,6 +77,15 @@ _TABLES = [
     received_date TEXT, sender TEXT, subject TEXT, intent TEXT,
     associated_lead_id TEXT DEFAULT ''
 )""",
+    # Generated outreach assets. The files under output/ are a convenience
+    # copy; this table is the durable one (cloud filesystems are ephemeral).
+    """CREATE TABLE IF NOT EXISTS assets (
+    lead_id TEXT NOT NULL,
+    name TEXT NOT NULL,
+    content TEXT DEFAULT '',
+    generated_at TEXT DEFAULT '',
+    PRIMARY KEY (lead_id, name)
+)""",
 ]
 
 
@@ -333,6 +342,27 @@ class PacosStore:
              "detail": by_node.get(n, {}).get("detail", "")}
             for n, _ in AGENT_NODES
         ]
+
+    # ── generated assets ─────────────────────────────────────────────────
+    def save_assets(self, lead_id: str, files: dict[str, str]) -> None:
+        now = datetime.now().isoformat(timespec="seconds")
+        with self._conn() as c:
+            for name, content in files.items():
+                c.execute(
+                    """INSERT INTO assets(lead_id, name, content, generated_at)
+                       VALUES (?,?,?,?)
+                       ON CONFLICT(lead_id, name) DO UPDATE SET
+                         content=excluded.content,
+                         generated_at=excluded.generated_at""",
+                    (lead_id, name, content, now),
+                )
+
+    def get_assets(self, lead_id: str) -> dict[str, str]:
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT name, content FROM assets WHERE lead_id=?", (lead_id,)
+            ).fetchall()
+        return {r["name"]: r["content"] or "" for r in rows}
 
     # ── unmatched replies ────────────────────────────────────────────────
     def add_unmatched_reply(self, *, received_date, sender, subject, intent) -> None:

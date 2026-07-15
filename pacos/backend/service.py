@@ -83,14 +83,19 @@ class Service:
         lead = self.store.get_lead(lead_id)
         if lead is None:
             return None
+        # The store is the durable copy; output/ files are a fallback for
+        # assets generated before the assets table existed (CLI-era runs).
+        stored = self.store.get_assets(lead_id)
         folder = self.cfg.output_dir / lead["folder_name"]
         files = []
         for name in ("cold_email.txt", "cold_dm.txt", "cover_letter.txt", "cv_notes.txt"):
-            fp = folder / name
-            files.append({"name": name,
-                          "content": fp.read_text(encoding="utf-8") if fp.exists() else ""})
+            content = stored.get(name, "")
+            if not content:
+                fp = folder / name
+                content = fp.read_text(encoding="utf-8") if fp.exists() else ""
+            files.append({"name": name, "content": content})
         return {"lead_id": lead_id, "folder_name": lead["folder_name"],
-                "generated": folder.exists(), "files": files}
+                "generated": bool(stored) or folder.exists(), "files": files}
 
     # ── generation ───────────────────────────────────────────────────────
     def _leads_for_generation(self) -> list[Lead]:

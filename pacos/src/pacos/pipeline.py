@@ -84,12 +84,18 @@ class Pipeline:
         return Generated(lead_id=lead.lead_id, folder=folder, hook=used_hook, dry_run=dry)
 
     def _write_assets(self, lead: Lead, assets: dict) -> Path:
-        folder = self.cfg.output_dir / lead.folder_name
-        folder.mkdir(parents=True, exist_ok=True)
-        # Always write all four filenames; a skipped agent leaves a note.
+        # Always produce all four filenames; a skipped agent leaves a note.
+        files = {}
         for _, (filename, _spec) in ASSET_SPECS.items():
             content = assets.get(filename)
             if content is None:
                 content = "(not generated — lead has no email, so no cold email)"
+            files[filename] = content
+        # The store is the durable copy (cloud filesystems are ephemeral);
+        # the files under output/ are the operator-friendly convenience copy.
+        self.store.save_assets(lead.lead_id, files)
+        folder = self.cfg.output_dir / lead.folder_name
+        folder.mkdir(parents=True, exist_ok=True)
+        for filename, content in files.items():
             (folder / filename).write_text(content, encoding="utf-8")
         return folder

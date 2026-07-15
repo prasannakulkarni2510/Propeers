@@ -26,7 +26,7 @@ def store(tmp_path):
 
     with psycopg.connect(PG_URL) as conn:  # clean slate per test
         conn.execute(
-            "DROP TABLE IF EXISTS leads, tracker, agent_status, unmatched_replies"
+            "DROP TABLE IF EXISTS leads, tracker, agent_status, unmatched_replies, assets"
         )
     from pacos.store import PacosStore
 

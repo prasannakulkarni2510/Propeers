@@ -71,6 +71,20 @@ def test_discovery_unknown_lead_is_404(client):
     assert client.get("/api/discovery/nope").status_code == 404
 
 
+def test_assets_survive_output_dir_loss(client, tmp_path):
+    """Cloud regression: output/ is ephemeral — assets must come back from
+    the store after the folder is wiped (restart/redeploy)."""
+    import shutil as _shutil
+
+    r = client.post("/api/agents/generate",
+                    json={"dry_run": True, "lead_id": "nurix-ai-aarav"})
+    assert r.status_code == 200 and r.json()["generated"] == 1
+    _shutil.rmtree(tmp_path / "output")  # simulate the post-restart filesystem
+    body = client.get("/api/assets/nurix-ai-aarav").json()
+    assert body["generated"] is True
+    assert all(f["content"] for f in body["files"])
+
+
 def test_generate_works_without_lead_sheet(client, tmp_path):
     """Cloud regression: leads.csv is ephemeral and may be gone after a
     restart — generation must still run from the tracker store."""
