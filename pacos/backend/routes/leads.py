@@ -4,7 +4,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..deps import get_service
-from ..models import LeadOut, StatsOut
+from ..models import (AddLeadRequest, AddLeadResult, LeadOut, ParseJDRequest,
+                      ParseJDResult, StatsOut)
 from ..service import Service
 
 router = APIRouter(prefix="/api", tags=["leads"])
@@ -16,6 +17,25 @@ def list_leads(svc: Service = Depends(get_service)):
         return svc.leads_with_state()
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.post("/leads/parse-jd", response_model=ParseJDResult)
+def parse_jd(req: ParseJDRequest, svc: Service = Depends(get_service)):
+    """Extract proposed lead fields from a pasted JD. Writes nothing — the
+    operator reviews the proposal, then confirms via POST /api/leads."""
+    fields, warnings, llm_used = svc.parse_jd(req.text)
+    return ParseJDResult(fields=fields, warnings=warnings, llm_used=llm_used,
+                         model=svc.cfg.nemotron_model if llm_used else "offline-fallback")
+
+
+@router.post("/leads", response_model=AddLeadResult, status_code=201)
+def add_lead(req: AddLeadRequest, svc: Service = Depends(get_service)):
+    """Add a lead to the lead sheet (leads.csv) and the tracker."""
+    try:
+        lead, created, message, warnings = svc.add_lead(req.model_dump())
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    return AddLeadResult(lead=lead, created=created, message=message, warnings=warnings)
 
 
 @router.get("/leads/{lead_id}", response_model=LeadOut)

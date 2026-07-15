@@ -19,6 +19,7 @@ export default function LeadTable({ leads }) {
             <th>Channel</th>
             <th>Assets</th>
             <th>Status</th>
+            <th>People</th>
           </tr>
         </thead>
         <tbody>
@@ -37,6 +38,21 @@ export default function LeadTable({ leads }) {
               <td>{l.has_email ? "email + dm" : "dm-only"}</td>
               <td>{l.assets_generated === "true" ? "✓" : "—"}</td>
               <td><StatusBadge status={l.status} /></td>
+              <td>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  title={`Boolean searches for hiring people at ${l.company_name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const q = new URLSearchParams({
+                      company: l.company_name, role: l.job_title, city: l.city,
+                    });
+                    navigate(`/discovery?${q}`);
+                  }}
+                >
+                  Find people
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

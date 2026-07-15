@@ -47,6 +47,33 @@ class AddLeadRequest(BaseModel):
     funding_stage: str = ""
 
 
+class ParseJDRequest(BaseModel):
+    text: str = Field(min_length=30, description="Pasted job description text")
+
+
+class ParsedLead(BaseModel):
+    """Proposed lead fields extracted from a JD — all optional, operator edits
+    and confirms before anything is written."""
+    full_name: str = ""
+    job_title: str = ""
+    company_name: str = ""
+    persona_tag: str = ""  # unlike AddLeadRequest, may be empty pre-review
+    city: str = ""
+    linkedin_url: str = ""
+    email: str = ""
+    company_size: str = ""
+    industry: str = ""
+    company_website: str = ""
+    funding_stage: str = ""
+
+
+class ParseJDResult(BaseModel):
+    fields: ParsedLead
+    warnings: list[str] = []
+    llm_used: bool
+    model: str
+
+
 class AddLeadResult(BaseModel):
     lead: "LeadOut"
     created: bool
@@ -133,3 +160,61 @@ class AgentState(BaseModel):
 
 class DigestOut(BaseModel):
     text: str
+
+
+class JobAlertOut(BaseModel):
+    date: str
+    source: str
+    title: str
+    company: str = ""
+    location: str = ""
+    url: str
+
+
+class ScanResult(BaseModel):
+    scanned: int
+    job_alerts: int
+    replies_classified: int
+    matched: int
+    unmatched: int
+
+
+class DiscoveryRequest(BaseModel):
+    """Job details to hunt hiring-side people for. Company anchors the search."""
+    company_name: str = Field(min_length=1)
+    job_title: str = ""
+    city: str = ""
+    keywords: list[str] = Field(default_factory=list, max_length=8)
+
+
+class DiscoveryVariant(BaseModel):
+    group: str
+    persona_tag: str  # lead-sheet tag a found person would carry ("" = mixed)
+    query: str
+    linkedin_url: str
+    xray_url: str
+    keywords: list[str] = []
+
+
+class DiscoveryResult(BaseModel):
+    company_name: str
+    job_title: str = ""
+    city: str = ""
+    variants: list[DiscoveryVariant]
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=20000)
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+
+
+class ChatResult(BaseModel):
+    reply: str
+    lead_proposal: Optional[ParsedLead] = None
+    warnings: list[str] = []
+    llm_used: bool
+    model: str

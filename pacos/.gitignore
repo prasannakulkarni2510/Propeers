@@ -21,3 +21,18 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+
+# PyInstaller exe build (re-mint with build_exe.bat; see docs/adr/0004)
+dist/
+build/
+*.spec
+PACOS.exe
+
+# SQLite tracker (source of truth, per-operator)
+tracker.db
+tracker.db-shm
+tracker.db-wal
+
+# Built frontend (bundled into the exe; rebuilt by build_exe.bat)
+frontend/dist/
+frontend/node_modules/

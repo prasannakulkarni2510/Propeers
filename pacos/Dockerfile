@@ -1,13 +1,31 @@
-# PACOS backend (FastAPI + Nemotron core). Local dev / Railway deploy.
+# PACOS cloud image: one container serves the API *and* the built dashboard,
+# mirroring the frozen-exe layout (ADR 0004) — FastAPI mounts frontend/dist
+# with an SPA fallback, so there is no separate frontend host and no CORS.
+# Workspace state (leads.csv, tracker.db, output/) lives on a mounted volume;
+# point the *_PATH env vars at it (see render.yaml / docs/DEPLOYMENT.md).
+
+# ── Stage 1: build the React dashboard ──────────────────────────────────────
+FROM node:20-alpine AS frontend
+WORKDIR /build
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+COPY frontend/ ./
+RUN npm run build
+
+# ── Stage 2: Python runtime ─────────────────────────────────────────────────
 FROM python:3.11-slim
-
 WORKDIR /app
+ENV PYTHONUNBUFFERED=1
 
-# Install the core package + backend deps.
+# Editable install keeps the package at /app/src, so config.py resolves the
+# repo root to /app — same layout as a source checkout.
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY backend ./backend
 RUN pip install --no-cache-dir -e . -r backend/requirements.txt
 
+COPY --from=frontend /build/dist ./frontend/dist
+
 EXPOSE 8000
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Shell form so $PORT (injected by Render/Railway/Fly) expands.
+CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}

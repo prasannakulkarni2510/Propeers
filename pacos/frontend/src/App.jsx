@@ -6,6 +6,9 @@ import Leads from "./pages/Leads.jsx";
 import Assets from "./pages/Assets.jsx";
 import Approvals from "./pages/Approvals.jsx";
 import Tracker from "./pages/Tracker.jsx";
+import Chat from "./pages/Chat.jsx";
+import Discovery from "./pages/Discovery.jsx";
+import AuthGate from "./components/AuthGate.jsx";
 
 const NAV = [
   { to: "/", label: "Dashboard", end: true },
@@ -13,6 +16,8 @@ const NAV = [
   { to: "/assets", label: "Assets" },
   { to: "/approvals", label: "Approvals" },
   { to: "/tracker", label: "Tracker" },
+  { to: "/chat", label: "Chat" },
+  { to: "/discovery", label: "Discovery" },
 ];
 
 function Toast() {
@@ -33,6 +38,7 @@ function Toast() {
 
 export default function App() {
   return (
+    <AuthGate>
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
@@ -63,9 +69,12 @@ export default function App() {
           <Route path="/assets/:leadId" element={<Assets />} />
           <Route path="/approvals" element={<Approvals />} />
           <Route path="/tracker" element={<Tracker />} />
+          <Route path="/chat" element={<Chat />} />
+          <Route path="/discovery" element={<Discovery />} />
         </Routes>
       </main>
       <Toast />
     </div>
+    </AuthGate>
   );
 }

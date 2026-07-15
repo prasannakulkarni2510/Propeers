@@ -6,6 +6,8 @@ pandas>=2.0.0            # lead sheet + tracker CSV handling
 python-dotenv>=1.0.0     # load secrets from .env
 beautifulsoup4>=4.12.0   # parse LinkedIn / Naukri HTML alert emails
 tenacity>=8.2.0          # retry Nemotron calls on transient errors
+langgraph>=1.0.0         # multi-agent generation pipeline (ADR 0002)
+langgraph-checkpoint-sqlite>=2.0.0
 
 # --- Gmail Inbox Monitor (Layer 2) ---
 google-api-python-client>=2.100.0

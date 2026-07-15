@@ -5,8 +5,11 @@ few small scripts. It generates personalised outreach from a lead spreadsheet,
 reads your Gmail for job alerts and recruiter replies, and keeps a single live
 tracker so nothing slips.
 
-> **Hard constraint:** PACOS never auto-sends. Every outreach is copy-pasted by a
-> human after review. The inbox monitor is strictly **read-only**.
+> **Hard constraints:** PACOS never auto-sends — every outreach is copy-pasted by
+> a human after review. The inbox monitor is strictly **read-only**. And no
+> model-proposed data is ever written without operator confirmation: extractors
+> (the JD parser, the chat assistant) only *propose* leads; the operator confirms
+> each one into the lead sheet.
 
 **Generation runs on NVIDIA Nemotron** (via the OpenAI-compatible NVIDIA NIM API),
 not Claude. Swap the model with one env var.
@@ -137,6 +140,24 @@ self-hosted NIM container without code changes.
 pip install pytest
 pytest -q      # pure logic: classifier, lead parsing, JSON extraction, tracker
 ```
+
+## Recruiter Discovery
+
+The **Discovery** page (and the "Find people" button on every lead row / chat
+proposal) builds boolean people-searches for the humans behind a job — hiring
+managers, engineering managers, directors, recruiters, TA, HRBPs — from the
+company/role/location PACOS already knows. Each variant comes with a
+pre-filled LinkedIn people-search link, a Google X-Ray link, and the raw
+query to copy. Deliberately deterministic (no model call) and read-only: you
+open the search in your browser, pick a person, and confirm them as a lead
+like any other. No scraping — see Legal.
+
+## Deploy online
+
+PACOS can run as a private, token-gated web app (one Docker service on
+Render; SQLite + assets on a persistent disk). See
+[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for the platform comparison,
+secret-management rules, and step-by-step instructions.
 
 ## Legal
 

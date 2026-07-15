@@ -44,6 +44,19 @@ export const useStore = create((set, get) => ({
     }
   },
 
+  addLead: async (fields) => {
+    set({ error: "" });
+    try {
+      const res = await api.addLead(fields);
+      set({ toast: res.message });
+      await get().refresh();
+      return res;
+    } catch (e) {
+      set({ error: e.message });
+      throw e;
+    }
+  },
+
   associate: async (reply_id, lead_id) => {
     const res = await api.associate({ reply_id, lead_id });
     set({ toast: res.message });

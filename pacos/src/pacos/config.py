@@ -6,13 +6,19 @@ directly. Call `load()` once at process start (the CLI does this for you).
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Repo root = two levels up from this file (src/pacos/config.py -> repo root)
-REPO_ROOT = Path(__file__).resolve().parents[2]
+# Repo root = two levels up from this file (src/pacos/config.py -> repo root).
+# In a frozen (PyInstaller) build, __file__ lives in an unpack temp dir, so the
+# root is instead the folder the exe sits in — .env, data/ and output/ go there.
+if getattr(sys, "frozen", False):
+    REPO_ROOT = Path(sys.executable).resolve().parent
+else:
+    REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _path(env_value: str) -> Path:
@@ -27,6 +33,10 @@ class Config:
     nvidia_api_key: str
     nemotron_base_url: str
     nemotron_model: str
+
+    # ── Embeddings (Hugging Face) ────────────────────────────────────────
+    embedding_model: str
+    hf_token: str
 
     # ── Files ────────────────────────────────────────────────────────────
     leads_csv: Path
@@ -70,6 +80,8 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
         nemotron_model=os.getenv(
             "NEMOTRON_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"
         ).strip(),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3").strip(),
+        hf_token=os.getenv("HF_TOKEN", "").strip(),
         leads_csv=_path(os.getenv("LEADS_CSV_PATH", "data/leads.csv")),
         output_dir=_path(os.getenv("OUTPUT_DIR", "output")),
         tracker_csv=_path(os.getenv("TRACKER_CSV_PATH", "tracker.csv")),
