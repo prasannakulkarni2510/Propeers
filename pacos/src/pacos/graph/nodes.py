@@ -39,7 +39,8 @@ def make_personalization_node(cfg: Config, client: NemotronClient, store):
             data = client.complete_json(
                 system=prompts.SYSTEM_PERSONALIZATION,
                 user=prompts.build_personalization_user(lead, _candidate(cfg), _base_cv(cfg)),
-                max_tokens=400,
+                # generous headroom — a truncated reply is unparseable JSON
+                max_tokens=1200,
             )
             hook = str(data.get("hook", "")).strip()
             domain_read = str(data.get("domain_read", "")).strip()
@@ -66,7 +67,7 @@ def make_asset_node(asset_key: str, cfg: Config, client: NemotronClient, store):
                 system=prompts.SYSTEM_ASSET,
                 user=prompts.build_asset_user(
                     asset_key, lead, _candidate(cfg), _base_cv(cfg), hook, domain_read),
-                max_tokens=900,
+                max_tokens=1600,
             )
 
         store.set_agent_status(asset_key, "done", "")
