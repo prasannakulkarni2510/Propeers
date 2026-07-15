@@ -26,6 +26,16 @@ RUN pip install --no-cache-dir -e . -r backend/requirements.txt
 
 COPY --from=frontend /build/dist ./frontend/dist
 
+# Non-root runtime user (uid 1000 — required by Hugging Face Spaces, good
+# hygiene everywhere). /app must stay writable: the workspace defaults
+# (data/leads.csv, tracker.db, output/) live under it when no *_PATH env
+# vars point elsewhere.
+RUN useradd -m -u 1000 pacos \
+    && mkdir -p /app/data /app/output \
+    && chown -R pacos:pacos /app
+USER pacos
+ENV HOME=/home/pacos
+
 EXPOSE 8000
 # Shell form so $PORT (injected by Render/Railway/Fly) expands.
 CMD uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}

@@ -2,6 +2,7 @@
 .env
 credentials.json
 token.json
+.pacos_space_token
 
 # Generated per-lead assets and state
 output/

@@ -131,6 +131,28 @@ environment or in the operator's head — never in git, never in the bundle.**
    (build.nvidia.com), set the new value in Render → environment, redeploy.
    No code change, no commit.
 
+## Free option: Hugging Face Spaces
+
+When $0 matters more than durability, the same Docker image runs as a
+**private HF Space** (free CPU tier). The honest trade-off: **Space storage
+is ephemeral** — leads/tracker on the Space reset whenever it restarts or
+redeploys, and the free tier sleeps after ~48h of inactivity. Treat the
+Space as anywhere-access to a demo workspace; your local/exe workspace stays
+the source of truth.
+
+```bash
+# one-time: HF_TOKEN in .env needs *write* scope (hf.co/settings/tokens)
+pip install huggingface_hub
+python scripts/deploy_hf_space.py          # creates private Space + secrets, uploads
+```
+
+The script forwards `NVIDIA_API_KEY`, candidate identity, and
+`PACOS_AUTH_TOKEN` from `.env` to the Space's encrypted secrets (values are
+never printed or committed; a generated gate token lands in
+`.pacos_space_token`, gitignored). Re-run the script to redeploy — that is
+the whole CI/CD story on this path. Same single-service architecture,
+same auth gate, same "no secret in the client" rules as Render.
+
 ## Deploy steps
 
 1. Push the repo to GitHub (with `render.yaml` at the root).
