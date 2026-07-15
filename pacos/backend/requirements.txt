@@ -1,3 +1,6 @@
 # Backend API deps (in addition to the core `pacos` package, installed via `pip install -e .`)
 fastapi>=0.110
 uvicorn[standard]>=0.29
+# Postgres driver for the cloud tracker backend (used only when DATABASE_URL
+# is set; local/exe mode stays on stdlib sqlite3).
+psycopg[binary]>=3.1

@@ -29,7 +29,7 @@ def _parse_date(s):
 
 
 def _store(cfg: Config) -> PacosStore:
-    store = PacosStore(cfg.db_path)
+    store = PacosStore(cfg.db_path, database_url=cfg.database_url)
     if store.leads_empty() and cfg.leads_csv.exists():
         store.ingest_leads(load_leads(cfg.leads_csv))
     return store
@@ -37,7 +37,7 @@ def _store(cfg: Config) -> PacosStore:
 
 def cmd_ingest(args) -> int:
     cfg = load()
-    store = PacosStore(cfg.db_path)
+    store = PacosStore(cfg.db_path, database_url=cfg.database_url)
     n = store.ingest_leads(load_leads(cfg.leads_csv))
     print(f"[ok] ingested {n} lead(s) from {cfg.leads_csv} into {cfg.db_path.name}")
     return 0

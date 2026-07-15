@@ -1,22 +1,23 @@
 # Render blueprint for PACOS (pacos/docs/DEPLOYMENT.md explains the choices).
-# One Docker web service serves the API and the dashboard; the workspace
-# (leads.csv, tracker.db, generated assets) lives on a persistent disk at
-# /data. Secrets are set in the Render dashboard, never committed.
+# Free-tier deployment: one Docker web service (API + dashboard), with the
+# tracker in a free external Postgres (Neon/Supabase) via DATABASE_URL so
+# nothing critical lives on the free instance's ephemeral filesystem.
+# Trade-offs: the service sleeps after ~15 idle minutes (cold start on next
+# visit), and generated asset files/leads.csv on disk reset on restart — the
+# Postgres tracker (leads + pipeline state) is what persists.
 services:
   - type: web
     name: pacos
     runtime: docker
-    plan: starter # persistent disks need a paid instance; starter is the cheapest
+    plan: free
     dockerfilePath: ./pacos/Dockerfile
     dockerContext: ./pacos
     healthCheckPath: /api/health
     autoDeploy: true # every push to the tracked branch redeploys (CI/CD)
-    disk:
-      name: pacos-data
-      mountPath: /data
-      sizeGB: 1
     envVars:
       # ── secrets: fill in the Render dashboard (sync: false = never in git) ──
+      - key: DATABASE_URL # Neon/Supabase Postgres connection string
+        sync: false
       - key: NVIDIA_API_KEY
         sync: false
       - key: HF_TOKEN
@@ -34,18 +35,3 @@ services:
         sync: false
       - key: CANDIDATE_LINKEDIN
         sync: false
-      # ── workspace paths: everything mutable lives on the persistent disk ──
-      - key: LEADS_CSV_PATH
-        value: /data/leads.csv
-      - key: TRACKER_CSV_PATH
-        value: /data/tracker.csv
-      - key: NEW_JOBS_CSV_PATH
-        value: /data/new_jobs.csv
-      - key: OUTPUT_DIR
-        value: /data/output
-      - key: BASE_CV_PATH
-        value: /data/base_cv.txt
-      - key: GMAIL_CREDENTIALS_PATH
-        value: /data/credentials.json
-      - key: GMAIL_TOKEN_PATH
-        value: /data/token.json

@@ -1,11 +1,17 @@
-"""SQLite store — the authoritative source of truth (ADR 0003).
+"""Tracker store — the authoritative source of truth (ADR 0003).
 
-Holds leads, tracker state, live per-agent status, and unmatched inbox replies in
-one local file (`pacos.db`). Atomic writes end the lost-update races that the old
-whole-file `tracker.csv` approach had. `tracker.csv` is now a read-only export.
+Holds leads, tracker state, live per-agent status, and unmatched inbox replies.
+Two interchangeable backends behind one class:
 
-One connection per call (sqlite3 handles file locking); WAL + busy_timeout keep
-the FastAPI threads and CLI from stepping on each other.
+- **SQLite** (default): one local file, WAL + busy_timeout — the local-first
+  and exe mode, unchanged.
+- **Postgres** (when a `DATABASE_URL` is passed): the cloud mode, where the
+  host's filesystem is ephemeral but the tracker must survive restarts
+  (docs/DEPLOYMENT.md). Same SQL shape; a thin adapter bridges the paramstyle
+  (`?` vs `%s`) and the one schema difference (the autoincrement id column).
+
+One connection per call keeps both backends simple; dates stay ISO-8601 TEXT
+in both so behaviour is identical.
 """
 from __future__ import annotations
 
@@ -13,6 +19,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Any, Mapping
 
 from .leads import Lead
 
@@ -36,15 +43,18 @@ EXPORT_COLUMNS = [
 STATUS_ORDER = ["pending", "sent", "replied", "interested", "interview", "offer"]
 TERMINAL_STATUSES = {"offer", "rejected"}
 
-_SCHEMA = """
-CREATE TABLE IF NOT EXISTS leads (
+# Table definitions shared by both backends. {autoinc_pk} is the only
+# dialect difference: INTEGER PRIMARY KEY AUTOINCREMENT (sqlite) vs
+# SERIAL PRIMARY KEY (postgres).
+_TABLES = [
+    """CREATE TABLE IF NOT EXISTS leads (
     lead_id TEXT PRIMARY KEY,
     full_name TEXT, first_name TEXT, job_title TEXT, company_name TEXT,
     city TEXT, linkedin_url TEXT, persona_tag TEXT, domain_tag TEXT,
     email TEXT, company_size TEXT, industry TEXT, company_website TEXT,
     funding_stage TEXT, folder_name TEXT
-);
-CREATE TABLE IF NOT EXISTS tracker (
+)""",
+    """CREATE TABLE IF NOT EXISTS tracker (
     lead_id TEXT PRIMARY KEY,
     status TEXT DEFAULT 'pending',
     assets_generated TEXT DEFAULT 'false',
@@ -55,52 +65,86 @@ CREATE TABLE IF NOT EXISTS tracker (
     reply_intent TEXT DEFAULT '',
     follow_up_due TEXT DEFAULT '',
     notes TEXT DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS agent_status (
+)""",
+    """CREATE TABLE IF NOT EXISTS agent_status (
     node TEXT PRIMARY KEY,
     status TEXT DEFAULT 'idle',
     detail TEXT DEFAULT '',
     updated_at TEXT DEFAULT ''
-);
-CREATE TABLE IF NOT EXISTS unmatched_replies (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+)""",
+    """CREATE TABLE IF NOT EXISTS unmatched_replies (
+    id {autoinc_pk},
     received_date TEXT, sender TEXT, subject TEXT, intent TEXT,
     associated_lead_id TEXT DEFAULT ''
-);
-"""
+)""",
+]
+
+
+class _Conn:
+    """One dialect over both drivers: sqlite paramstyle in, rows out as
+    dict-compatible objects (sqlite3.Row / psycopg dict_row)."""
+
+    def __init__(self, raw, is_pg: bool):
+        self._raw = raw
+        self._is_pg = is_pg
+
+    def execute(self, sql: str, params: tuple | list = ()):
+        if self._is_pg:
+            sql = sql.replace("?", "%s")
+        return self._raw.execute(sql, params)
 
 
 class PacosStore:
-    def __init__(self, db_path: str | Path):
-        self.path = Path(db_path)
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+    def __init__(self, db_path: str | Path, database_url: str = ""):
+        """SQLite at `db_path` by default; Postgres when `database_url` is set
+        (the cloud mode — `db_path` is then ignored)."""
+        self.database_url = (database_url or "").strip()
+        self.is_postgres = bool(self.database_url)
+        if not self.is_postgres:
+            self.path = Path(db_path)
+            self.path.parent.mkdir(parents=True, exist_ok=True)
         self._ensure_schema()
 
     @contextmanager
     def _conn(self):
-        conn = sqlite3.connect(self.path, timeout=5.0)
-        conn.row_factory = sqlite3.Row
-        conn.execute("PRAGMA journal_mode=WAL;")
-        conn.execute("PRAGMA busy_timeout=5000;")
-        try:
-            yield conn
-            conn.commit()
-        finally:
-            conn.close()
+        if self.is_postgres:
+            import psycopg  # lazy — only the cloud deployment needs it
+            from psycopg.rows import dict_row
+
+            conn = psycopg.connect(self.database_url, row_factory=dict_row)
+            try:
+                yield _Conn(conn, is_pg=True)
+                conn.commit()
+            finally:
+                conn.close()
+        else:
+            conn = sqlite3.connect(self.path, timeout=5.0)
+            conn.row_factory = sqlite3.Row
+            conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA busy_timeout=5000;")
+            try:
+                yield _Conn(conn, is_pg=False)
+                conn.commit()
+            finally:
+                conn.close()
 
     def _ensure_schema(self) -> None:
+        autoinc = "SERIAL PRIMARY KEY" if self.is_postgres \
+            else "INTEGER PRIMARY KEY AUTOINCREMENT"
         with self._conn() as c:
-            c.executescript(_SCHEMA)
+            for table in _TABLES:
+                c.execute(table.format(autoinc_pk=autoinc))
             for node, _ in AGENT_NODES:
                 c.execute(
-                    "INSERT OR IGNORE INTO agent_status(node, status) VALUES (?, 'idle')",
+                    "INSERT INTO agent_status(node, status) VALUES (?, 'idle') "
+                    "ON CONFLICT DO NOTHING",
                     (node,),
                 )
 
     # ── leads ────────────────────────────────────────────────────────────
     def leads_empty(self) -> bool:
         with self._conn() as c:
-            return c.execute("SELECT COUNT(*) n FROM leads").fetchone()["n"] == 0
+            return c.execute("SELECT COUNT(*) AS n FROM leads").fetchone()["n"] == 0
 
     def ingest_leads(self, leads: list[Lead]) -> int:
         with self._conn() as c:
@@ -126,7 +170,8 @@ class PacosStore:
                      ld.company_website, ld.funding_stage, ld.folder_name),
                 )
                 c.execute(
-                    "INSERT OR IGNORE INTO tracker(lead_id, status) VALUES (?, 'pending')",
+                    "INSERT INTO tracker(lead_id, status) VALUES (?, 'pending') "
+                    "ON CONFLICT DO NOTHING",
                     (ld.lead_id,),
                 )
         return len(leads)
@@ -137,7 +182,7 @@ class PacosStore:
         self.ingest_leads([lead])
         return created
 
-    def _lead_row(self, row: sqlite3.Row) -> dict:
+    def _lead_row(self, row: Mapping[str, Any]) -> dict:
         d = dict(row)
         email = d.get("email", "") or ""
         d["has_email"] = bool(email and "@" in email)
@@ -191,13 +236,15 @@ class PacosStore:
         sets = ", ".join(f"{k}=?" for k in cols)
         params = list(cols.values()) + [lead_id]
         with self._conn() as c:
-            c.execute("INSERT OR IGNORE INTO tracker(lead_id) VALUES (?)", (lead_id,))
+            c.execute("INSERT INTO tracker(lead_id) VALUES (?) ON CONFLICT DO NOTHING",
+                      (lead_id,))
             cur = c.execute(f"UPDATE tracker SET {sets} WHERE lead_id=?", params)
             return cur.rowcount > 0
 
     def upsert_from_generation(self, lead_id: str, hook: str) -> None:
         with self._conn() as c:
-            c.execute("INSERT OR IGNORE INTO tracker(lead_id) VALUES (?)", (lead_id,))
+            c.execute("INSERT INTO tracker(lead_id) VALUES (?) ON CONFLICT DO NOTHING",
+                      (lead_id,))
             row = c.execute(
                 "SELECT status, notes FROM tracker WHERE lead_id=?", (lead_id,)
             ).fetchone()

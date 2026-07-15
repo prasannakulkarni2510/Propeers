@@ -28,6 +28,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("OUTPUT_DIR", str(tmp_path / "output"))
     monkeypatch.setenv("GMAIL_TOKEN_PATH", str(tmp_path / "token.json"))
     monkeypatch.setenv("GMAIL_CREDENTIALS_PATH", str(tmp_path / "credentials.json"))
+    monkeypatch.setenv("DATABASE_URL", "")  # force the sqlite backend
 
     from backend.deps import get_service
     from backend.main import app

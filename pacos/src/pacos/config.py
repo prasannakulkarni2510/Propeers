@@ -38,6 +38,11 @@ class Config:
     embedding_model: str
     hf_token: str
 
+    # ── Tracker backend ──────────────────────────────────────────────────
+    # Empty = SQLite file next to tracker.csv (local/exe mode). A Postgres
+    # URL = cloud mode, where the filesystem is ephemeral (docs/DEPLOYMENT.md).
+    database_url: str
+
     # ── Files ────────────────────────────────────────────────────────────
     leads_csv: Path
     output_dir: Path
@@ -80,6 +85,7 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
         nemotron_model=os.getenv(
             "NEMOTRON_MODEL", "nvidia/llama-3.1-nemotron-70b-instruct"
         ).strip(),
+        database_url=os.getenv("DATABASE_URL", "").strip(),
         embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3").strip(),
         hf_token=os.getenv("HF_TOKEN", "").strip(),
         leads_csv=_path(os.getenv("LEADS_CSV_PATH", "data/leads.csv")),

@@ -20,7 +20,7 @@ from pacos.store import PacosStore
 class Service:
     def __init__(self, cfg: Config | None = None):
         self.cfg = cfg or load()
-        self.store = PacosStore(self.cfg.db_path)
+        self.store = PacosStore(self.cfg.db_path, database_url=self.cfg.database_url)
         if self.store.leads_empty() and self.cfg.leads_csv.exists():
             self.store.ingest_leads(load_leads(self.cfg.leads_csv))
         self._pipeline: Pipeline | None = None

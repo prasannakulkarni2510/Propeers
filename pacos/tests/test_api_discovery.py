@@ -27,6 +27,7 @@ def client(tmp_path, monkeypatch):
     monkeypatch.setenv("NEW_JOBS_CSV_PATH", str(tmp_path / "new_jobs.csv"))
     monkeypatch.setenv("OUTPUT_DIR", str(tmp_path / "output"))
     monkeypatch.delenv("PACOS_AUTH_TOKEN", raising=False)
+    monkeypatch.setenv("DATABASE_URL", "")  # force the sqlite backend
 
     from backend.deps import get_service
     from backend.main import app

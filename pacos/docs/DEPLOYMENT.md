@@ -22,9 +22,19 @@ frontend host, no CORS, no second deploy pipeline, one URL.
 Browser ──HTTPS──▶ Render web service (Docker)
                     ├── FastAPI  /api/*   (Bearer PACOS_AUTH_TOKEN)
                     ├── static   /        (frontend/dist, SPA fallback)
-                    └── /data (persistent disk): leads.csv · tracker.db · output/
-                          └──▶ NVIDIA NIM API (Nemotron) — key stays server-side
+                    ├── tracker ──▶ free Postgres (Neon) via DATABASE_URL
+                    └──▶ NVIDIA NIM API (Nemotron) — key stays server-side
 ```
+
+**The chosen $0 variant** (what `render.yaml` now describes): Render's free
+instance plus a free managed Postgres (Neon). The store is dual-backend —
+SQLite locally (unchanged, ADR 0003), Postgres whenever `DATABASE_URL` is
+set — so the tracker survives the free tier's ephemeral filesystem. Free-tier
+trade-offs, accepted for the MVP: the service sleeps after ~15 idle minutes
+(~1 min cold start), and *files* (generated assets, leads.csv, new_jobs.csv)
+reset on restart — regenerate assets per lead when needed; the tracker itself
+persists. Upgrading to the $7 Starter + disk (previous revision of
+`render.yaml` in git history) removes both caveats without code changes.
 
 ## Platform comparison
 
@@ -77,11 +87,10 @@ PACOS where the frontend needs a CDN.
 - **Frontend hosting** — served by FastAPI from the same container (built in
   the Docker stage 1). No separate host.
 - **Backend hosting** — Render web service (Docker runtime), Starter plan.
-- **Database** — SQLite on the persistent disk (`/data/tracker.db`). Right
-  answer while PACOS is single-user by design (ADR 0001/0003): zero ops, easy
-  backups (download the file), transactional. The migration trigger to
-  managed Postgres (Neon/Supabase) is *multi-user*, not scale — one operator
-  will never stress SQLite.
+- **Database** — dual-backend store: SQLite locally (zero ops, ADR 0003),
+  free managed Postgres (Neon) in the cloud via `DATABASE_URL`, because free
+  hosts have no persistent disks. Neon's free tier (0.5 GB) is orders of
+  magnitude beyond what one operator's tracker will ever need.
 - **Authentication** — single-operator bearer token (`PACOS_AUTH_TOKEN`).
   The backend middleware 401s any `/api/*` call without
   `Authorization: Bearer <token>`; the dashboard prompts once and stores it
@@ -131,14 +140,18 @@ environment or in the operator's head — never in git, never in the bundle.**
    (build.nvidia.com), set the new value in Render → environment, redeploy.
    No code change, no commit.
 
-## Free option: Hugging Face Spaces
+## Alternative: Hugging Face Spaces
 
-When $0 matters more than durability, the same Docker image runs as a
-**private HF Space** (free CPU tier). The honest trade-off: **Space storage
-is ephemeral** — leads/tracker on the Space reset whenever it restarts or
-redeploys, and the free tier sleeps after ~48h of inactivity. Treat the
-Space as anywhere-access to a demo workspace; your local/exe workspace stays
-the source of truth.
+> **No longer free**: as of mid-2026 HF returns *402 Payment Required* for
+> Docker Spaces on free hardware — they now require a PRO subscription
+> (~$9/mo). The script below still works if you have PRO; otherwise use the
+> Render free-tier path above.
+
+The same Docker image runs as a **private HF Space**. Trade-off: **Space
+storage is ephemeral** — leads/tracker on the Space reset whenever it
+restarts or redeploys (no DATABASE_URL wiring in the script), and it sleeps
+after ~48h of inactivity. Treat the Space as anywhere-access to a demo
+workspace; your local/exe workspace stays the source of truth.
 
 ```bash
 # one-time: HF_TOKEN in .env needs *write* scope (hf.co/settings/tokens)
