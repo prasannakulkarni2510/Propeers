@@ -15,7 +15,6 @@ from pathlib import Path
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from fastapi.staticfiles import StaticFiles
 
 from .routes import agents, approvals, assets, chat, discovery, inbox, leads, tracker
 
@@ -84,7 +83,9 @@ def _dist_dir() -> Path | None:
 
 _dist = _dist_dir()
 if _dist is not None:
-    app.mount("/assets", StaticFiles(directory=_dist / "assets"), name="assets")
+    # No StaticFiles mount on /assets — it would shadow the React route
+    # /assets/:leadId on direct navigation. The SPA fallback below already
+    # serves real bundle files (dist/assets/*) and index.html for the rest.
 
     @app.get("/{full_path:path}", include_in_schema=False)
     def spa(full_path: str):
