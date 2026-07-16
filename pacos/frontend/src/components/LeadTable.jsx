@@ -55,6 +55,25 @@ function RowActions({ lead }) {
   );
 }
 
+// Predicted work email + a confidence chip. Falls back to a plain verified/typed
+// email when the lead wasn't auto-enriched. Predicted emails are flagged so they
+// read as "likely", never "confirmed".
+function EmailCell({ lead }) {
+  const email = lead.predicted_email || lead.email;
+  if (!email) return <span className="muted">—</span>;
+  const predicted = lead.email_status === "predicted";
+  const conf = (lead.email_confidence || "").toLowerCase();
+  return (
+    <div className="email-cell">
+      {predicted && <span className="muted email-likely">Likely:</span>}
+      <span className="email-addr">{email}</span>
+      {predicted && conf && (
+        <span className={`conf conf-${conf}`}>{conf[0].toUpperCase() + conf.slice(1)}</span>
+      )}
+    </div>
+  );
+}
+
 // CSV lead list view (docx: LeadTable.jsx). Click a row to view its assets.
 export default function LeadTable({ leads }) {
   const navigate = useNavigate();
@@ -65,12 +84,11 @@ export default function LeadTable({ leads }) {
         <thead>
           <tr>
             <th>Name</th>
+            <th>Title</th>
             <th>Company</th>
-            <th>Role</th>
-            <th>City</th>
-            <th>Persona</th>
+            <th>LinkedIn</th>
+            <th>Predicted Email</th>
             <th>Domain</th>
-            <th>Channel</th>
             <th>Assets</th>
             <th>Status</th>
             <th>Actions</th>
@@ -84,12 +102,25 @@ export default function LeadTable({ leads }) {
               onClick={() => navigate(`/assets/${l.lead_id}`)}
             >
               <td>{l.full_name}</td>
-              <td>{l.company_name}</td>
               <td>{l.job_title}</td>
-              <td>{l.city}</td>
-              <td>{l.persona_tag}</td>
+              <td>{l.company_name}</td>
+              <td>
+                {l.linkedin_url ? (
+                  <a
+                    className="link"
+                    href={l.linkedin_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    profile ↗
+                  </a>
+                ) : (
+                  <span className="muted">—</span>
+                )}
+              </td>
+              <td><EmailCell lead={l} /></td>
               <td><span className="tag">{l.domain_tag}</span></td>
-              <td>{l.has_email ? "email + dm" : "dm-only"}</td>
               <td>{l.assets_generated === "true" ? "✓" : "—"}</td>
               <td><StatusBadge status={l.status} /></td>
               <td><RowActions lead={l} /></td>

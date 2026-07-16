@@ -9,6 +9,7 @@ export const useStore = create((set, get) => ({
   agents: [],
   unmatched: [],
   loading: false,
+  generating: false, // global so the "Generating…" state survives tab switches
   error: "",
   toast: "",
 
@@ -30,17 +31,30 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  generate: async ({ dry_run = false, limit = 0, lead_id = null, review_hooks = false } = {}) => {
-    set({ error: "" });
+  generate: async ({
+    dry_run = false,
+    limit = 0,
+    lead_id = null,
+    review_hooks = false,
+    only_missing = true,
+  } = {}) => {
+    if (get().generating) return; // guard against double-clicks / re-entry
+    set({ error: "", generating: true });
     try {
-      const res = await api.generate({ dry_run, limit, lead_id, review_hooks });
-      const mode = res.dry_run ? "dry-run" : res.model;
-      set({ toast: `Generated ${res.generated}/${res.requested} via ${mode}` });
+      const res = await api.generate({ dry_run, limit, lead_id, review_hooks, only_missing });
+      if (res.requested === 0) {
+        set({ toast: "All leads already have assets — nothing new to build. Use Regenerate on a lead to rebuild." });
+      } else {
+        const mode = res.dry_run ? "dry-run" : res.model;
+        set({ toast: `Generated ${res.generated}/${res.requested} via ${mode}` });
+      }
       await get().refresh();
       return res;
     } catch (e) {
       set({ error: e.message });
       throw e;
+    } finally {
+      set({ generating: false });
     }
   },
 

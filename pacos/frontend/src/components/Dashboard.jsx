@@ -5,7 +5,8 @@ import AgentStatus from "./AgentStatus.jsx";
 // Supervisor overview (docx: Dashboard.jsx): stat tiles + generate trigger.
 export default function Dashboard() {
   const { stats, generate } = useStore();
-  const [busy, setBusy] = useState(false);
+  // Global so leaving and returning to this tab still shows the run in progress.
+  const busy = useStore((s) => s.generating);
   const [reviewHooks, setReviewHooks] = useState(false);
 
   const tiles = [
@@ -20,13 +21,9 @@ export default function Dashboard() {
   ];
 
   const run = async (dry_run) => {
-    setBusy(true);
     try {
       await generate({ dry_run, review_hooks: reviewHooks });
-    } catch (_) {
-    } finally {
-      setBusy(false);
-    }
+    } catch (_) {}
   };
 
   return (
@@ -43,8 +40,11 @@ export default function Dashboard() {
       <div className="panel">
         <h3>Generate outreach (Layer 1)</h3>
         <p className="muted" style={{ marginTop: 0 }}>
-          Runs one Nemotron call per lead → four files each. Use dry-run to
-          produce templates without an API key. Nothing is ever sent.
+          Builds assets only for leads that don't have them yet (so adding a lead
+          and clicking here builds that one, not everyone). One Nemotron call per
+          lead → four files each. To rebuild an existing lead, use Regenerate on
+          the Assets page. Dry-run produces templates without an API key. Nothing
+          is ever sent.
         </p>
         <div className="btn-row">
           <button className="btn btn-accent" disabled={busy} onClick={() => run(false)}>

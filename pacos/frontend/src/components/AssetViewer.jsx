@@ -14,6 +14,7 @@ export default function AssetViewer({ leadId }) {
   const [data, setData] = useState(null);
   const [active, setActive] = useState("cold_email.txt");
   const [error, setError] = useState("");
+  const [regenerating, setRegenerating] = useState(false);
   const setToast = useStore((s) => s.setToast);
 
   useEffect(() => {
@@ -45,6 +46,19 @@ export default function AssetViewer({ leadId }) {
     }
   };
 
+  const regenerate = async () => {
+    setRegenerating(true);
+    try {
+      const fresh = await api.regenerateAsset(leadId, current.name);
+      setData(fresh);
+      setToast(`Regenerated ${LABELS[current.name]}`);
+    } catch (e) {
+      setToast(`Regenerate failed — ${e.message}`);
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   return (
     <div className="asset-layout">
       <div className="asset-list">
@@ -61,9 +75,21 @@ export default function AssetViewer({ leadId }) {
       <div>
         <div className="copy-bar">
           <b>{LABELS[current.name]}</b>
-          <button className="btn btn-sm btn-accent" onClick={copy}>Copy</button>
+          <div className="copy-bar-actions">
+            <button
+              className="btn btn-sm"
+              onClick={regenerate}
+              disabled={regenerating}
+              title="Rewrite this asset — reuses the same hook, different copy"
+            >
+              {regenerating ? "Regenerating…" : "Regenerate"}
+            </button>
+            <button className="btn btn-sm btn-accent" onClick={copy}>Copy</button>
+          </div>
         </div>
-        <div className="asset-body">{current.content || "(empty)"}</div>
+        <div className="asset-body">
+          {regenerating ? "Regenerating…" : current.content || "(empty)"}
+        </div>
       </div>
     </div>
   );

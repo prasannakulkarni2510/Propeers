@@ -52,7 +52,9 @@ _TABLES = [
     full_name TEXT, first_name TEXT, job_title TEXT, company_name TEXT,
     city TEXT, linkedin_url TEXT, persona_tag TEXT, domain_tag TEXT,
     email TEXT, company_size TEXT, industry TEXT, company_website TEXT,
-    funding_stage TEXT, folder_name TEXT
+    funding_stage TEXT, folder_name TEXT,
+    predicted_email TEXT DEFAULT '', email_confidence TEXT DEFAULT '',
+    email_status TEXT DEFAULT ''
 )""",
     """CREATE TABLE IF NOT EXISTS tracker (
     lead_id TEXT PRIMARY KEY,
@@ -143,12 +145,27 @@ class PacosStore:
         with self._conn() as c:
             for table in _TABLES:
                 c.execute(table.format(autoinc_pk=autoinc))
+            self._migrate_leads(c)
             for node, _ in AGENT_NODES:
                 c.execute(
                     "INSERT INTO agent_status(node, status) VALUES (?, 'idle') "
                     "ON CONFLICT DO NOTHING",
                     (node,),
                 )
+
+    def _migrate_leads(self, c) -> None:
+        """Add enrichment columns to a pre-existing leads table (older DBs).
+        CREATE TABLE IF NOT EXISTS won't alter an already-present table, so add
+        the columns explicitly — idempotent on both backends."""
+        new_cols = ("predicted_email", "email_confidence", "email_status")
+        if self.is_postgres:
+            for col in new_cols:
+                c.execute(f"ALTER TABLE leads ADD COLUMN IF NOT EXISTS {col} TEXT DEFAULT ''")
+            return
+        have = {r["name"] for r in c.execute("PRAGMA table_info(leads)").fetchall()}
+        for col in new_cols:
+            if col not in have:
+                c.execute(f"ALTER TABLE leads ADD COLUMN {col} TEXT DEFAULT ''")
 
     # ── leads ────────────────────────────────────────────────────────────
     def leads_empty(self) -> bool:
@@ -162,8 +179,8 @@ class PacosStore:
                     """INSERT INTO leads(lead_id, full_name, first_name, job_title,
                         company_name, city, linkedin_url, persona_tag, domain_tag,
                         email, company_size, industry, company_website, funding_stage,
-                        folder_name)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        folder_name, predicted_email, email_confidence, email_status)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                        ON CONFLICT(lead_id) DO UPDATE SET
                         full_name=excluded.full_name, first_name=excluded.first_name,
                         job_title=excluded.job_title, company_name=excluded.company_name,
@@ -171,12 +188,16 @@ class PacosStore:
                         persona_tag=excluded.persona_tag, domain_tag=excluded.domain_tag,
                         email=excluded.email, company_size=excluded.company_size,
                         industry=excluded.industry, company_website=excluded.company_website,
-                        funding_stage=excluded.funding_stage, folder_name=excluded.folder_name
+                        funding_stage=excluded.funding_stage, folder_name=excluded.folder_name,
+                        predicted_email=excluded.predicted_email,
+                        email_confidence=excluded.email_confidence,
+                        email_status=excluded.email_status
                     """,
                     (ld.lead_id, ld.full_name, ld.first_name, ld.job_title,
                      ld.company_name, ld.city, ld.linkedin_url, ld.persona_tag,
                      ld.domain_tag, ld.email, ld.company_size, ld.industry,
-                     ld.company_website, ld.funding_stage, ld.folder_name),
+                     ld.company_website, ld.funding_stage, ld.folder_name,
+                     ld.predicted_email, ld.email_confidence, ld.email_status),
                 )
                 c.execute(
                     "INSERT INTO tracker(lead_id, status) VALUES (?, 'pending') "
@@ -365,6 +386,14 @@ class PacosStore:
                          generated_at=excluded.generated_at""",
                     (lead_id, name, content, now),
                 )
+
+    def get_hook(self, lead_id: str) -> str:
+        """The personalization hook stored at generation time (empty if never run)."""
+        with self._conn() as c:
+            row = c.execute(
+                "SELECT personalization_hook FROM tracker WHERE lead_id=?", (lead_id,)
+            ).fetchone()
+        return (row["personalization_hook"] if row else "") or ""
 
     def get_assets(self, lead_id: str) -> dict[str, str]:
         with self._conn() as c:

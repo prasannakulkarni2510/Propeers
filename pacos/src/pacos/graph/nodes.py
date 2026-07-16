@@ -69,6 +69,7 @@ def make_asset_node(asset_key: str, cfg: Config, client: NemotronClient, store):
                     asset_key, lead, _candidate(cfg), _base_cv(cfg), hook, domain_read),
                 max_tokens=1600,
             )
+        text = prompts.strip_dashes(text)
 
         store.set_agent_status(asset_key, "done", "")
         return {"assets": {filename: text}}

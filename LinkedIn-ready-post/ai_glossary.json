@@ -1,0 +1,1098 @@
+{
+  "A": {
+    "tech_words": {
+      "Activation Function": {
+        "explanation": "",
+        "diagram_keywords": [],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\A\\page1\\photo.webp"
+      },
+      "ANN": {
+        "explanation": "",
+        "diagram_keywords": [],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\A\\page2\\photo.png"
+      },
+      "AUC-ROC": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Alpha (Learning Rate)": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Agentic AI": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "A/B Testing": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "AI as a Judge": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Andrew Ng": {
+        "explanation": "",
+        "diagram_keywords": [],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\A\\page1\\photo.webp"
+      },
+      "AI Engineer": {
+        "explanation": "A YouTube channel and digital hub for tech explainers and panel discussions, connecting a global community of over a million AI professionals.",
+        "diagram_keywords": [],
+        "socials": [
+          "https://www.youtube.com/@aiDotEngineer",
+          "https://www.linkedin.com/company/aidotengineer/"
+        ],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\A\\page2\\photo.png"
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "B": {
+    "tech_words": {
+      "BERT": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Backpropagation": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Bagging": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Boosting": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Bucketing": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Bag of Words": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Bhashini": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "BharatAI": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "C": {
+    "tech_words": {
+      "Clustering Algorithms": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "CNN": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Chain of Thought": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Cost Function": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Context Window": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Chunking": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "CUDA": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {
+      "Computerphile": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "CampusX": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "CodeBasics": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Claude Code": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "CrewAI": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Cassandra": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "D": {
+    "tech_words": {
+      "Diffusion Models": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Distributed Compute": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Distributed Memory": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "DBMS": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Distillation": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Data Poisoning": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Dropout": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Dwarkesh Patel": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {
+      "DeepSeek": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "DynamoDB": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "E": {
+    "tech_words": {
+      "Encryption": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Euclidean Distance": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Encoder Decoder": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Ensemble": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Entropy": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Evaluation Metrics": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "F": {
+    "tech_words": {
+      "Fine-tuning": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Forward Propagation": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Fourier Transform": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "FFmpeg": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Faithfulness": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "FLOPs": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Few-shot Prompting": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "G": {
+    "tech_words": {
+      "GPT": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "GAN": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Global Minima": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Gossip Protocol": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Guardrails": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Grounding": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Golden Dataset": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Garry Tan": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Greg Isenberg": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Gaurav Sen": {
+        "explanation": "An exceptional tech educator who breaks down complex system design, architectural failures, and case studies, with a strong focus on scaling safe and sustainable AI infrastructure.",
+        "diagram_keywords": [],
+        "socials": [
+          "https://www.youtube.com/@gkcs",
+          "https://www.linkedin.com/in/gkcs/"
+        ],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\G\\page3\\photo.png"
+      }
+    },
+    "youtube_channel": {
+      "GKCS": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Gemma": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Gemini": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Genspark": {
+        "explanation": "",
+        "diagram_keywords": [],
+        "photo_path": "C:\\Users\\Prasanna Kulkarni\\Desktop\\KrishNaik Online lectures\\AI_Glossary\\assets\\G\\page3\\photo.png"
+      },
+      "Gamma": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Grok": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "H": {
+    "tech_words": {
+      "Hyperparameters": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "HITL": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Hallucination": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Hybrid Search": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Hypothesis Testing": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Heartbeat": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Hugging Face": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Higgsfield": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Hive": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "I": {
+    "tech_words": {
+      "Inference": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Imputation": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Indexing": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "In-context Learning": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Instruction Tuning": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Ilya Sutskever": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "IBM Technology": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Imagen": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "India AI": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "J": {
+    "tech_words": {
+      "JSON": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Jacobian": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Jupyter Notebook": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Jailbreaking": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Job Scheduling": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Joint Embedding": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Jack Dorsey": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Jensen Huang": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "K": {
+    "tech_words": {
+      "KNN": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "K-Means": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Knowledge Graph": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Knowledge Base": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "KV Cache": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Kurtosis": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Krish Naik": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "Krish Naik": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Kimi": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "L": {
+    "tech_words": {
+      "LLMs": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Learning Rate": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Linear Regression": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Logistic Regression": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "LoRA": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Loss Function": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "LSTM": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Lemmatization": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "LlamaIndex": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "LangChain": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "M": {
+    "tech_words": {
+      "Memory": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "MCP": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "MoE": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Markdown": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Memory Management": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Multimodality": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Mira Murati": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Mayank Agarwal": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "Monkbyte": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Manus": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Moonshot AI": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Meta AI Research": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "N": {
+    "tech_words": {
+      "Neural Networks": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "NoSQL": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "NLP": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "NanoLMs": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Nate Herk": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {
+      "N8N": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "NotebookLM": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Neo4j": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "O": {
+    "tech_words": {
+      "Overfitting": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "ODE": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Orchestration": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "OpenRouter": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Ollama": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "OpenCV": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "OpenClaw": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "P": {
+    "tech_words": {
+      "PCA": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Pydantic": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Parameters": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "P-value": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Perceptron": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "PDE": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Prompt Engineering": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Prompt Injection": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Pix2Pix": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Peter Thiel": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Paul Graham": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {
+      "PaLM": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "Q": {
+    "tech_words": {
+      "QKV": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Quantization": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "QLoRA": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Query/Prompt Caching": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Qwen": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "R": {
+    "tech_words": {
+      "RAG": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "RLHF": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "RL": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "RNN": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "ReLU": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Reasoning": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Replication": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "RDBMS": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "RAGAS": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Reranker": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "ReAct": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Rohan Paul": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {},
+    "company_tool": {
+      "Redis": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "S": {
+    "tech_words": {
+      "Similarity Search": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Sharding": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "SQL": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Stateful": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Stateless": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "SLMs": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Semantic Deduplication": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Sam Altman": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "StatQuest": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Sarvam": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "SQLite": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Seedance": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "T": {
+    "tech_words": {
+      "Transformers": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Tool Calling": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Tokenization": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Temperature": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "TF-IDF": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Tkinter": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Tracing": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Tech with Tim": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Thomas Kurien": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "Tech with Tim": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "3Blue1Brown": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {
+      "Tribe V2": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "U": {
+    "tech_words": {
+      "Underfitting": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Unsupervised Learning": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Unequal Sampling": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Univariate and Multivariate Prediction": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Unsloth": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "V": {
+    "tech_words": {
+      "Vectors": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "VAE": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Visual Transformer": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Vs of Big Data": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "W": {
+    "tech_words": {
+      "Weights": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Weights and Biases": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Word2Vec": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Weights & Biases": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  },
+  "X": {
+    "tech_words": {
+      "XGBoost": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {}
+  },
+  "Y": {
+    "tech_words": {
+      "YOLO": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {
+      "Yann LeCun": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "youtube_channel": {
+      "Y Combinator": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "company_tool": {}
+  },
+  "Z": {
+    "tech_words": {
+      "Z-score": {
+        "explanation": "",
+        "diagram_keywords": []
+      },
+      "Zero-shot Learning": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    },
+    "creator": {},
+    "youtube_channel": {},
+    "company_tool": {
+      "Zapier": {
+        "explanation": "",
+        "diagram_keywords": []
+      }
+    }
+  }
+}

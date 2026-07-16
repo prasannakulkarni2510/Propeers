@@ -98,6 +98,23 @@ def test_generate_works_without_lead_sheet(client, tmp_path):
     assert body["errors"] == []
 
 
+def test_generate_only_builds_missing_by_default(client):
+    """Clicking Generate should build only leads without assets (the newly added
+    ones), not rebuild everyone. A second run finds nothing to do."""
+    first = client.post("/api/agents/generate", json={"dry_run": True}).json()
+    assert first["requested"] == 5 and first["generated"] == 5
+
+    # Everyone now has assets -> a repeat build requests nobody.
+    again = client.post("/api/agents/generate", json={"dry_run": True}).json()
+    assert again["requested"] == 0
+
+    # Opting out rebuilds all of them.
+    forced = client.post(
+        "/api/agents/generate", json={"dry_run": True, "only_missing": False}
+    ).json()
+    assert forced["requested"] == 5
+
+
 def test_delete_lead_everywhere(client):
     assert len(client.get("/api/leads").json()) == 5
     r = client.delete("/api/leads/nurix-ai-aarav")

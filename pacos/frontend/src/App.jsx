@@ -1,6 +1,7 @@
 import { NavLink, Route, Routes } from "react-router-dom";
 import { useEffect } from "react";
 import { useStore } from "./store";
+import { useAgentPolling } from "./hooks/useAgentStatus";
 import Home from "./pages/Home.jsx";
 import Leads from "./pages/Leads.jsx";
 import Assets from "./pages/Assets.jsx";
@@ -8,6 +9,7 @@ import Approvals from "./pages/Approvals.jsx";
 import Tracker from "./pages/Tracker.jsx";
 import Chat from "./pages/Chat.jsx";
 import Discovery from "./pages/Discovery.jsx";
+import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
 
 const NAV = [
@@ -37,6 +39,9 @@ function Toast() {
 }
 
 export default function App() {
+  // Poll agent status app-wide so generation progress keeps updating even when
+  // the user navigates away from the Dashboard.
+  useAgentPolling();
   return (
     <AuthGate>
     <div className="app">
@@ -58,7 +63,13 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          Nemotron-powered · never auto-sends
+          <NavLink
+            to="/about"
+            className={({ isActive }) => `nav-about ${isActive ? "active" : ""}`}
+          >
+            Know more about the project →
+          </NavLink>
+          <span className="sidebar-tag">Nemotron-powered · never auto-sends</span>
         </div>
       </aside>
       <main className="content">
@@ -71,6 +82,7 @@ export default function App() {
           <Route path="/tracker" element={<Tracker />} />
           <Route path="/chat" element={<Chat />} />
           <Route path="/discovery" element={<Discovery />} />
+          <Route path="/about" element={<About />} />
         </Routes>
       </main>
       <Toast />

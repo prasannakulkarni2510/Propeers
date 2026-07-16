@@ -1,0 +1,13 @@
+# PACOS v1 — Personal AI Career Operating System
+# Generation model: NVIDIA Nemotron (via NVIDIA NIM, OpenAI-compatible API)
+
+openai>=1.30.0            # client for NVIDIA NIM OpenAI-compatible endpoint
+pandas>=2.0.0            # lead sheet + tracker CSV handling
+python-dotenv>=1.0.0     # load secrets from .env
+beautifulsoup4>=4.12.0   # parse LinkedIn / Naukri HTML alert emails
+tenacity>=8.2.0          # retry Nemotron calls on transient errors
+
+# --- Gmail Inbox Monitor (Layer 2) ---
+google-api-python-client>=2.100.0
+google-auth-httplib2>=0.2.0
+google-auth-oauthlib>=1.2.0

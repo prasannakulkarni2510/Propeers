@@ -1,17 +1,19 @@
 import { useEffect } from "react";
-import { useStore } from "../store";
-import { api } from "../services/api";
 import { create } from "zustand";
+import { api } from "../services/api";
 
-// Small local store just for polled agent status, so it can refresh on an
-// interval without re-rendering the whole app tree.
+// Module-level store for polled agent status. Because it lives outside the React
+// tree, the data survives route/tab changes — switching pages never wipes it.
 const agentStore = create((set) => ({
   agents: [],
   setAgents: (agents) => set({ agents }),
 }));
 
-export function useAgentStatus(intervalMs = 4000) {
-  const { agents, setAgents } = agentStore();
+// Mount ONCE, high in the tree (App), so the poll keeps running no matter which
+// page is on screen. Generation runs on the backend; this keeps the board live
+// even while the user is looking at another tab.
+export function useAgentPolling(intervalMs = 3000) {
+  const setAgents = agentStore((s) => s.setAgents);
   useEffect(() => {
     let alive = true;
     const tick = async () => {
@@ -27,5 +29,9 @@ export function useAgentStatus(intervalMs = 4000) {
       clearInterval(id);
     };
   }, [intervalMs, setAgents]);
-  return agents;
+}
+
+// Read-only subscription for components that just display the board.
+export function useAgentStatus() {
+  return agentStore((s) => s.agents);
 }

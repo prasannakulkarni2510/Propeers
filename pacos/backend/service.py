@@ -51,6 +51,76 @@ class Service:
         """Boolean people-search variants for a job. Read-only: writes nothing."""
         return [asdict(v) for v in build_searches(company, role, city, keywords)]
 
+    def enrich_from_discovery(
+        self, company: str, role: str = "", city: str = "",
+        keywords: list[str] | None = None, *, pasted_html: str = "",
+        max_leads: int = 25,
+    ) -> dict:
+        """Deterministic lead enrichment: run the existing Google X-Ray searches,
+        extract LinkedIn profiles, predict work emails, and create leads.
+
+        Not an LLM agent and not a paid people-search API — the only source is
+        the operator's own Google X-Ray query. `pasted_html`, when given, is a
+        results page the operator copied (used when the automated fetch is
+        blocked); otherwise each variant's X-Ray URL is fetched server-side.
+        """
+        from pacos.enrichment import (fetch_xray, hit_to_lead_fields,
+                                       parse_profiles)
+
+        variants = build_searches(company, role, city, keywords)
+        warnings: list[str] = []
+
+        # (canonical linkedin_url) -> (ProfileHit, persona_tag) — dedupe across
+        # every persona variant so one person becomes exactly one lead.
+        found: dict[str, tuple] = {}
+        source = "none"
+        if pasted_html.strip():
+            source = "pasted"
+            for hit in parse_profiles(pasted_html):
+                found.setdefault(hit.linkedin_url, (hit, variants[0].persona_tag))
+        else:
+            for v in variants:
+                try:
+                    html = fetch_xray(v.xray_url)
+                except Exception as e:  # network/consent wall — keep going
+                    warnings.append(f"{v.group}: fetch failed ({type(e).__name__})")
+                    continue
+                hits = parse_profiles(html)
+                if hits:
+                    source = "fetch"
+                for hit in hits:
+                    found.setdefault(hit.linkedin_url, (hit, v.persona_tag))
+
+        if not found and source != "pasted":
+            warnings.append(
+                "No profiles collected — Google likely served a consent/CAPTCHA "
+                "page. Open the X-Ray search, copy the results page, and paste it."
+            )
+
+        imported: list[dict] = []
+        for hit, persona in list(found.values())[:max_leads]:
+            if not hit.full_name.strip():
+                continue  # a bare URL with no parseable name isn't a usable lead
+            raw = hit_to_lead_fields(hit, company_name=company.strip(),
+                                     city=city.strip(), persona_tag=persona)
+            try:
+                row, created, _msg, _w = self.add_lead(raw)
+            except ValueError:
+                continue
+            imported.append({
+                "lead_id": row["lead_id"], "full_name": row["full_name"],
+                "job_title": row["job_title"], "company_name": row["company_name"],
+                "linkedin_url": row.get("linkedin_url", ""),
+                "predicted_email": row.get("predicted_email", ""),
+                "email_confidence": row.get("email_confidence", ""),
+                "email_status": row.get("email_status", ""),
+                "created": created,
+            })
+
+        return {"company_name": company.strip(), "profiles_found": len(found),
+                "leads_imported": len(imported), "source": source,
+                "leads": imported, "warnings": warnings}
+
     def parse_jd(self, text: str) -> tuple[dict, list[str], bool]:
         """Extract proposed lead fields from JD text. Read-only: writes nothing."""
         return parse_jd(self._llm(), text)
@@ -114,6 +184,30 @@ class Service:
         return {"lead_id": lead_id, "folder_name": lead["folder_name"],
                 "generated": bool(stored) or folder.exists(), "files": files}
 
+    def regenerate_asset(self, lead_id: str, asset: str,
+                         *, dry_run: bool = False) -> dict | None:
+        """Rewrite one asset for a lead and return the full refreshed bundle.
+        `asset` may be an asset key ('cold_dm') or its filename ('cold_dm.txt').
+        Returns None if the lead is unknown; raises ValueError on a bad asset."""
+        from pacos.graph.prompts import ASSET_SPECS
+
+        # Accept either the key or the filename the UI already knows.
+        by_filename = {fname: key for key, (fname, _s) in ASSET_SPECS.items()}
+        asset_key = asset if asset in ASSET_SPECS else by_filename.get(asset)
+        if asset_key is None:
+            raise ValueError(
+                f"unknown asset '{asset}' (expected one of "
+                f"{', '.join(sorted(ASSET_SPECS))})"
+            )
+
+        with self._lock:
+            row = self.store.get_lead(lead_id)
+            if row is None:
+                return None
+            lead = build_lead(row)
+            self._pipe().regenerate_asset(lead, asset_key, dry_run=dry_run)
+            return self.assets_for(lead_id)
+
     # ── generation ───────────────────────────────────────────────────────
     def _leads_for_generation(self) -> list[Lead]:
         """Leads to generate for — from the tracker store, the source of truth
@@ -125,13 +219,20 @@ class Service:
         return [build_lead(row) for row in self.store.get_leads()]
 
     def generate(self, *, dry_run: bool, limit: int, lead_id: str | None,
-                 review_hooks: bool = False) -> dict:
+                 review_hooks: bool = False, only_missing: bool = True) -> dict:
         with self._lock:
             leads = self._leads_for_generation()
             if lead_id:
                 leads = [ld for ld in leads if ld.lead_id == lead_id]
-            elif limit:
-                leads = leads[:limit]
+            else:
+                if only_missing:
+                    # Skip leads that already have assets, so clicking Generate
+                    # after adding a lead builds only the new (asset-less) ones.
+                    done = {r["lead_id"] for r in self.store.get_leads()
+                            if r.get("assets_generated") == "true"}
+                    leads = [ld for ld in leads if ld.lead_id not in done]
+                if limit:
+                    leads = leads[:limit]
 
             pipe = self._pipe()
             dry = dry_run or pipe.dry_by_default

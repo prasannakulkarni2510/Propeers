@@ -37,3 +37,6 @@ tracker.db-wal
 # Built frontend (bundled into the exe; rebuilt by build_exe.bat)
 frontend/dist/
 frontend/node_modules/
+
+# local scratch (personal photo etc.) — never push
+temp/

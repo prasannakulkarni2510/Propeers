@@ -12,8 +12,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config import Config
+from .graph import prompts
 from .graph.edges import build_graph
-from .graph.nodes import make_personalization_node
+from .graph.nodes import _base_cv, _candidate, make_personalization_node
 from .graph.prompts import ASSET_SPECS
 from .leads import Lead
 from .llm import NemotronClient
@@ -82,6 +83,43 @@ class Pipeline:
         used_hook = result.get("hook", hook or "")
         self.store.upsert_from_generation(lead.lead_id, used_hook)
         return Generated(lead_id=lead.lead_id, folder=folder, hook=used_hook, dry_run=dry)
+
+    def regenerate_asset(self, lead: Lead, asset_key: str, *,
+                         dry_run: bool = False) -> str:
+        """Rewrite a single asset for a lead, reusing the hook from the last run
+        so the message stays consistent with the others. Runs at a higher
+        temperature than a first pass so the rewrite is genuinely different, not
+        the same sentences shuffled."""
+        if asset_key not in ASSET_SPECS:
+            raise KeyError(f"unknown asset '{asset_key}'")
+        dry = dry_run or self.dry_by_default
+        lead_d = lead_to_dict(lead)
+        filename, _ = ASSET_SPECS[asset_key]
+
+        hook = self.store.get_hook(lead.lead_id) or self.personalize(lead, dry_run=dry)
+        domain_read = prompts.tone_for(lead_d.get("domain_tag", ""))
+
+        self.store.set_agent_status(asset_key, "running", lead.folder_name)
+        if dry:
+            text = prompts.tmpl_asset(asset_key, lead_d, _candidate(self.cfg), hook)
+        else:
+            text = self.client.complete_text(
+                system=prompts.SYSTEM_ASSET,
+                user=prompts.build_asset_user(
+                    asset_key, lead_d, _candidate(self.cfg), _base_cv(self.cfg),
+                    hook, domain_read),
+                temperature=0.9,  # more spread than the 0.6 first pass
+                max_tokens=1600,
+            )
+        text = prompts.strip_dashes(text)
+        self.store.set_agent_status(asset_key, "done", "regenerated")
+
+        # Persist to the durable store and refresh the convenience file copy.
+        self.store.save_assets(lead.lead_id, {filename: text})
+        folder = self.cfg.output_dir / lead.folder_name
+        folder.mkdir(parents=True, exist_ok=True)
+        (folder / filename).write_text(text, encoding="utf-8")
+        return text
 
     def _write_assets(self, lead: Lead, assets: dict) -> Path:
         # Always produce all four filenames; a skipped agent leaves a note.

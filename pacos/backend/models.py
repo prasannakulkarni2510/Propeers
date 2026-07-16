@@ -18,6 +18,11 @@ class LeadOut(BaseModel):
     email: str
     has_email: bool
     folder_name: str
+    linkedin_url: str = ""
+    # enrichment (auto-import from discovery) — predicted, never verified
+    predicted_email: str = ""
+    email_confidence: str = ""
+    email_status: str = ""
     # tracker-derived (empty until generated / acted on)
     status: str = ""
     assets_generated: str = ""
@@ -93,11 +98,21 @@ class AssetsOut(BaseModel):
     files: list[AssetFile]
 
 
+class RegenerateAssetRequest(BaseModel):
+    """Rewrite a single asset. `asset` is the filename the UI holds
+    ('cold_email.txt') or the bare asset key ('cold_email')."""
+    asset: str = Field(min_length=1)
+    dry_run: bool = False
+
+
 class GenerateRequest(BaseModel):
     dry_run: bool = False
     limit: int = 0
     lead_id: Optional[str] = None  # generate for just one lead
     review_hooks: bool = False
+    # Default: only build assets for leads that don't have them yet (so a click
+    # after adding a lead builds that lead, not everyone). False rebuilds all.
+    only_missing: bool = True
 
 
 class UnmatchedReply(BaseModel):
@@ -201,6 +216,38 @@ class DiscoveryResult(BaseModel):
     job_title: str = ""
     city: str = ""
     variants: list[DiscoveryVariant]
+
+
+class EnrichRequest(DiscoveryRequest):
+    """Auto-import leads from a Google X-Ray search. Inherits the discovery
+    fields (company/role/city/keywords) that build the same Boolean queries.
+
+    `pasted_html` lets the operator paste a Google X-Ray results page when the
+    server-side fetch is blocked by a consent/CAPTCHA wall — the source is still
+    the operator's own Google query, never a third-party people-search API."""
+    pasted_html: str = ""
+    max_leads: int = Field(default=25, ge=1, le=100)
+
+
+class ImportedLead(BaseModel):
+    lead_id: str
+    full_name: str
+    job_title: str
+    company_name: str
+    linkedin_url: str
+    predicted_email: str
+    email_confidence: str
+    email_status: str
+    created: bool
+
+
+class EnrichResult(BaseModel):
+    company_name: str
+    profiles_found: int
+    leads_imported: int
+    source: str  # "fetch" | "pasted" | "none"
+    leads: list[ImportedLead] = []
+    warnings: list[str] = []
 
 
 class ChatMessage(BaseModel):

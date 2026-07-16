@@ -27,6 +27,11 @@ OPTIONAL_COLUMNS = [
     "industry",
     "company_website",
     "funding_stage",
+    # Enrichment (discovery auto-import): a predicted work email is never
+    # treated as verified — email_status stays 'predicted' until proven.
+    "predicted_email",
+    "email_confidence",
+    "email_status",
 ]
 
 VALID_PERSONAS = {"hr", "engineer", "manager", "cto", "ceo"}
@@ -48,6 +53,11 @@ class Lead:
     industry: str = ""
     company_website: str = ""
     funding_stage: str = ""
+    # Enrichment fields (see OPTIONAL_COLUMNS): a predicted email is a
+    # convenience, not a fact — never mark it verified.
+    predicted_email: str = ""
+    email_confidence: str = ""
+    email_status: str = ""
     warnings: list[str] = field(default_factory=list)
 
     @property
@@ -164,6 +174,9 @@ def build_lead(raw: dict, row_no: int | None = None) -> Lead:
         industry=g("industry"),
         company_website=g("company_website"),
         funding_stage=g("funding_stage"),
+        predicted_email=g("predicted_email"),
+        email_confidence=g("email_confidence"),
+        email_status=g("email_status"),
         warnings=warnings,
     )
 
@@ -180,6 +193,10 @@ def append_lead_to_csv(csv_path: str | Path, raw: dict) -> bool:
     new_id = build_lead(raw).lead_id
     existing_ids: set[str] = set()
     if csv_path.exists():
+        # Upgrade an older header in place first: a sheet written before the
+        # enrichment columns existed has fewer columns than CSV_INPUT_COLUMNS,
+        # and appending a full-width row under a short header corrupts the file.
+        _ensure_csv_columns(csv_path)
         for ld in load_leads(csv_path):
             existing_ids.add(ld.lead_id)
     if new_id in existing_ids:
@@ -193,6 +210,19 @@ def append_lead_to_csv(csv_path: str | Path, raw: dict) -> bool:
             w.writeheader()
         w.writerow({c: str(raw.get(c, "") or "").strip() for c in CSV_INPUT_COLUMNS})
     return True
+
+
+def _ensure_csv_columns(csv_path: Path) -> None:
+    """Rewrite leads.csv with the full CSV_INPUT_COLUMNS header when it predates
+    newer optional columns, so appended rows stay aligned. No-op when current."""
+    df = pd.read_csv(csv_path, dtype=str, keep_default_na=False).fillna("")
+    df.columns = [c.strip() for c in df.columns]
+    if all(col in df.columns for col in CSV_INPUT_COLUMNS):
+        return
+    for col in CSV_INPUT_COLUMNS:
+        if col not in df.columns:
+            df[col] = ""
+    df[CSV_INPUT_COLUMNS].to_csv(csv_path, index=False)
 
 
 def remove_lead_from_csv(csv_path: str | Path, lead_id: str) -> bool:

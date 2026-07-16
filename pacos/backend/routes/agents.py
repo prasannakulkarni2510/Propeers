@@ -18,4 +18,4 @@ def agent_status(svc: Service = Depends(get_service)):
 @router.post("/generate", response_model=GenerateResult)
 def generate(req: GenerateRequest, svc: Service = Depends(get_service)):
     return svc.generate(dry_run=req.dry_run, limit=req.limit, lead_id=req.lead_id,
-                        review_hooks=req.review_hooks)
+                        review_hooks=req.review_hooks, only_missing=req.only_missing)

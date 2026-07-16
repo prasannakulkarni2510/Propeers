@@ -1,0 +1,760 @@
+AI GLOSSARY A→Z  ·  LINKEDIN CAPTIONS + TAGS + LINKS
+Built by Prasanna Kulkarni · https://www.linkedin.com/in/prasanna-kulkarni-032650180
+
+How to use this file:
+- Each letter has a ready caption, the people to tag with clickable links, and a closing line.
+- Copy the caption, paste it on the post, then @mention the names as you type.
+- Links come straight from the slides. Paste them as-is; LinkedIn makes raw URLs clickable.
+- A bare X link (x.com/handle) is from a handle the slide showed without a platform label;
+  the same handle usually also works on that person's YouTube.
+- "search:" links open a LinkedIn people search for anyone whose card showed no handle,
+  so you can still find and tag them.
+- A full link directory sits at the bottom if you just want the list.
+
+
+═══════════════════════════════  LETTER A  ═══════════════════════════════
+
+A couple of years ago "agent" meant a travel website to me. Now it's half my feed.
+
+So I started an AI glossary, one letter at a time, plain definitions you can actually
+use on the job. Letter A is up.
+
+Inside: ANN, activation functions, alpha (the learning rate), agents, agentic AI,
+AI as a judge, A/B testing, and AUC-ROC. Plus Google Antigravity, the agent-first IDE
+everyone keeps arguing about, and six people who built the foundations, starting with
+Alan Turing.
+
+One term per swipe. No filler.
+
+Save it for later, and if there is an A-word you would have added, drop it in the
+comments. I read all of them.
+
+Tag:
+Andrew Ng https://x.com/AndrewYNg
+Ashish Vaswani https://x.com/ashVaswani
+Andrej Karpathy https://x.com/karpathy
+Aishwarya Srinivasan https://www.linkedin.com/in/aishwarya-srinivasan · https://www.instagram.com/the.datascience.gal
+Afshine Amidi https://www.linkedin.com/in/afshineamidi
+AI Engineer https://www.youtube.com/@aidotengineer
+Alan Turing (historical, no profile)
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #NeuralNetworks #AIAgents #AIEngineer #DataScience #GenerativeAI #LearnAI #TechCommunity #AITools
+
+
+═══════════════════════════════  LETTER B  ═══════════════════════════════
+
+B is the one that finally made backprop click for me.
+
+Six terms this time: backpropagation, bag of words, BERT, bagging, boosting, and
+bucketing. If you have ever wondered how a model actually learns from its mistakes,
+start there.
+
+I also put two India-built projects in this one, Bhashini and BharatGen, both working
+on sovereign, multilingual models, plus three creators whose visuals taught me more
+than most courses did.
+
+Swipe through, and tell me which B-term you use most day to day.
+
+Tag:
+BAIR https://x.com/berkeleybair · https://www.linkedin.com/company/bair-lab
+ByteMonk https://www.linkedin.com/in/bytemonk
+ByteByteGo https://x.com/bytebytego · https://www.linkedin.com/company/bytebytego
+BharatGen https://x.com/BharatGen_AI · https://www.linkedin.com/company/bharatgen
+Bhashini https://www.linkedin.com/company/bhashini · https://bhashini.gov.in
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #NLP #BERT #NeuralNetworks #AIEngineer #DataScience #SovereignAI #IndiaAI #LearnAI
+
+
+═══════════════════════════════  LETTER C  ═══════════════════════════════
+
+Letter C is where the glossary gets practical.
+
+Seven terms: cost function, clustering, CNNs, chain of thought, context window,
+chunking, and CUDA. Half of these show up the moment you start building anything real
+with LLMs.
+
+Then five tools that make up a working C-stack, from Claude Code and Cursor to CrewAI,
+Cohere, and Cassandra. And three YouTube channels I actually keep open in a tab.
+
+If you are learning this stuff, save the card. Which C-term tripped you up first?
+
+Tag:
+Computerphile https://www.youtube.com/@Computerphile
+CampusX https://www.youtube.com/@campusx-official
+CodeBasics https://www.youtube.com/@codebasics
+Tools: Claude Code https://claude.com/code · Cursor https://cursor.com · CrewAI https://crewai.com · Cohere https://cohere.com · Cassandra https://cassandra.apache.org
+
+#AI #ArtificialIntelligence #MachineLearning #LLM #LLMs #ClaudeCode #Cursor #RAG #AIEngineer #DataScience #ComputerVision #LearnAI
+
+
+═══════════════════════════════  LETTER D  ═══════════════════════════════
+
+Dropout, distillation, diffusion. The D-words are a good reminder that a lot of modern
+AI is just clever ways to keep models honest and small.
+
+This one covers dropout, distillation, diffusion models, data poisoning, DBMS,
+distributed memory, and distributed compute. Security and systems creep in here, and
+that is on purpose.
+
+I also spotlighted five people worth following on the safety and research side,
+including both Amodeis.
+
+Save it, and drop the D-term you reach for most.
+
+Tag:
+Dario Amodei https://x.com/DarioAmodei · https://www.linkedin.com/in/dario-amodei-3934934
+Demis Hassabis https://x.com/demishassabis · https://www.linkedin.com/in/demishassabis
+Daniela Amodei https://x.com/danamodei · https://www.linkedin.com/in/daniela-amodei-790bb22
+Dwarkesh Patel https://x.com/dwarkesh_sp · https://www.youtube.com/@DwarkeshPatel
+Dhruv Singhal https://www.linkedin.com/in/dhruv-singhal-385043165 · https://www.instagram.com/dhruvtechbytes
+Tools: DeepSeek https://deepseek.com · DynamoDB https://aws.amazon.com/dynamodb
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #DiffusionModels #AISafety #Alignment #AIEngineer #DataScience #GenerativeAI #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER E  ═══════════════════════════════
+
+Short letter, dense ideas.
+
+E covers Euclidean distance, entropy, ensembles, encoder-decoder models, evaluation
+metrics, and encryption. Basically the math and the guardrails, side by side.
+
+Only one person in the spotlight this time, but he is the reason your LoRA fine-tunes
+work at all.
+
+If entropy still feels fuzzy, this is the swipe for you. Tell me if it landed.
+
+Tag:
+Edward Hu https://x.com/edwardjhu · https://www.linkedin.com/in/edwardjhu
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #FineTuning #LoRA #Entropy #AIEngineer #DataScience #ModelEvaluation #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER F  ═══════════════════════════════
+
+F is forward motion. Literally, we start with forward propagation.
+
+Six terms: forward propagation, Fourier transform, few-shot prompting, fine-tuning,
+faithfulness, and FLOPs. A nice mix of the math you skipped and the prompting tricks
+you use every day.
+
+Plus FFmpeg (the quiet workhorse behind half of AI video) and two channels that teach
+fast without wasting your time.
+
+Save it. What is the F-term you had to look up more than once?
+
+Tag:
+Fireship https://www.youtube.com/@Fireship
+freeCodeCamp search: https://www.linkedin.com/search/results/all/?keywords=freeCodeCamp
+Tool: FFmpeg https://ffmpeg.org
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Prompting #FineTuning #FewShot #AIEngineer #DataScience #GenerativeAI #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER G  ═══════════════════════════════
+
+G goes from GANs to guardrails, so from making things up to keeping things in line.
+
+The terms: GAN, GPT, grounding, guardrails, golden dataset, and gossip protocol.
+If you only learn one, learn grounding. It is what separates a confident answer from
+a correct one.
+
+For people, this letter is stacked: six G-named minds, from the godfather of deep
+learning to the founders and educators shaping how AI gets built now.
+
+Swipe, save, and add the G-term I missed.
+
+Tag (cards showed names only, so these open a LinkedIn search to find and tag them):
+Geoffrey Hinton search: https://www.linkedin.com/search/results/people/?keywords=Geoffrey%20Hinton
+Greg Brockman search: https://www.linkedin.com/search/results/people/?keywords=Greg%20Brockman
+Gaurav Sen search: https://www.linkedin.com/search/results/people/?keywords=Gaurav%20Sen
+Garry Tan search: https://www.linkedin.com/search/results/people/?keywords=Garry%20Tan
+Greg Isenberg search: https://www.linkedin.com/search/results/people/?keywords=Greg%20Isenberg
+Ghita El Haitmy search: https://www.linkedin.com/search/results/people/?keywords=Ghita%20El%20Haitmy
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #GANs #GenerativeAI #GPT #Guardrails #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER H  ═══════════════════════════════
+
+Hallucination is the H-word everyone knows. The rest of the letter is how you fight it.
+
+Inside: hypothesis testing, hyperparameters, hallucination, hybrid search, human in
+the loop, and heartbeat. Stats, retrieval, and systems in one letter.
+
+I also added Hugging Face, Hive, and Higgsfield, and two educators who make hard things
+feel doable.
+
+Save it. Which H-term do you actually use at work?
+
+Tag:
+Hitesh Choudhary https://x.com/Hiteshdotcom
+Harsh Bhatt https://x.com/harshbhatt7585
+Tools: Hugging Face https://huggingface.co · Hive · Higgsfield
+
+#AI #ArtificialIntelligence #MachineLearning #LLM #Hallucination #RAG #HuggingFace #AIEngineer #DataScience #HumanInTheLoop #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER I  ═══════════════════════════════
+
+I is for inference, and for the country trying to build its own AI stack.
+
+Terms: inference, instruction tuning, in-context learning, imputation, and indexing.
+The quiet plumbing that makes models useful in production.
+
+The spotlight has two foundational minds, Ilya Sutskever and Ian Goodfellow, plus one
+channel I trust for whiteboard-clear explainers. I also covered IndiaAI, the national
+mission, and Imagen.
+
+Save it, and tell me the I-term you use most.
+
+Tag (cards showed names only, so these open a search):
+Ilya Sutskever search: https://www.linkedin.com/search/results/people/?keywords=Ilya%20Sutskever
+Ian Goodfellow search: https://www.linkedin.com/search/results/people/?keywords=Ian%20Goodfellow
+IBM Technology search: https://www.youtube.com/results?search_query=IBM+Technology
+Featured: IndiaAI · Imagen
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Inference #InstructionTuning #IndiaAI #AIEngineer #DataScience #GenerativeAI #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER J  ═══════════════════════════════
+
+J is the letter where you meet the people whose work quietly built the AI you use
+every day.
+
+The terms: JSON, jailbreaking, Jacobian, job scheduling, joint embedding, and JEPA.
+A little bit of everything, from data formats to the math under the hood.
+
+Then six names, from Jensen Huang to John Schulman, that is a lot of the modern stack
+in one carousel. Plus Jupyter, still the notebook we all live in.
+
+Save it. What is your most-used J-term?
+
+Tag (cards showed names only, so these open a LinkedIn search):
+Jensen Huang search: https://www.linkedin.com/search/results/people/?keywords=Jensen%20Huang
+Jeff Dean search: https://www.linkedin.com/search/results/people/?keywords=Jeff%20Dean
+Jack Dorsey search: https://www.linkedin.com/search/results/people/?keywords=Jack%20Dorsey
+Jared Kaplan search: https://www.linkedin.com/search/results/people/?keywords=Jared%20Kaplan
+Jacob Devlin search: https://www.linkedin.com/search/results/people/?keywords=Jacob%20Devlin
+John Schulman search: https://www.linkedin.com/search/results/people/?keywords=John%20Schulman
+Tool: Jupyter https://jupyter.org
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Jailbreaking #LLM #Jupyter #AIEngineer #DataScience #AIResearch #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER K  ═══════════════════════════════
+
+K is a big one. Twelve terms, because a lot of the toolkit starts with K.
+
+Kurtosis, knowledge graphs, KNN, knowledge bases, KV cache, K-means, K-fold CV,
+kernels, Keras, Kafka, Kubernetes, and knowledge distillation. Stats, classic ML, and
+infra all sharing a letter.
+
+Companies too: Kling, Kimi, Kaggle, Kubeflow. And five educators and researchers,
+including three whose YouTube got me through the basics.
+
+Save it and comment the K-term you use most.
+
+Tag:
+Krish Naik https://www.youtube.com/@krishnaik06
+Ken Jee https://www.youtube.com/@KenJee1
+Kunal Kushwaha https://www.youtube.com/@kunalkushwaha
+Khan Academy search: https://www.linkedin.com/search/results/all/?keywords=Khan%20Academy
+Kaiming He search: https://www.linkedin.com/search/results/people/?keywords=Kaiming%20He
+Featured: Kling · Kimi · Kaggle · Kubeflow
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Kubernetes #Keras #MLOps #Kaggle #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER L  ═══════════════════════════════
+
+L is the workhorse letter. Linear regression to LLMs, all under one initial.
+
+Eleven terms: lemmatization, learning rate, LSTM, linear regression, LoRA, logistic
+regression, LLMs, loss function, label encoding, LR scheduler, and layer normalization.
+If you are prepping for interviews, this is a good one to save.
+
+Tools too, LangChain, LlamaIndex, LM Studio and more, plus three people who teach the
+math without the ego.
+
+What is the L-term you use most? I am curious.
+
+Tag:
+Laurence Moroney https://x.com/lmoroney
+Luis Serrano https://www.youtube.com/@SerranoAcademy
+Léon Bottou https://leon.bottou.org
+Latent Space https://x.com/latentspacepod · https://latent.space
+Tools: LangChain https://langchain.com · LlamaIndex https://llamaindex.ai · LM Studio https://lmstudio.ai · Labelbox https://labelbox.com
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #LLM #LoRA #LangChain #FineTuning #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER M  ═══════════════════════════════
+
+M is the heaviest letter in the whole series. Sixteen terms.
+
+Multimodality, MCP, memory, memory management, MoE, multi-head attention, Mamba, model
+compression, fine-tuning, multimodal embeddings, machine translation, masked language
+models, model evaluation, model parallelism, and model context window. If agents and
+memory are where you are headed, live in this one.
+
+Companies from Meta AI to Mistral, five creators, and five researchers including Mira
+Murati and Max Tegmark.
+
+Save it. Which M-term do you use most?
+
+Tag:
+Mayank Agarwal https://x.com/mayank_agarwal
+Max Tegmark https://x.com/tegmark
+Michael Jordan https://x.com/mjordan_ml
+Mira Murati search: https://www.linkedin.com/search/results/people/?keywords=Mira%20Murati
+Mustafa Suleyman search: https://www.linkedin.com/search/results/people/?keywords=Mustafa%20Suleyman
+Creators:
+Marina Wyss https://x.com/MarinaWyssAI
+MonkByte https://x.com/MonkByte
+Matthew Berman https://x.com/matthew_berman
+Mervin Praison https://x.com/MervinPraison
+Matt Wolfe https://x.com/mreflow
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #LLM #Agents #MCP #MixtureOfExperts #AIEngineer #DataScience #GenerativeAI #LearnAI
+
+
+═══════════════════════════════  LETTER N  ═══════════════════════════════
+
+N starts where most people start: neural networks.
+
+Six terms: neural networks, NLP, N-grams, normalization, NanoLMs, and NoSQL. A clean
+mix of the foundations and the infra.
+
+Tools include Nvidia, NotebookLM, n8n, and Neo4j. Two channels I keep coming back to,
+and five researchers, including a couple of names behind models you use without knowing it.
+
+Save it, then tell me your most-used N-term.
+
+Tag:
+Noam Shazeer https://x.com/NoamShazeer
+Nikhil https://x.com/nikhil_ai
+Nicholas Renotte https://www.youtube.com/@nicholasrenotte
+Nate Herk https://x.com/nateherk
+Nal Kalchbrenner search: https://www.linkedin.com/search/results/people/?keywords=Nal%20Kalchbrenner
+Channels: NeuralNine https://x.com/neuralnine · NetworkChuck https://x.com/NetworkChuck
+Tools: Nvidia https://nvidia.com · NotebookLM https://notebooklm.google · n8n https://n8n.io · Neo4j https://neo4j.com
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #NLP #NeuralNetworks #NoSQL #AIEngineer #DataScience #GenerativeAI #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER O  ═══════════════════════════════
+
+O is the letter that quietly decides whether your model actually works.
+
+Ten terms: overfitting, outliers, optimizer, ODE, orthogonality, one-shot prompting,
+open-weight models, OCR, orchestration, and observability. Training, math, and the
+production checks people skip until something breaks.
+
+Tools too, OpenCV, Ollama, OpenRouter, OpenClaw, Obsidian. And one researcher whose
+work sits under a lot of what you use.
+
+Save it. What is the O-term you rely on most?
+
+Tag:
+Oriol Vinyals https://x.com/OriolVinyalsML
+Tools: OpenCV https://opencv.org · Ollama https://ollama.com · OpenRouter https://openrouter.ai · Obsidian https://obsidian.md
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Overfitting #MLOps #Observability #OpenWeights #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER P  ═══════════════════════════════
+
+P is a monster. From perceptrons to PPO to prompt injection.
+
+The terms run deep this time: perceptron, parameters, pooling, PCA, probability
+distributions, p-value, PDE, positional encoding, PEFT, PPO, prompt engineering and
+injection, perplexity, precision and recall, Pix2Pix, and Pydantic. Save it for the
+interview prep alone.
+
+Tools from PyTorch to Pinecone, and seven researchers, builders, and investors,
+including the lead author of the RAG paper.
+
+Which P-term do you use most? Comment it.
+
+Tag:
+Pieter Abbeel https://x.com/pabbeel
+Percy Liang https://x.com/percyliang
+Patrick Lewis https://x.com/PSH_Lewis
+Philipp Schmid https://x.com/_philschmid
+Peter Steinberger https://x.com/steipete
+Paul Graham https://x.com/paulg
+Peter Thiel search: https://www.linkedin.com/search/results/people/?keywords=Peter%20Thiel
+Tools: PyTorch https://pytorch.org · Pinecone https://pinecone.io · Perplexity https://perplexity.ai
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #PyTorch #RAG #PromptEngineering #PEFT #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER Q  ═══════════════════════════════
+
+Q is small but it punches up. Reinforcement learning and efficient fine-tuning both
+live here.
+
+Nine terms: Q-learning, query caching, QLoRA, quantization, QKV, qualitative and
+quantitative variables, QML, and Q-tables. QLoRA alone is worth the swipe if you fine-tune
+on a budget.
+
+Qwen for open models, Qdrant and Qualcomm AI for tooling, and four researchers and
+educators, including the person who made coding free for the world.
+
+Save it, and tell me your go-to Q-term.
+
+Tag:
+Qingyun Wu https://x.com/qingyun_wu
+Quoc Le https://x.com/quocleix
+Quincy Larson https://x.com/ossia
+Qiang Yang search: https://www.linkedin.com/search/results/people/?keywords=Qiang%20Yang
+Channel: Qodo https://x.com/qodoai
+Featured: Qwen · Qdrant https://qdrant.tech · Qualcomm AI
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #QLoRA #Quantization #ReinforcementLearning #FineTuning #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER R  ═══════════════════════════════
+
+R might be the most useful letter for anyone building with LLMs right now.
+
+Terms: RNN, ReLU, RL, RLHF, reasoning, ReAct, RAG, reranker, RoPE, RAGAS, R² score,
+replication, and RDBMS. If RAG is your world, this whole carousel is for you.
+
+Redis and Replicate for tooling, and three researchers, from frontier AI safety to the
+daily firehose of what is new.
+
+Save it. What is the R-term you use most?
+
+Tag:
+Rohan Paul https://x.com/rohanpaul_ai
+Rohin Shah search: https://www.linkedin.com/search/results/people/?keywords=Rohin%20Shah
+Rahul Agarwal search: https://www.linkedin.com/search/results/people/?keywords=Rahul%20Agarwal%20MLWhiz
+Tools: Redis https://redis.io · Replicate https://replicate.com
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #RAG #RLHF #LLM #Reasoning #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER S  ═══════════════════════════════
+
+S is the systems-and-scale letter. Twelve terms, a lot of it about doing AI at size.
+
+Stateful vs stateless, sharding, SFT, semantic dedup, similarity search, SLMs, SQL,
+SVM, SGD, system prompt, sparse vectors, synthetic data, sentence transformers, and
+stable diffusion. Save it, this one earns its space.
+
+Tools and companies from SQLite to Scale.ai and Sarvam, two channels, and three people
+including Sam Altman and Sebastian Raschka.
+
+Which S-term do you use most? Comment below.
+
+Tag:
+Sam Altman https://x.com/sama
+Sebastian Raschka https://x.com/rasbt
+Shervine Amidi https://x.com/shervinea
+Channels: StatQuest https://x.com/statquest · Stanford Online https://x.com/stanfordonline
+Featured: SQLite https://sqlite.org · Scale.ai https://scale.com · Sarvam https://sarvam.ai · Surge
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #SQL #StableDiffusion #SyntheticData #LLM #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER T  ═══════════════════════════════
+
+T is transformers, and everything that lives around them.
+
+Six terms: transformers, tokenization, temperature, TF-IDF, tool calling, and tracing.
+The first two are the base of the whole modern stack, the last two are how agents
+actually run.
+
+Trae and TRIBE v2 for tooling, six people, and 3Blue1Brown, the channel that made the
+math finally make sense for me.
+
+Save it, then tell me your most-used T-term.
+
+Tag:
+Tina Huang https://www.youtube.com/@TinaHuang1
+Tomas Mikolov search: https://www.linkedin.com/search/results/people/?keywords=Tomas%20Mikolov
+Thomas Kurian search: https://www.linkedin.com/search/results/people/?keywords=Thomas%20Kurian
+Tom Brown search: https://www.linkedin.com/search/results/people/?keywords=Tom%20Brown%20Anthropic
+Tiffany Janzen search: https://www.linkedin.com/search/results/people/?keywords=Tiffany%20Janzen
+Channels: 3Blue1Brown https://www.youtube.com/results?search_query=3blue1brown · Tech with Tim https://www.youtube.com/results?search_query=Tech+With+Tim
+Tools: Trae · TRIBE v2
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Transformers #Tokenization #ToolCalling #LLM #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER U  ═══════════════════════════════
+
+U is short, and mostly about the messy reality of data.
+
+Six terms: unsupervised learning, uni and multivariate analysis, unequal sampling,
+underfitting, unstructured data, and U-Net. The unglamorous stuff that decides whether
+a model is any good.
+
+Unsloth and Uizard for tooling, and two researchers who shaped how we search and mine data.
+
+Save it. What is the U-term you run into most?
+
+Tag:
+Usama Fayyad https://x.com/ufayyad
+Udi Manber search: https://www.linkedin.com/search/results/people/?keywords=Udi%20Manber
+Tools: Unsloth https://unsloth.ai · Uizard https://uizard.io
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #UnsupervisedLearning #DataScience #Underfitting #UNet #AIEngineer #GenerativeAI #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER V  ═══════════════════════════════
+
+V is the letter behind every RAG system you have ever touched.
+
+Seven terms: the Vs of big data, VAEs, vectors, vectorization, vector databases, vector
+embeddings, and vision transformers. If you understand embeddings, half of modern AI
+stops feeling like magic.
+
+Vertex AI, Voyage AI, and Vizuara for tooling, and three figures, from a founder of
+statistical learning theory to leaders in responsible AI.
+
+Which V-term do you use most? Tell me.
+
+Tag (cards showed names only, so these open a LinkedIn search):
+Vladimir Vapnik search: https://www.linkedin.com/search/results/people/?keywords=Vladimir%20Vapnik
+Virginia Dignum search: https://www.linkedin.com/search/results/people/?keywords=Virginia%20Dignum
+Victor Dibia search: https://www.linkedin.com/search/results/people/?keywords=Victor%20Dibia
+Tools: Vertex AI https://cloud.google.com/vertex-ai · Voyage AI https://voyageai.com · Vizuara
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Embeddings #VectorDatabase #RAG #VisionTransformer #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER W  ═══════════════════════════════
+
+W is weights, and the ideas that grew out of them.
+
+Five terms: weights, weights and biases, Word2Vec, world models, and warehousing. Small
+letter, but Word2Vec and world models are two of the more important ideas in it.
+
+Tools from Weights & Biases and Whisper to Wolfram Alpha and Weaviate, two channels,
+and two people, including one of OpenAI's co-founders.
+
+Save it. What is the W-term you use most?
+
+Tag:
+Wojciech Zaremba https://x.com/wojzaremba
+Werner Vogels https://x.com/Werner
+Channels: Welch Labs https://x.com/WelchLabsVideo · Wolfram Research https://x.com/WolframResearch
+Tools: Weights & Biases https://wandb.ai · Whisper · Wolfram Alpha https://wolframalpha.com · Weaviate https://weaviate.io
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #Word2Vec #WorldModels #NLP #WeightsAndBiases #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER X  ═══════════════════════════════
+
+X is the trickiest letter to fill, and honestly the most fun.
+
+Three terms: XGBoost (still winning on tabular data), XAI (explainable AI), and XLA
+(the compiler that makes training faster). Small list, real weight.
+
+Then five X-named labs turning ideas into products, from xAI and Xiaomi MiMo to Xaira
+and XtalPi in drug discovery. Plus one mind worth a follow.
+
+Which X-term or lab surprised you? Comment it.
+
+Tag:
+Xavier Amatriain https://x.com/xamat · https://www.linkedin.com/in/xamat
+Companies:
+xAI https://x.com/xai
+Xane AI https://x.com/Xane_AI · https://xane.ai
+Xiaomi MiMo https://huggingface.co/XiaomiMiMo
+Xaira https://xaira.com
+XtalPi https://en.xtalpi.com
+
+#AI #ArtificialIntelligence #MachineLearning #XGBoost #ExplainableAI #XAI #DeepLearning #AIEngineer #DataScience #DrugDiscovery #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER Y  ═══════════════════════════════
+
+Y is tiny, but it comes with two of the biggest names in AI.
+
+Three terms: YOLO (real-time object detection), YARN, and YAML. From computer vision to
+the config files you fight with weekly.
+
+Y Combinator and you.com round out the tools, and the spotlight is Yann LeCun and
+Yoshua Bengio, two of the three "godfathers" of deep learning.
+
+Save it, and tell me your most-used Y-term.
+
+Tag:
+Yann LeCun https://x.com/ylecun
+Yoshua Bengio https://x.com/Yoshua_Bengio
+Featured: Y Combinator https://ycombinator.com · you.com https://you.com
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #YOLO #ComputerVision #YAML #NeuralNetworks #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════  LETTER Z  ═══════════════════════════════
+
+Z. The last one. We made it all the way through the alphabet.
+
+Five terms to close it out: zero-shot learning, zero-shot prompting, zero-shot coding,
+Z-score, and ZeRO (the memory trick behind training huge models). A fitting end, since
+zero-shot is where a lot of this is heading.
+
+Tools from Zoho and Zapier to Zed and Zhipu AI. No spotlight this time, just a thank you
+for swiping along the whole A to Z.
+
+If this series taught you one term you did not know, that is the whole point. Follow for
+whatever I build next, and tell me which letter was your favourite.
+
+Tag: (no people spotlight on Z)
+Tools: Zoho https://zoho.com · Zed https://zed.dev · Zapier https://zapier.com · Zhipu AI (Z.ai) https://z.ai
+
+#AI #ArtificialIntelligence #MachineLearning #DeepLearning #ZeroShot #ZeRO #LLM #GenerativeAI #AIEngineer #DataScience #LearnAI #TechCommunity
+
+
+═══════════════════════════════════════════════════════════════════════════
+LINK DIRECTORY  ·  everyone in the series, by letter
+Links are copied from the slides. "search:" = the card showed no handle.
+═══════════════════════════════════════════════════════════════════════════
+
+A · Andrew Ng — https://x.com/AndrewYNg · https://andrewng.org
+A · Ashish Vaswani — https://x.com/ashVaswani · https://essentialai.com
+A · Andrej Karpathy — https://x.com/karpathy · https://karpathy.ai
+A · Aishwarya Srinivasan — https://www.linkedin.com/in/aishwarya-srinivasan · https://www.instagram.com/the.datascience.gal
+A · Afshine Amidi — https://www.linkedin.com/in/afshineamidi
+A · AI Engineer — https://www.youtube.com/@aidotengineer · https://ai.engineer
+A · Alan Turing — historical, no profile
+
+B · BAIR (Berkeley AI Research) — https://x.com/berkeleybair · https://bair.berkeley.edu · https://www.linkedin.com/company/bair-lab
+B · ByteMonk — https://www.linkedin.com/in/bytemonk · https://blog.bytemonk.io
+B · ByteByteGo — https://x.com/bytebytego · https://www.linkedin.com/company/bytebytego
+B · BharatGen (tool) — https://x.com/BharatGen_AI · https://www.linkedin.com/company/bharatgen
+B · Bhashini (tool) — https://www.linkedin.com/company/bhashini · https://bhashini.gov.in
+
+C · Computerphile — https://www.youtube.com/@Computerphile
+C · CampusX — https://www.youtube.com/@campusx-official
+C · CodeBasics — https://www.youtube.com/@codebasics
+
+D · Dario Amodei — https://x.com/DarioAmodei · https://www.linkedin.com/in/dario-amodei-3934934
+D · Demis Hassabis — https://x.com/demishassabis · https://www.linkedin.com/in/demishassabis
+D · Daniela Amodei — https://x.com/danamodei · https://www.linkedin.com/in/daniela-amodei-790bb22
+D · Dwarkesh Patel — https://x.com/dwarkesh_sp · https://www.youtube.com/@DwarkeshPatel
+D · Dhruv Singhal — https://www.linkedin.com/in/dhruv-singhal-385043165 · https://www.instagram.com/dhruvtechbytes
+
+E · Edward Hu — https://x.com/edwardjhu · https://www.linkedin.com/in/edwardjhu
+
+F · Fireship (Jeff Delaney) — https://www.youtube.com/@Fireship
+F · freeCodeCamp — search: https://www.linkedin.com/search/results/all/?keywords=freeCodeCamp
+
+G · Geoffrey Hinton — search: https://www.linkedin.com/search/results/people/?keywords=Geoffrey%20Hinton
+G · Greg Brockman — search: https://www.linkedin.com/search/results/people/?keywords=Greg%20Brockman
+G · Gaurav Sen — search: https://www.linkedin.com/search/results/people/?keywords=Gaurav%20Sen
+G · Garry Tan — search: https://www.linkedin.com/search/results/people/?keywords=Garry%20Tan
+G · Greg Isenberg — search: https://www.linkedin.com/search/results/people/?keywords=Greg%20Isenberg
+G · Ghita El Haitmy — search: https://www.linkedin.com/search/results/people/?keywords=Ghita%20El%20Haitmy
+
+H · Hitesh Choudhary — https://x.com/Hiteshdotcom
+H · Harsh Bhatt — https://x.com/harshbhatt7585
+
+I · Ilya Sutskever — search: https://www.linkedin.com/search/results/people/?keywords=Ilya%20Sutskever
+I · Ian Goodfellow — search: https://www.linkedin.com/search/results/people/?keywords=Ian%20Goodfellow
+I · IBM Technology (channel) — search: https://www.youtube.com/results?search_query=IBM+Technology
+
+J · Jensen Huang — search: https://www.linkedin.com/search/results/people/?keywords=Jensen%20Huang
+J · Jeff Dean — search: https://www.linkedin.com/search/results/people/?keywords=Jeff%20Dean
+J · Jack Dorsey — search: https://www.linkedin.com/search/results/people/?keywords=Jack%20Dorsey
+J · Jared Kaplan — search: https://www.linkedin.com/search/results/people/?keywords=Jared%20Kaplan
+J · Jacob Devlin — search: https://www.linkedin.com/search/results/people/?keywords=Jacob%20Devlin
+J · John Schulman — search: https://www.linkedin.com/search/results/people/?keywords=John%20Schulman
+
+K · Krish Naik — https://www.youtube.com/@krishnaik06
+K · Ken Jee — https://www.youtube.com/@KenJee1
+K · Kunal Kushwaha — https://www.youtube.com/@kunalkushwaha
+K · Khan Academy — search: https://www.linkedin.com/search/results/all/?keywords=Khan%20Academy
+K · Kaiming He — search: https://www.linkedin.com/search/results/people/?keywords=Kaiming%20He
+
+L · Laurence Moroney — https://x.com/lmoroney
+L · Luis Serrano — https://www.youtube.com/@SerranoAcademy
+L · Léon Bottou — https://leon.bottou.org
+L · Latent Space (channel) — https://x.com/latentspacepod · https://latent.space
+
+M · Mayank Agarwal — https://x.com/mayank_agarwal
+M · Max Tegmark — https://x.com/tegmark
+M · Michael Jordan — https://x.com/mjordan_ml
+M · Mira Murati — search: https://www.linkedin.com/search/results/people/?keywords=Mira%20Murati
+M · Mustafa Suleyman — search: https://www.linkedin.com/search/results/people/?keywords=Mustafa%20Suleyman
+M · Marina Wyss (creator) — https://x.com/MarinaWyssAI
+M · MonkByte (creator) — https://x.com/MonkByte
+M · Matthew Berman (creator) — https://x.com/matthew_berman
+M · Mervin Praison (creator) — https://x.com/MervinPraison
+M · Matt Wolfe (creator) — https://x.com/mreflow
+
+N · Noam Shazeer — https://x.com/NoamShazeer
+N · Nikhil — https://x.com/nikhil_ai
+N · Nicholas Renotte — https://www.youtube.com/@nicholasrenotte
+N · Nate Herk — https://x.com/nateherk
+N · Nal Kalchbrenner — search: https://www.linkedin.com/search/results/people/?keywords=Nal%20Kalchbrenner
+N · NeuralNine (channel) — https://x.com/neuralnine
+N · NetworkChuck (channel) — https://x.com/NetworkChuck
+
+O · Oriol Vinyals — https://x.com/OriolVinyalsML
+
+P · Pieter Abbeel — https://x.com/pabbeel
+P · Percy Liang — https://x.com/percyliang
+P · Patrick Lewis — https://x.com/PSH_Lewis
+P · Philipp Schmid — https://x.com/_philschmid
+P · Peter Steinberger — https://x.com/steipete
+P · Paul Graham — https://x.com/paulg
+P · Peter Thiel — search: https://www.linkedin.com/search/results/people/?keywords=Peter%20Thiel
+
+Q · Qingyun Wu — https://x.com/qingyun_wu
+Q · Quoc Le — https://x.com/quocleix
+Q · Quincy Larson — https://x.com/ossia
+Q · Qiang Yang — search: https://www.linkedin.com/search/results/people/?keywords=Qiang%20Yang
+Q · Qodo (channel) — https://x.com/qodoai
+
+R · Rohan Paul — https://x.com/rohanpaul_ai
+R · Rohin Shah — search: https://www.linkedin.com/search/results/people/?keywords=Rohin%20Shah
+R · Rahul Agarwal — search: https://www.linkedin.com/search/results/people/?keywords=Rahul%20Agarwal%20MLWhiz
+
+S · Sam Altman — https://x.com/sama
+S · Sebastian Raschka — https://x.com/rasbt
+S · Shervine Amidi — https://x.com/shervinea
+S · StatQuest (Josh Starmer, channel) — https://x.com/statquest
+S · Stanford Online (channel) — https://x.com/stanfordonline
+
+T · Tina Huang — https://www.youtube.com/@TinaHuang1
+T · Tomas Mikolov — search: https://www.linkedin.com/search/results/people/?keywords=Tomas%20Mikolov
+T · Thomas Kurian — search: https://www.linkedin.com/search/results/people/?keywords=Thomas%20Kurian
+T · Tom Brown — search: https://www.linkedin.com/search/results/people/?keywords=Tom%20Brown%20Anthropic
+T · Tiffany Janzen (TiffinTech) — search: https://www.linkedin.com/search/results/people/?keywords=Tiffany%20Janzen
+T · 3Blue1Brown (Grant Sanderson) — https://www.youtube.com/results?search_query=3blue1brown
+T · Tech with Tim (Tim Ruscica) — https://www.youtube.com/results?search_query=Tech+With+Tim
+
+U · Usama Fayyad — https://x.com/ufayyad
+U · Udi Manber — search: https://www.linkedin.com/search/results/people/?keywords=Udi%20Manber
+
+V · Vladimir Vapnik — search: https://www.linkedin.com/search/results/people/?keywords=Vladimir%20Vapnik
+V · Virginia Dignum — search: https://www.linkedin.com/search/results/people/?keywords=Virginia%20Dignum
+V · Victor Dibia — search: https://www.linkedin.com/search/results/people/?keywords=Victor%20Dibia
+
+W · Wojciech Zaremba — https://x.com/wojzaremba
+W · Werner Vogels — https://x.com/Werner
+W · Welch Labs (channel) — https://x.com/WelchLabsVideo
+W · Wolfram Research (channel) — https://x.com/WolframResearch
+
+X · Xavier Amatriain — https://x.com/xamat · https://www.linkedin.com/in/xamat · https://amatriain.net
+X · xAI (company) — https://x.com/xai
+X · Xane AI (company) — https://x.com/Xane_AI · https://xane.ai
+X · Xiaomi MiMo (company) — https://huggingface.co/XiaomiMiMo
+X · Xaira (company) — https://xaira.com
+X · XtalPi (company) — https://en.xtalpi.com
+
+Y · Yann LeCun — https://x.com/ylecun
+Y · Yoshua Bengio — https://x.com/Yoshua_Bengio
+
+Z · (no people spotlight)
+
+═══════════════════════════════════════════════════════════════════════════
+End. 26 letters, one series. Follow the full A to Z:
+Prasanna Kulkarni · https://www.linkedin.com/in/prasanna-kulkarni-032650180
+═══════════════════════════════════════════════════════════════════════════

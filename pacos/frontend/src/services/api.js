@@ -38,6 +38,11 @@ export const api = {
   leads: () => req("/api/leads"),
   lead: (id) => req(`/api/leads/${id}`),
   assets: (id) => req(`/api/assets/${id}`),
+  regenerateAsset: (id, asset) =>
+    req(`/api/assets/${id}/regenerate`, {
+      method: "POST",
+      body: JSON.stringify({ asset }),
+    }),
   tracker: () => req("/api/tracker"),
   digest: () => req("/api/tracker/digest"),
   agents: () => req("/api/agents/status"),
@@ -54,6 +59,8 @@ export const api = {
     req("/api/chat", { method: "POST", body: JSON.stringify({ messages }) }),
   discovery: (body) =>
     req("/api/discovery", { method: "POST", body: JSON.stringify(body) }),
+  enrich: (body) =>
+    req("/api/discovery/enrich", { method: "POST", body: JSON.stringify(body) }),
   discoveryForLead: (id) => req(`/api/discovery/${id}`),
   scanInbox: (days = 1) =>
     req(`/api/inbox/scan?days=${days}`, { method: "POST" }),

@@ -6,7 +6,8 @@ from __future__ import annotations
 from fastapi import APIRouter, Depends, HTTPException
 
 from ..deps import get_service
-from ..models import DiscoveryRequest, DiscoveryResult
+from ..models import (DiscoveryRequest, DiscoveryResult, EnrichRequest,
+                      EnrichResult)
 from ..service import Service
 
 router = APIRouter(prefix="/api", tags=["discovery"])
@@ -22,6 +23,20 @@ def discovery(req: DiscoveryRequest, svc: Service = Depends(get_service)):
     return DiscoveryResult(company_name=req.company_name.strip(),
                            job_title=req.job_title.strip(), city=req.city.strip(),
                            variants=variants)
+
+
+@router.post("/discovery/enrich", response_model=EnrichResult)
+def enrich(req: EnrichRequest, svc: Service = Depends(get_service)):
+    """Auto-import leads from the Google X-Ray search for a job: collect
+    profiles, predict work emails, and create leads. Human-in-the-loop is
+    preserved — leads land in the tracker for review; nothing is sent."""
+    try:
+        return svc.enrich_from_discovery(
+            req.company_name, req.job_title, req.city, req.keywords,
+            pasted_html=req.pasted_html, max_leads=req.max_leads,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
 
 @router.get("/discovery/{lead_id}", response_model=DiscoveryResult)

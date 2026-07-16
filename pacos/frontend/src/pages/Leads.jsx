@@ -1,5 +1,5 @@
 import { useLeads } from "../hooks/useLeads";
-import LeadTable from "../components/LeadTable.jsx";
+import LeadBrowser from "../components/LeadBrowser.jsx";
 import AddLeadFromJD from "../components/AddLeadFromJD.jsx";
 import AddLeadForm from "../components/AddLeadForm.jsx";
 
@@ -15,7 +15,7 @@ export default function Leads() {
         <AddLeadFromJD />
         <AddLeadForm />
       </div>
-      {loading ? <p className="muted">Loading…</p> : <LeadTable leads={leads} />}
+      {loading ? <p className="muted">Loading…</p> : <LeadBrowser leads={leads} />}
     </div>
   );
 }
