@@ -54,7 +54,7 @@ _TABLES = [
     email TEXT, company_size TEXT, industry TEXT, company_website TEXT,
     funding_stage TEXT, folder_name TEXT,
     predicted_email TEXT DEFAULT '', email_confidence TEXT DEFAULT '',
-    email_status TEXT DEFAULT ''
+    email_status TEXT DEFAULT '', lead_type TEXT DEFAULT 'person'
 )""",
     """CREATE TABLE IF NOT EXISTS tracker (
     lead_id TEXT PRIMARY KEY,
@@ -157,15 +157,29 @@ class PacosStore:
         """Add enrichment columns to a pre-existing leads table (older DBs).
         CREATE TABLE IF NOT EXISTS won't alter an already-present table, so add
         the columns explicitly — idempotent on both backends."""
-        new_cols = ("predicted_email", "email_confidence", "email_status")
+        new_cols = ("predicted_email", "email_confidence", "email_status",
+                    "lead_type")
         if self.is_postgres:
             for col in new_cols:
                 c.execute(f"ALTER TABLE leads ADD COLUMN IF NOT EXISTS {col} TEXT DEFAULT ''")
-            return
-        have = {r["name"] for r in c.execute("PRAGMA table_info(leads)").fetchall()}
-        for col in new_cols:
-            if col not in have:
-                c.execute(f"ALTER TABLE leads ADD COLUMN {col} TEXT DEFAULT ''")
+        else:
+            have = {r["name"] for r in c.execute("PRAGMA table_info(leads)").fetchall()}
+            for col in new_cols:
+                if col not in have:
+                    c.execute(f"ALTER TABLE leads ADD COLUMN {col} TEXT DEFAULT ''")
+        # One-time backfill (idempotent: only rows still untyped are touched).
+        # Placeholder names mean the row is a job posting, not a person —
+        # keep in sync with leads.PLACEHOLDER_NAMES.
+        c.execute(
+            """UPDATE leads SET lead_type='job'
+               WHERE (lead_type IS NULL OR lead_type='')
+                 AND (full_name IS NULL OR lower(trim(full_name)) IN
+                      ('', 'unknown', 'n/a', 'na', 'none', 'tbd', '-', '?'))"""
+        )
+        c.execute(
+            "UPDATE leads SET lead_type='person' "
+            "WHERE lead_type IS NULL OR lead_type=''"
+        )
 
     # ── leads ────────────────────────────────────────────────────────────
     def leads_empty(self) -> bool:
@@ -179,8 +193,9 @@ class PacosStore:
                     """INSERT INTO leads(lead_id, full_name, first_name, job_title,
                         company_name, city, linkedin_url, persona_tag, domain_tag,
                         email, company_size, industry, company_website, funding_stage,
-                        folder_name, predicted_email, email_confidence, email_status)
-                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                        folder_name, predicted_email, email_confidence, email_status,
+                        lead_type)
+                       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                        ON CONFLICT(lead_id) DO UPDATE SET
                         full_name=excluded.full_name, first_name=excluded.first_name,
                         job_title=excluded.job_title, company_name=excluded.company_name,
@@ -191,13 +206,15 @@ class PacosStore:
                         funding_stage=excluded.funding_stage, folder_name=excluded.folder_name,
                         predicted_email=excluded.predicted_email,
                         email_confidence=excluded.email_confidence,
-                        email_status=excluded.email_status
+                        email_status=excluded.email_status,
+                        lead_type=excluded.lead_type
                     """,
                     (ld.lead_id, ld.full_name, ld.first_name, ld.job_title,
                      ld.company_name, ld.city, ld.linkedin_url, ld.persona_tag,
                      ld.domain_tag, ld.email, ld.company_size, ld.industry,
                      ld.company_website, ld.funding_stage, ld.folder_name,
-                     ld.predicted_email, ld.email_confidence, ld.email_status),
+                     ld.predicted_email, ld.email_confidence, ld.email_status,
+                     ld.lead_type or "person"),
                 )
                 c.execute(
                     "INSERT INTO tracker(lead_id, status) VALUES (?, 'pending') "

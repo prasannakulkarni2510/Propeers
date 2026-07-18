@@ -1,5 +1,5 @@
 import { NavLink, Route, Routes } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useStore } from "./store";
 import { useAgentPolling } from "./hooks/useAgentStatus";
 import Home from "./pages/Home.jsx";
@@ -38,24 +38,48 @@ function Toast() {
   );
 }
 
+const MOBILE_QUERY = "(max-width: 900px)";
+
 export default function App() {
   // Poll agent status app-wide so generation progress keeps updating even when
   // the user navigates away from the Dashboard.
   useAgentPolling();
+  // Chatbot-style nav: open by default on desktop, hidden on mobile until the
+  // operator asks for it. Picking a page on mobile closes it again.
+  const [navOpen, setNavOpen] = useState(
+    () => !window.matchMedia(MOBILE_QUERY).matches,
+  );
+  const onNavigate = () => {
+    if (window.matchMedia(MOBILE_QUERY).matches) setNavOpen(false);
+  };
   return (
     <AuthGate>
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          PAC<span className="brand-accent">OS</span>
+    <div className={`app ${navOpen ? "" : "nav-closed"}`}>
+      {!navOpen && (
+        <button className="nav-toggle" aria-label="Open menu" onClick={() => setNavOpen(true)}>
+          ☰
+        </button>
+      )}
+      {navOpen && <div className="backdrop" onClick={() => setNavOpen(false)} />}
+      <aside className={`sidebar ${navOpen ? "open" : ""}`}>
+        <div className="sidebar-head">
+          <div>
+            <div className="brand">
+              PAC<span className="brand-accent">OS</span>
+            </div>
+            <div className="brand-sub">Personal AI Career OS</div>
+          </div>
+          <button className="nav-close" aria-label="Close menu" onClick={() => setNavOpen(false)}>
+            ✕
+          </button>
         </div>
-        <div className="brand-sub">Personal AI Career OS</div>
         <nav>
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               end={n.end}
+              onClick={onNavigate}
               className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
             >
               {n.label}
@@ -65,6 +89,7 @@ export default function App() {
         <div className="sidebar-foot">
           <NavLink
             to="/about"
+            onClick={onNavigate}
             className={({ isActive }) => `nav-about ${isActive ? "active" : ""}`}
           >
             Know more about the project →

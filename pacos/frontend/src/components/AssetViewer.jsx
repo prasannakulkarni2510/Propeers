@@ -42,7 +42,7 @@ export default function AssetViewer({ leadId }) {
       await navigator.clipboard.writeText(current.content);
       setToast(`Copied ${LABELS[current.name]} to clipboard`);
     } catch (_) {
-      setToast("Copy failed — select and copy manually");
+      setToast("Copy failed. Select and copy manually");
     }
   };
 
@@ -53,7 +53,7 @@ export default function AssetViewer({ leadId }) {
       setData(fresh);
       setToast(`Regenerated ${LABELS[current.name]}`);
     } catch (e) {
-      setToast(`Regenerate failed — ${e.message}`);
+      setToast(`Regenerate failed: ${e.message}`);
     } finally {
       setRegenerating(false);
     }
@@ -80,7 +80,7 @@ export default function AssetViewer({ leadId }) {
               className="btn btn-sm"
               onClick={regenerate}
               disabled={regenerating}
-              title="Rewrite this asset — reuses the same hook, different copy"
+              title="Rewrite this asset: reuses the same hook, different copy"
             >
               {regenerating ? "Regenerating…" : "Regenerate"}
             </button>

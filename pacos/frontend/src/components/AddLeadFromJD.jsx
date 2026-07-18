@@ -33,11 +33,11 @@ export default function AddLeadFromJD() {
     }
   };
 
-  const confirm = async () => {
+  const confirm = async (leadType = "person") => {
     setBusy(true);
     setError("");
     try {
-      await addLead({ ...fields, persona_tag: persona });
+      await addLead({ ...fields, persona_tag: persona, lead_type: leadType });
       setText("");
       setFields(null);
       setWarnings([]);
@@ -81,7 +81,7 @@ export default function AddLeadFromJD() {
       ) : (
         <>
           <p className="muted">
-            Extracted via {source}. Review and edit — nothing is saved until you confirm.
+            Extracted via {source}. Review and edit; nothing is saved until you confirm.
           </p>
           {warnings.length > 0 && (
             <ul className="jd-warnings">
@@ -100,9 +100,17 @@ export default function AddLeadFromJD() {
             <button
               className="btn btn-accent"
               disabled={busy || !canSubmitLead(fields, persona)}
-              onClick={confirm}
+              onClick={() => confirm("person")}
             >
               {busy ? "Adding…" : "Add to leads.csv"}
+            </button>
+            <button
+              className="btn"
+              title="No recruiter or hiring manager named? Save the role itself under the Jobs tab and find the contact later."
+              disabled={busy || !(fields.job_title && fields.company_name)}
+              onClick={() => confirm("job")}
+            >
+              Save as job posting
             </button>
             <button className="btn btn-ghost" disabled={busy} onClick={() => setFields(null)}>
               Back to JD text

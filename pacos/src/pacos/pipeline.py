@@ -108,8 +108,8 @@ class Pipeline:
                 user=prompts.build_asset_user(
                     asset_key, lead_d, _candidate(self.cfg), _base_cv(self.cfg),
                     hook, domain_read),
-                temperature=0.9,  # more spread than the 0.6 first pass
-                max_tokens=1600,
+                temperature=0.6,  # more spread than the 0.3 first pass, but
+                max_tokens=1600,  # low enough to stay grounded in the CV
             )
         text = prompts.strip_dashes(text)
         self.store.set_agent_status(asset_key, "done", "regenerated")
@@ -127,7 +127,7 @@ class Pipeline:
         for _, (filename, _spec) in ASSET_SPECS.items():
             content = assets.get(filename)
             if content is None:
-                content = "(not generated — lead has no email, so no cold email)"
+                content = "(not generated: lead has no email, so no cold email)"
             files[filename] = content
         # The store is the durable copy (cloud filesystems are ephemeral);
         # the files under output/ are the operator-friendly convenience copy.

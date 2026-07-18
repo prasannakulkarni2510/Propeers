@@ -43,7 +43,7 @@ export default function AuthGate({ children }) {
     } catch (err) {
       if (err.status === 401) {
         authToken.set("");
-        setError("That token was rejected — check PACOS_AUTH_TOKEN.");
+        setError("That token was rejected. Check PACOS_AUTH_TOKEN.");
       } else {
         setState("ok"); // backend trouble ≠ bad token; let the app surface it
       }

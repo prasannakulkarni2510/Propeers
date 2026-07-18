@@ -73,4 +73,8 @@ export const api = {
     req("/api/approvals/reply", { method: "POST", body: JSON.stringify(body) }),
   markStatus: (body) =>
     req("/api/approvals/status", { method: "POST", body: JSON.stringify(body) }),
+
+  getCv: () => req("/api/settings/cv"),
+  saveCv: (content) =>
+    req("/api/settings/cv", { method: "PUT", body: JSON.stringify({ content }) }),
 };

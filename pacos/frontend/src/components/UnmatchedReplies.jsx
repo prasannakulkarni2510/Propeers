@@ -43,10 +43,10 @@ export default function UnmatchedReplies() {
                     value={picks[r.id] || ""}
                     onChange={(e) => setPicks({ ...picks, [r.id]: e.target.value })}
                   >
-                    <option value="">— pick lead —</option>
+                    <option value="">(pick lead)</option>
                     {leads.map((l) => (
                       <option key={l.lead_id} value={l.lead_id}>
-                        {l.full_name} — {l.company_name}
+                        {l.full_name} · {l.company_name}
                       </option>
                     ))}
                   </select>

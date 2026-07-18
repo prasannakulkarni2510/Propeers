@@ -8,6 +8,7 @@ same POST /api/leads write path as everything else (human-in-the-loop).
 """
 from __future__ import annotations
 
+from .graph.prompts import strip_dashes
 from .jd_parser import PROPOSAL_KEYS, normalise_proposal
 from .llm import NemotronClient, NemotronError
 
@@ -71,7 +72,9 @@ def chat_turn(
     except NemotronError as e:
         return f"Nemotron error: {e}", None, [], False
 
-    reply = str(raw.get("reply", "") or "").strip() or "(empty reply from model)"
+    # House style everywhere: no em/en dashes in anything the operator reads.
+    reply = strip_dashes(str(raw.get("reply", "") or "").strip()) \
+        or "(empty reply from model)"
     proposal, warnings = None, []
     lead = raw.get("lead")
     if isinstance(lead, dict) and any(str(v or "").strip() for v in lead.values()):

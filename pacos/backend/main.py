@@ -16,12 +16,13 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
-from .routes import agents, approvals, assets, chat, discovery, inbox, leads, tracker
+from .routes import (agents, approvals, assets, chat, discovery, inbox, leads,
+                     settings, tracker)
 
 app = FastAPI(
     title="PACOS API",
     version="1.0.0",
-    description="Personal AI Career Operating System — Nemotron-powered, human-in-the-loop.",
+    description="Personal AI Career Operating System. Nemotron-powered, human-in-the-loop.",
 )
 
 # CORS for the Vite dev server (and any deployed frontend origin).
@@ -51,7 +52,7 @@ async def require_bearer_token(request, call_next):
         supplied = request.headers.get("authorization", "")
         if not secrets.compare_digest(supplied, f"Bearer {token}"):
             return JSONResponse(status_code=401,
-                                content={"detail": "unauthorized — bearer token required"})
+                                content={"detail": "unauthorized: bearer token required"})
     return await call_next(request)
 
 
@@ -63,6 +64,7 @@ app.include_router(tracker.router)
 app.include_router(chat.router)
 app.include_router(inbox.router)
 app.include_router(discovery.router)
+app.include_router(settings.router)
 
 
 @app.get("/api/health")

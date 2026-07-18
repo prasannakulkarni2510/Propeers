@@ -10,9 +10,9 @@ export default function Dashboard() {
   const [reviewHooks, setReviewHooks] = useState(false);
 
   const tiles = [
-    { label: "Leads", value: stats?.total ?? "—" },
-    { label: "With assets", value: stats?.with_assets ?? "—" },
-    { label: "Follow-ups due", value: stats?.followups_due ?? "—" },
+    { label: "Leads", value: stats?.total ?? "-" },
+    { label: "With assets", value: stats?.with_assets ?? "-" },
+    { label: "Follow-ups due", value: stats?.followups_due ?? "-" },
     {
       label: "Interested",
       value: stats?.status_counts?.interested ?? 0,

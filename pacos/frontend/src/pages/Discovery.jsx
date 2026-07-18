@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { api } from "../services/api";
 import { useStore } from "../store";
+import SuggestInput from "../components/SuggestInput.jsx";
 
 // Deterministic auto-import: run the same Google X-Ray search, collect the
 // LinkedIn profiles it surfaces, predict work emails, and create leads. No new
@@ -74,7 +75,7 @@ function FindPeople({ company, role, city, keywords }) {
       <p className="muted" style={{ marginTop: 0 }}>
         Collect the LinkedIn profiles from the Google X-Ray results, predict a
         likely work email, and create leads. Predicted emails are never marked
-        verified — review before sending.
+        verified. Review before sending.
       </p>
       <div className="btn-row">
         <button className="btn btn-accent" disabled={busy || !company.trim()} onClick={() => run()}>
@@ -102,7 +103,7 @@ function FindPeople({ company, role, city, keywords }) {
           <p className="muted">
             Open the <strong>Google X-Ray</strong> link above, copy the whole
             results page (Ctrl+A, Ctrl+C), paste it here, and import. Keeps the
-            search 100% Google — no third-party API.
+            search 100% Google, no third-party API.
           </p>
           <textarea
             className="input"
@@ -203,17 +204,17 @@ export default function Discovery() {
     <div>
       <h1 className="page-title">Recruiter Discovery</h1>
       <p className="page-sub">
-        Boolean searches for the people behind a job — hiring managers, leads,
+        Boolean searches for the people behind a job: hiring managers, leads,
         directors, recruiters, TA, HRBPs. Open a search, pick a person, add
         them as a lead.
       </p>
       <div className="panel disc-form">
-        <input className="input" placeholder="Company (required)" value={company}
-               onChange={(e) => setCompany(e.target.value)} />
-        <input className="input" placeholder="Role / job title (optional)" value={role}
-               onChange={(e) => setRole(e.target.value)} />
-        <input className="input" placeholder="Location (optional)" value={city}
-               onChange={(e) => setCity(e.target.value)} />
+        <SuggestInput field="company_name" placeholder="Company (required)" value={company}
+                      onChange={(e) => setCompany(e.target.value)} />
+        <SuggestInput field="job_title" placeholder="Role / job title (optional)" value={role}
+                      onChange={(e) => setRole(e.target.value)} />
+        <SuggestInput field="city" placeholder="Location (optional)" value={city}
+                      onChange={(e) => setCity(e.target.value)} />
         <input className="input" placeholder="Tech stack, comma-separated (optional)" value={keywords}
                onChange={(e) => setKeywords(e.target.value)} />
         <button className="btn btn-accent" disabled={busy || !company.trim()} onClick={() => run()}>
@@ -225,7 +226,7 @@ export default function Discovery() {
         <>
           <p className="muted">
             {result.variants.length} search variants for {result.company_name}
-            {result.city && ` · ${result.city}`} — LinkedIn keyword search
+            {result.city && ` · ${result.city}`}. LinkedIn keyword search
             understands AND/OR/quotes; X-Ray finds public profiles via Google.
           </p>
           <FindPeople company={company} role={role} city={city} keywords={keywords} />

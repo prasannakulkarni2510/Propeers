@@ -9,6 +9,11 @@ tenacity>=8.2.0          # retry Nemotron calls on transient errors
 langgraph>=1.0.0         # multi-agent generation pipeline (ADR 0002)
 langgraph-checkpoint-sqlite>=2.0.0
 
+# --- Optional: headless-browser Google fetch for Discovery auto-import ---
+# Not installed on cloud hosts (Chromium is too big for the Render free tier);
+# without it the enrich flow falls back to urllib and the operator paste.
+#   pip install playwright && playwright install chromium
+
 # --- Gmail Inbox Monitor (Layer 2) ---
 google-api-python-client>=2.100.0
 google-auth-httplib2>=0.2.0

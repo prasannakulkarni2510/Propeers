@@ -62,8 +62,12 @@ class Service:
         Not an LLM agent and not a paid people-search API — the only source is
         the operator's own Google X-Ray query. `pasted_html`, when given, is a
         results page the operator copied (used when the automated fetch is
-        blocked); otherwise each variant's X-Ray URL is fetched server-side.
+        blocked); otherwise each variant's X-Ray URL is fetched server-side,
+        preferring a headless browser (Playwright, when installed) over the
+        bare urllib GET that Google usually walls off.
         """
+        from pacos.browser_fetch import (BrowserFetchError, browser_available,
+                                          fetch_xray_browser)
         from pacos.enrichment import (fetch_xray, hit_to_lead_fields,
                                        parse_profiles)
 
@@ -79,21 +83,33 @@ class Service:
             for hit in parse_profiles(pasted_html):
                 found.setdefault(hit.linkedin_url, (hit, variants[0].persona_tag))
         else:
-            for v in variants:
+            browser_html: dict[str, str] = {}
+            if self.cfg.browser_fetch and browser_available():
                 try:
-                    html = fetch_xray(v.xray_url)
-                except Exception as e:  # network/consent wall — keep going
-                    warnings.append(f"{v.group}: fetch failed ({type(e).__name__})")
-                    continue
+                    browser_html, bw = fetch_xray_browser(
+                        [v.xray_url for v in variants])
+                    warnings.extend(bw)
+                except BrowserFetchError as e:
+                    warnings.append(str(e))
+            for v in variants:
+                html = browser_html.get(v.xray_url)
+                via = "browser"
+                if html is None:
+                    via = "fetch"
+                    try:
+                        html = fetch_xray(v.xray_url)
+                    except Exception as e:  # network/consent wall - keep going
+                        warnings.append(f"{v.group}: fetch failed ({type(e).__name__})")
+                        continue
                 hits = parse_profiles(html)
                 if hits:
-                    source = "fetch"
+                    source = via
                 for hit in hits:
                     found.setdefault(hit.linkedin_url, (hit, v.persona_tag))
 
         if not found and source != "pasted":
             warnings.append(
-                "No profiles collected — Google likely served a consent/CAPTCHA "
+                "No profiles collected. Google likely served a consent/CAPTCHA "
                 "page. Open the X-Ray search, copy the results page, and paste it."
             )
 
@@ -135,7 +151,7 @@ class Service:
             lead = build_lead(raw)
             if not lead.lead_id:
                 raise ValueError(
-                    "could not derive a lead_id — full_name and company_name "
+                    "could not derive a lead_id: full_name and company_name "
                     "must contain at least one alphanumeric character"
                 )
             csv_written = append_lead_to_csv(self.cfg.leads_csv, raw)
@@ -147,7 +163,7 @@ class Service:
             elif csv_written:
                 msg = f"Lead {lead.lead_id} re-added to lead sheet; tracker updated."
             else:
-                msg = f"Lead {lead.lead_id} already exists — details updated in tracker."
+                msg = f"Lead {lead.lead_id} already exists; details updated in tracker."
             return row, created, msg, lead.warnings
 
     def delete_lead(self, lead_id: str) -> tuple[bool, str]:
@@ -224,7 +240,15 @@ class Service:
             leads = self._leads_for_generation()
             if lead_id:
                 leads = [ld for ld in leads if ld.lead_id == lead_id]
+                if leads and leads[0].lead_type == "job":
+                    return {"requested": 0, "generated": 0, "dry_run": dry_run,
+                            "model": self.cfg.nemotron_model,
+                            "errors": [f"{lead_id} is a job posting with no "
+                                       "contact person. Use Find people to "
+                                       "add someone first."]}
             else:
+                # Job postings have nobody to write to - people only.
+                leads = [ld for ld in leads if ld.lead_type != "job"]
                 if only_missing:
                     # Skip leads that already have assets, so clicking Generate
                     # after adding a lead builds only the new (asset-less) ones.
@@ -309,6 +333,24 @@ class Service:
         if self.store.associate_reply(reply_id, lead_id):
             return True, f"Reply #{reply_id} associated with {lead_id}."
         return False, "reply not found"
+
+    # ── candidate CV (grounding context for asset generation) ───────────
+    # The sample file ships with this exact header; while it is still in
+    # place the model has no real facts and asset generation will invent.
+    _SAMPLE_CV_MARKER = "# Base CV context (sample"
+
+    def get_cv(self) -> tuple[str, bool]:
+        """Return (cv_text, is_sample). Missing file reads as empty text."""
+        path = self.cfg.base_cv
+        text = path.read_text(encoding="utf-8") if path.exists() else ""
+        is_sample = text.lstrip().startswith(self._SAMPLE_CV_MARKER)
+        return text, is_sample
+
+    def save_cv(self, content: str) -> None:
+        """Overwrite the base CV file. Operator-initiated, like every write."""
+        with self._lock:
+            self.cfg.base_cv.parent.mkdir(parents=True, exist_ok=True)
+            self.cfg.base_cv.write_text(content, encoding="utf-8")
 
     # ── dashboard ────────────────────────────────────────────────────────
     def stats(self) -> dict:

@@ -117,14 +117,14 @@ export default function Chat() {
     <div className="chat-page">
       <h1 className="page-title">Chat</h1>
       <p className="page-sub">
-        Ask about your pipeline, draft outreach, or describe a person/JD — I'll
+        Ask about your pipeline, draft outreach, or describe a person/JD, and I'll
         propose a lead you can approve into leads.csv.
       </p>
       <div className="chat-scroll">
         {messages.length === 0 && (
           <p className="muted">
             Try: “Add this person: Priya Shah, engineering manager at Razorpay,
-            Bengaluru, priya@razorpay.com” — or paste a whole JD.
+            Bengaluru, priya@razorpay.com”, or paste a whole JD.
           </p>
         )}
         {messages.map((m, i) => (

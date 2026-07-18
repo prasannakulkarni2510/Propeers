@@ -78,11 +78,11 @@ export default function OutreachTracker({ leads }) {
               <td>{l.full_name}</td>
               <td>{l.company_name}</td>
               <td><StatusBadge status={l.status} /></td>
-              <td>{l.outreach_sent_date || "—"}</td>
-              <td>{l.channel || "—"}</td>
-              <td>{l.last_reply_date || "—"}</td>
-              <td>{l.reply_intent || "—"}</td>
-              <td>{l.follow_up_due || "—"}</td>
+              <td>{l.outreach_sent_date || "-"}</td>
+              <td>{l.channel || "-"}</td>
+              <td>{l.last_reply_date || "-"}</td>
+              <td>{l.reply_intent || "-"}</td>
+              <td>{l.follow_up_due || "-"}</td>
               <td>
                 <select
                   className="select"

@@ -60,9 +60,16 @@ function RowActions({ lead }) {
 // read as "likely", never "confirmed".
 function EmailCell({ lead }) {
   const email = lead.predicted_email || lead.email;
-  if (!email) return <span className="muted">—</span>;
+  const [copied, setCopied] = useState(false);
+  if (!email) return <span className="muted">-</span>;
   const predicted = lead.email_status === "predicted";
   const conf = (lead.email_confidence || "").toLowerCase();
+  const copy = async (e) => {
+    e.stopPropagation();
+    await navigator.clipboard.writeText(email);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
   return (
     <div className="email-cell">
       {predicted && <span className="muted email-likely">Likely:</span>}
@@ -70,6 +77,9 @@ function EmailCell({ lead }) {
       {predicted && conf && (
         <span className={`conf conf-${conf}`}>{conf[0].toUpperCase() + conf.slice(1)}</span>
       )}
+      <button className="copy-chip" title="Copy email" onClick={copy}>
+        {copied ? "✓" : "Copy"}
+      </button>
     </div>
   );
 }
@@ -101,7 +111,7 @@ export default function LeadTable({ leads }) {
               className="row-click"
               onClick={() => navigate(`/assets/${l.lead_id}`)}
             >
-              <td>{l.full_name}</td>
+              <td>{l.full_name || <span className="muted">(no contact yet)</span>}</td>
               <td>{l.job_title}</td>
               <td>{l.company_name}</td>
               <td>
@@ -116,12 +126,12 @@ export default function LeadTable({ leads }) {
                     profile ↗
                   </a>
                 ) : (
-                  <span className="muted">—</span>
+                  <span className="muted">-</span>
                 )}
               </td>
               <td><EmailCell lead={l} /></td>
               <td><span className="tag">{l.domain_tag}</span></td>
-              <td>{l.assets_generated === "true" ? "✓" : "—"}</td>
+              <td>{l.assets_generated === "true" ? "✓" : "-"}</td>
               <td><StatusBadge status={l.status} /></td>
               <td><RowActions lead={l} /></td>
             </tr>

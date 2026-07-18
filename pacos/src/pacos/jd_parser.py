@@ -84,7 +84,7 @@ def normalise_proposal(raw: dict[str, Any]) -> tuple[dict[str, str], list[str]]:
     fields["persona_tag"] = persona
     for key in ("full_name", "company_name", "persona_tag"):
         if not fields[key]:
-            warnings.append(f"'{key}' not found in JD — fill it in before adding")
+            warnings.append(f"'{key}' not found in JD; fill it in before adding")
     return fields, warnings
 
 
@@ -113,5 +113,5 @@ def parse_jd(client: NemotronClient, text: str) -> tuple[dict[str, str], list[st
 
     fields, warnings = normalise_proposal(raw)
     if not llm_used:
-        warnings.insert(0, "NVIDIA_API_KEY not set — used offline regex fallback")
+        warnings.insert(0, "NVIDIA_API_KEY not set; used offline regex fallback")
     return fields, warnings, llm_used

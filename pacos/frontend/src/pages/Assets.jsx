@@ -42,10 +42,10 @@ export default function Assets() {
             value={selected}
             onChange={(e) => navigate(`/assets/${e.target.value}`)}
           >
-            <option value="">— select a lead ({shown.length}) —</option>
+            <option value="">select a lead ({shown.length})</option>
             {shown.map((l) => (
               <option key={l.lead_id} value={l.lead_id}>
-                {l.company_name} — {l.job_title} ({l.full_name})
+                {l.company_name} · {l.job_title} ({l.full_name})
               </option>
             ))}
           </select>

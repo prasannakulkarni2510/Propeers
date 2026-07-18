@@ -3,6 +3,31 @@ import LeadTable from "./LeadTable.jsx";
 
 const PAGE_SIZE = 25;
 
+// Bulk-copy every (predicted or typed) email in the current filtered set,
+// comma-separated so the result pastes straight into a To/BCC field.
+function CopyEmailsButton({ leads }) {
+  const [copied, setCopied] = useState(false);
+  const emails = useMemo(
+    () => [...new Set(leads.map((l) => l.predicted_email || l.email).filter(Boolean))],
+    [leads],
+  );
+  const copy = async () => {
+    await navigator.clipboard.writeText(emails.join(", "));
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <button
+      className="btn btn-ghost btn-sm"
+      disabled={emails.length === 0}
+      title="Copy the emails of every lead matching the current filters"
+      onClick={copy}
+    >
+      {copied ? "Copied ✓" : `Copy ${emails.length} email${emails.length === 1 ? "" : "s"}`}
+    </button>
+  );
+}
+
 // Search + filter + paginate the lead list so the table stays usable at any
 // size (the dataset can run to hundreds of rows). All client-side: the full
 // list is already in the store, we just slice what we render.
@@ -62,6 +87,7 @@ export default function LeadBrowser({ leads }) {
           <option value="no">Needs assets</option>
           <option value="yes">Has assets</option>
         </select>
+        <CopyEmailsButton leads={filtered} />
         <span className="muted">
           {filtered.length} match{filtered.length === 1 ? "" : "es"}
           {filtered.length !== leads.length ? ` of ${leads.length}` : ""}

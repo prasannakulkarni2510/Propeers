@@ -59,6 +59,11 @@ class Config:
     # ── Policy ───────────────────────────────────────────────────────────
     follow_up_days: int
 
+    # ── Discovery fetch ──────────────────────────────────────────────────
+    # Use a headless browser (Playwright Chromium) for the Google X-Ray fetch
+    # when the package is installed. Off = urllib only (paste fallback stays).
+    browser_fetch: bool
+
     # ── Gmail ────────────────────────────────────────────────────────────
     gmail_credentials: Path
     gmail_token: Path
@@ -98,6 +103,8 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
         candidate_email=os.getenv("CANDIDATE_EMAIL", "").strip(),
         candidate_linkedin=os.getenv("CANDIDATE_LINKEDIN", "").strip(),
         follow_up_days=int(os.getenv("FOLLOW_UP_DAYS", "5")),
+        browser_fetch=os.getenv("PACOS_BROWSER_FETCH", "1").strip().lower()
+        not in {"0", "false", "no", "off"},
         gmail_credentials=_path(os.getenv("GMAIL_CREDENTIALS_PATH", "credentials.json")),
         gmail_token=_path(os.getenv("GMAIL_TOKEN_PATH", "token.json")),
     )

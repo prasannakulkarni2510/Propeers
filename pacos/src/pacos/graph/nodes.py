@@ -42,8 +42,8 @@ def make_personalization_node(cfg: Config, client: NemotronClient, store):
                 # generous headroom — a truncated reply is unparseable JSON
                 max_tokens=1200,
             )
-            hook = str(data.get("hook", "")).strip()
-            domain_read = str(data.get("domain_read", "")).strip()
+            hook = prompts.strip_dashes(str(data.get("hook", "")).strip())
+            domain_read = prompts.strip_dashes(str(data.get("domain_read", "")).strip())
 
         store.set_agent_status("personalization", "done", hook[:50])
         return {"hook": hook, "domain_read": domain_read}
@@ -67,6 +67,9 @@ def make_asset_node(asset_key: str, cfg: Config, client: NemotronClient, store):
                 system=prompts.SYSTEM_ASSET,
                 user=prompts.build_asset_user(
                     asset_key, lead, _candidate(cfg), _base_cv(cfg), hook, domain_read),
+                # low temperature: creative sampling is where invented facts
+                # come from; grounded assets beat varied ones
+                temperature=0.3,
                 max_tokens=1600,
             )
         text = prompts.strip_dashes(text)

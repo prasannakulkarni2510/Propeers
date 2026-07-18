@@ -29,7 +29,7 @@ const GUARDRAILS = [
   ["Never auto-sends", "Every draft is copy-pasted by the operator after they read it. There is no send path in the code at all."],
   ["Inbox is strictly read-only", "The monitor requests only gmail.readonly. It never sends, labels, deletes, or modifies mail."],
   ["The model proposes, it never writes", "The JD parser and chat turn pasted text into a lead proposal. Nothing lands in the tracker until the operator confirms it."],
-  ["Discovery is deterministic", "Boolean people-searches with LinkedIn and Google X-Ray links, built from what PACOS already knows — no scraping, no model call."],
+  ["Discovery is deterministic", "Boolean people-searches with LinkedIn and Google X-Ray links, built from what PACOS already knows. No scraping, no model call."],
 ];
 
 const STATUS_FLOW = ["pending", "sent", "replied", "interested", "interview", "offer"];
@@ -106,7 +106,7 @@ export default function About() {
       </Section>
 
       {/* ── discovery + enrichment (shipped) ─────────────── */}
-      <Section kicker="Finding people" title="Discovery — deterministic, now with one-click enrichment">
+      <Section kicker="Finding people" title="Discovery: deterministic, now with one-click enrichment">
         <p>
           Discovery builds targeted Boolean searches for the humans behind a
           job (hiring managers, engineering leads, recruiters) as LinkedIn and
@@ -140,7 +140,7 @@ export default function About() {
           <li><strong>Shared hook</strong> keeps all four drafts coherent instead of four separate takes.</li>
           <li><strong>Conditional edge</strong> skips the email agent when a lead has no address.</li>
           <li><strong>Streaming status</strong> drives a real per-agent board in the UI.</li>
-          <li><strong>Checkpoint / resume</strong> — a big batch that fails partway resumes without re-spending tokens.</li>
+          <li><strong>Checkpoint / resume</strong>: a big batch that fails partway resumes without re-spending tokens.</li>
         </ul>
       </Section>
 
@@ -153,7 +153,7 @@ export default function About() {
           </div>
           <div className="panel about-card about-card-accent">
             <h3>What I shipped instead</h3>
-            <p>A LangGraph graph — ~5× the calls per lead and one real dependency — for coherent drafts from the shared hook, a real per-agent status board, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
+            <p>A LangGraph graph (~5× the calls per lead and one real dependency) for coherent drafts from the shared hook, a real per-agent status board, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
           </div>
         </div>
       </Section>
@@ -181,7 +181,7 @@ export default function About() {
           <span className="about-flow-branch">↳ any stage can branch to <em>rejected</em></span>
         </div>
         <p className="muted">
-          SQLite holds the real state — every lead, every status change.
+          SQLite holds the real state: every lead, every status change.
           tracker.csv is an export, never authoritative. A daily digest lists
           who replied and who is due for a follow-up.
         </p>
@@ -196,7 +196,7 @@ export default function About() {
           </div>
           <div className="panel about-card">
             <h3>Cloud</h3>
-            <p>A private, token-gated web app — one Docker service on Render, Postgres on Neon. Deployment is a config choice, not a rewrite: the same tested core underneath.</p>
+            <p>A private, token-gated web app: one Docker service on Render, Postgres on Neon. Deployment is a config choice, not a rewrite, with the same tested core underneath.</p>
           </div>
         </div>
       </Section>

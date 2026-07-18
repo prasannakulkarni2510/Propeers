@@ -36,15 +36,17 @@ ASSET_SPECS = {
         "A cold outreach email in my own voice, 90 to 130 words in 3 or 4 short "
         "paragraphs. Line 1 is 'Subject: ' then a specific subject under 8 words (no "
         "clickbait, no emojis). Open on something concretely true about them or their "
-        "company, not about me. Then one proof point from my CV that fits this role, "
-        "with a real number or outcome if my CV has one; if I name a project like PACOS, "
+        "company, not about me. Then one proof point copied from my CV context, using "
+        "a number only if that exact number appears there; with no usable proof point, "
+        "make the ask plainly instead. If I name a project like PACOS, "
         "say in one line what it does. Close with a single easy ask (a short call, or a "
         "yes/no question). Sign off with my first name on its own line."),
     "cold_dm": ("cold_dm.txt",
         "A LinkedIn DM in my own voice: 35 to 60 words, 2 or 3 sentences, no subject "
         "line and no signature. It reads like I'm messaging one person I respect, not "
         "pitching. Lead with the specific hook, give one concrete reason I'd be worth a "
-        "reply, and end with an easy question they can answer in one line. No links."),
+        "reply that comes straight from my CV context (no invented experience), and end "
+        "with an easy question they can answer in one line. No links."),
     "cover_letter": ("cover_letter.txt",
         "A cover letter in my own voice, 150 to 200 words, 3 paragraphs, addressed to "
         "the person by name. Para 1: the role and why this company specifically (name a "
@@ -55,9 +57,10 @@ ASSET_SPECS = {
     "cv_notes": ("cv_notes.txt",
         "5 to 8 first-person notes to myself on how to tailor my CV for this specific "
         "role. Each note is a concrete edit I can make today: what to move up, what to "
-        "rephrase, which metric to add, which keyword from the job title or industry to "
-        "surface. Write them as 'I'll ...' or 'Move my ...', referencing real content "
-        "from my CV. No generic advice like 'use action verbs'."),
+        "rephrase, which keyword from the job title or industry to surface. Every note "
+        "must name the actual CV line or item it edits; never tell me to add a metric, "
+        "project, or experience that is not already in my CV context. Write them as "
+        "'I'll ...' or 'Move my ...'. No generic advice like 'use action verbs'."),
 }
 
 SYSTEM_PERSONALIZATION = (
@@ -96,9 +99,17 @@ SYSTEM_ASSET = (
     "If I have nothing specific, be plainly direct instead of vague.\n"
     "- Lead with them, then connect it to my work. One clear point, made well.\n"
     "- Short, plain sentences with contractions. Cut any word that isn't pulling weight.\n\n"
-    "Honesty:\n"
-    "- Never invent facts about me beyond the CV context, or facts about the company. "
-    "No made-up numbers.\n"
+    "Grounding (the most important rule):\n"
+    "- The CANDIDATE CV CONTEXT is the ONLY source of truth about me. Every skill, "
+    "project, employer, metric, and outcome you write must appear there. If it is "
+    "not in the CV context, it does not exist.\n"
+    "- No number unless that exact number is in the CV context. Never estimate, "
+    "round, or 'improve' a figure. A claim without a number beats a fake number.\n"
+    "- The LEAD facts are the only source of truth about the person and company. "
+    "Do not invent funding news, launches, posts, or anything else about them.\n"
+    "- When the CV context is sparse or missing, write a shorter, plainer message "
+    "that leans on genuine interest instead of proof points. Omitting always "
+    "beats inventing.\n"
     "- When I mention one of my projects (for example PACOS), say in a line what it "
     "actually does so the reader gets it, and keep it true to the CV.\n\n"
     "Never do:\n"
@@ -144,7 +155,7 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
         f"Write the {asset_key} asset.\n\nSPEC: {spec}\n\n"
         f"TONE: {tone_for(lead.get('domain_tag',''))}\n"
         f"DOMAIN READ: {domain_read}\n"
-        f"SHARED HOOK (open on this — keep all assets consistent): {hook}\n\n"
+        f"SHARED HOOK (open on this, keep all assets consistent): {hook}\n\n"
         f"LEAD:\n{json.dumps(facts, indent=2)}\n\n"
         f"CANDIDATE (sender):\n{json.dumps(candidate, indent=2)}\n\n"
         f"CANDIDATE CV CONTEXT:\n{base_cv or '(none)'}\n\n"
@@ -152,7 +163,8 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
         "Ground every claim in the LEAD facts and CV context above; if a field is empty, "
         "work around it instead of inventing anything. Keep it warm and specific, and "
         "stay inside the SPEC's word count. Use no em dashes. Read it back once and cut "
-        "any sentence that could be sent to a hundred other people unchanged. Output "
+        "any sentence that could be sent to a hundred other people unchanged, plus any "
+        "sentence you cannot point to a LEAD fact or CV line for. Output "
         "only the asset text."
     )
 

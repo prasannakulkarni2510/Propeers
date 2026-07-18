@@ -19,21 +19,21 @@ def _fmt_lead(row: dict) -> str:
     name = row.get("full_name", "?")
     company = row.get("company_name", "?")
     role = row.get("job_title", "")
-    return f"{name} — {company}" + (f" ({role})" if role else "")
+    return f"{name} @ {company}" + (f" ({role})" if role else "")
 
 
 def build_digest(cfg: Config, store: PacosStore, on: date | None = None) -> str:
     on = on or date.today()
     lines: list[str] = []
     lines.append("=" * 60)
-    lines.append(f"PACOS daily digest — {on.isoformat()}")
+    lines.append(f"PACOS daily digest, {on.isoformat()}")
     lines.append("=" * 60)
 
     counts = store.status_counts()
     if counts:
         lines.append("Pipeline: " + "  ".join(f"{k}:{v}" for k, v in sorted(counts.items())))
     else:
-        lines.append("Pipeline: (empty — run `pacos generate` first)")
+        lines.append("Pipeline: (empty; run `pacos generate` first)")
     lines.append("")
 
     interviews = store.by_status("interview")
@@ -83,7 +83,7 @@ def build_digest(cfg: Config, store: PacosStore, on: date | None = None) -> str:
         if len(nj) == 0:
             lines.append("    (none)")
     else:
-        lines.append("[+] New job alerts: (no new_jobs.csv yet — run `pacos monitor`)")
+        lines.append("[+] New job alerts: (no new_jobs.csv yet; run `pacos monitor`)")
     lines.append("")
     lines.append("Reminder: PACOS never auto-sends. Copy approved assets from output/.")
     lines.append("=" * 60)

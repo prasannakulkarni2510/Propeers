@@ -43,7 +43,7 @@ export const useStore = create((set, get) => ({
     try {
       const res = await api.generate({ dry_run, limit, lead_id, review_hooks, only_missing });
       if (res.requested === 0) {
-        set({ toast: "All leads already have assets — nothing new to build. Use Regenerate on a lead to rebuild." });
+        set({ toast: "All leads already have assets, nothing new to build. Use Regenerate on a lead to rebuild." });
       } else {
         const mode = res.dry_run ? "dry-run" : res.model;
         set({ toast: `Generated ${res.generated}/${res.requested} via ${mode}` });

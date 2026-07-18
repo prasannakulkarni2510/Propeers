@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class LeadOut(BaseModel):
@@ -23,6 +23,8 @@ class LeadOut(BaseModel):
     predicted_email: str = ""
     email_confidence: str = ""
     email_status: str = ""
+    # 'person' (a real contact) or 'job' (a posting with no contact yet)
+    lead_type: str = "person"
     # tracker-derived (empty until generated / acted on)
     status: str = ""
     assets_generated: str = ""
@@ -37,10 +39,13 @@ class LeadOut(BaseModel):
 
 class AddLeadRequest(BaseModel):
     # required
-    full_name: str = Field(min_length=1)
     job_title: str = Field(min_length=1)
     company_name: str = Field(min_length=1)
-    persona_tag: Literal["hr", "engineer", "manager", "cto", "ceo"]
+    # 'person' needs a contact (full_name + persona_tag); a 'job' is a posting
+    # with no contact yet, so those two may stay empty until one is found.
+    lead_type: Literal["person", "job"] = "person"
+    full_name: str = ""
+    persona_tag: Literal["hr", "engineer", "manager", "cto", "ceo", ""] = ""
     # recommended but allowed empty
     city: str = ""
     linkedin_url: str = ""
@@ -50,6 +55,15 @@ class AddLeadRequest(BaseModel):
     industry: str = ""
     company_website: str = ""
     funding_stage: str = ""
+
+    @model_validator(mode="after")
+    def _person_needs_contact(self):
+        if self.lead_type == "person":
+            if not self.full_name.strip():
+                raise ValueError("full_name is required for a person lead")
+            if not self.persona_tag:
+                raise ValueError("persona_tag is required for a person lead")
+        return self
 
 
 class ParseJDRequest(BaseModel):
@@ -245,9 +259,20 @@ class EnrichResult(BaseModel):
     company_name: str
     profiles_found: int
     leads_imported: int
-    source: str  # "fetch" | "pasted" | "none"
+    source: str  # "browser" | "fetch" | "pasted" | "none"
     leads: list[ImportedLead] = []
     warnings: list[str] = []
+
+
+class CvOut(BaseModel):
+    """The base CV text that grounds asset generation. `is_sample` flags the
+    shipped placeholder so the UI can warn that assets will invent facts."""
+    content: str
+    is_sample: bool
+
+
+class CvUpdateRequest(BaseModel):
+    content: str = Field(max_length=40000)
 
 
 class ChatMessage(BaseModel):

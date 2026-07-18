@@ -32,9 +32,24 @@ OPTIONAL_COLUMNS = [
     "predicted_email",
     "email_confidence",
     "email_status",
+    # 'person' (a real contact) or 'job' (a posting with no contact yet).
+    "lead_type",
 ]
 
 VALID_PERSONAS = {"hr", "engineer", "manager", "cto", "ceo"}
+VALID_LEAD_TYPES = {"person", "job"}
+
+# full_name values that mean "no real person here" — such rows are job dumps.
+PLACEHOLDER_NAMES = {"", "unknown", "n/a", "na", "none", "tbd", "-", "?"}
+
+
+def derive_lead_type(full_name: str, explicit: str = "") -> str:
+    """A placeholder name always means 'job' (there is no person to write to,
+    whatever the caller claims); otherwise an explicit valid type wins."""
+    if (full_name or "").strip().lower() in PLACEHOLDER_NAMES:
+        return "job"
+    explicit = (explicit or "").strip().lower()
+    return explicit if explicit in VALID_LEAD_TYPES else "person"
 VALID_DOMAINS = {"startup", "scaleup", "enterprise", "product", "services", "research"}
 
 
@@ -58,19 +73,26 @@ class Lead:
     predicted_email: str = ""
     email_confidence: str = ""
     email_status: str = ""
+    lead_type: str = "person"
     warnings: list[str] = field(default_factory=list)
 
     @property
+    def _who(self) -> str:
+        """Second half of the identity slug: the person, or (for job rows with
+        no contact) the role, so two jobs at one company don't collide."""
+        return self.first_name or self.job_title
+
+    @property
     def lead_id(self) -> str:
-        """Stable short id: company + first name, slugified. Deterministic."""
-        base = f"{self.company_name}-{self.first_name}".lower()
+        """Stable short id: company + first name (or role), slugified."""
+        base = f"{self.company_name}-{self._who}".lower()
         return re.sub(r"[^a-z0-9]+", "-", base).strip("-")
 
     @property
     def folder_name(self) -> str:
         """`{company}_{first_name}` slug for the output/ directory (design §5)."""
         company = re.sub(r"[^A-Za-z0-9]+", "-", self.company_name).strip("-")
-        first = re.sub(r"[^A-Za-z0-9]+", "-", self.first_name).strip("-")
+        first = re.sub(r"[^A-Za-z0-9]+", "-", self._who).strip("-")
         return f"{company}_{first}"
 
     @property
@@ -150,8 +172,12 @@ def build_lead(raw: dict, row_no: int | None = None) -> Lead:
 
     warnings: list[str] = []
     where = f"row {row_no}: " if row_no is not None else ""
+    lead_type = derive_lead_type(g("full_name"), g("lead_type"))
+    # Job rows have no contact person yet, so the person-shaped fields
+    # (full_name, linkedin_url, persona_tag) are legitimately empty.
+    skip_for_jobs = {"full_name", "linkedin_url", "persona_tag"}
     for col in REQUIRED_COLUMNS:
-        if not g(col):
+        if not g(col) and not (lead_type == "job" and col in skip_for_jobs):
             warnings.append(f"{where}empty required field '{col}'")
 
     persona = g("persona_tag").lower()
@@ -177,6 +203,7 @@ def build_lead(raw: dict, row_no: int | None = None) -> Lead:
         predicted_email=g("predicted_email"),
         email_confidence=g("email_confidence"),
         email_status=g("email_status"),
+        lead_type=lead_type,
         warnings=warnings,
     )
 

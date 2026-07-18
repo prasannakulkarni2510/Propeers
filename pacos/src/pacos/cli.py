@@ -67,7 +67,7 @@ def cmd_generate(args) -> int:
     pipe = Pipeline(cfg, store)
     dry = args.dry_run or pipe.dry_by_default
     if dry and not args.dry_run:
-        print("[i] NVIDIA_API_KEY not set — using dry-run templates.\n")
+        print("[i] NVIDIA_API_KEY not set; using dry-run templates.\n")
     mode = "DRY RUN" if dry else f"Nemotron ({cfg.nemotron_model})"
     print(f"Generating assets for {len(leads)} lead(s) via {mode}"
           f"{' · review hooks' if args.review_hooks else ''}\n")
@@ -79,7 +79,7 @@ def cmd_generate(args) -> int:
             hook = None
             if args.review_hooks:
                 proposed = pipe.personalize(ld, dry_run=dry)
-                print(f"\n  {ld.folder_name} — proposed hook:\n    {proposed}")
+                print(f"\n  {ld.folder_name} proposed hook:\n    {proposed}")
                 edited = input("  Approve [Enter] or type a replacement: ").strip()
                 hook = edited or proposed
             g = pipe.run_for_lead(ld, dry_run=dry, hook=hook)
@@ -89,7 +89,7 @@ def cmd_generate(args) -> int:
             print(f"  [x]  {ld.folder_name:<28} {type(e).__name__}: {e}")
 
     print(f"\nDone. {ok}/{len(leads)} generated. State: {cfg.db_path}")
-    print("Review output/ before sending — PACOS never sends.")
+    print("Review output/ before sending. PACOS never sends.")
     return 0 if ok == len(leads) else 1
 
 
@@ -104,7 +104,7 @@ def cmd_monitor(args) -> int:
         print(f"[x] {e}")
         return 1
     print(f"Scanned {res.scanned} message(s): {res.job_alerts} job alert(s), "
-          f"{res.replies_classified} repl(ies) — {res.matched} matched, "
+          f"{res.replies_classified} repl(ies), {res.matched} matched, "
           f"{res.unmatched} unmatched.")
     if res.unmatched:
         print("Run `pacos associate` to link unmatched replies to leads.")

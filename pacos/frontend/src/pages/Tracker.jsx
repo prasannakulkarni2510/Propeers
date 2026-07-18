@@ -23,7 +23,7 @@ export default function Tracker() {
     try {
       const r = await api.scanInbox();
       setToast(
-        `Inbox scan: ${r.scanned} mail(s) — ${r.matched} matched, ` +
+        `Inbox scan: ${r.scanned} mail(s), ${r.matched} matched, ` +
         `${r.unmatched} unmatched, ${r.job_alerts} job alert(s)`
       );
       await refresh();
@@ -49,7 +49,7 @@ export default function Tracker() {
         <h3>Job alerts from your inbox ({jobs.length})</h3>
         {jobs.length === 0 ? (
           <p className="muted">
-            None yet — click “Scan inbox” to pull LinkedIn/Naukri alerts from Gmail.
+            None yet. Click “Scan inbox” to pull LinkedIn/Naukri alerts from Gmail.
           </p>
         ) : (
           <table className="table">
@@ -78,7 +78,7 @@ export default function Tracker() {
       </div>
       <div className="panel">
         <h3>Daily digest</h3>
-        {digest ? <div className="digest">{digest}</div> : <p className="muted">—</p>}
+        {digest ? <div className="digest">{digest}</div> : <p className="muted">-</p>}
       </div>
     </div>
   );
