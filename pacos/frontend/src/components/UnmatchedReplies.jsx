@@ -37,9 +37,11 @@ export default function UnmatchedReplies() {
               <td>{r.subject}</td>
               <td><span className="tag">{r.intent}</span></td>
               <td>
-                <div className="btn-row">
+                <div className="btn-row" style={{ flexWrap: "nowrap" }}>
                   <select
                     className="select"
+                    style={{ width: 240, maxWidth: "100%" }}
+                    aria-label={`Lead for reply from ${r.sender}`}
                     value={picks[r.id] || ""}
                     onChange={(e) => setPicks({ ...picks, [r.id]: e.target.value })}
                   >

@@ -275,6 +275,12 @@ class CvUpdateRequest(BaseModel):
     content: str = Field(max_length=40000)
 
 
+class CvExtractOut(BaseModel):
+    """Text pulled from an uploaded CV file, for the operator to review."""
+    content: str
+    filename: str = ""
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
     content: str = Field(min_length=1, max_length=20000)

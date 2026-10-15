@@ -87,7 +87,13 @@ function EmailCell({ lead }) {
 // CSV lead list view (docx: LeadTable.jsx). Click a row to view its assets.
 export default function LeadTable({ leads }) {
   const navigate = useNavigate();
-  if (!leads?.length) return <p className="muted">No leads. Add rows to data/leads.csv.</p>;
+  if (!leads?.length)
+    return (
+      <div className="empty-state">
+        <p>No leads here yet.</p>
+        <p className="muted">Add one from a JD or manually above, or auto-import people from Discovery.</p>
+      </div>
+    );
   return (
     <div className="panel" style={{ overflowX: "auto" }}>
       <table className="table">
@@ -109,7 +115,13 @@ export default function LeadTable({ leads }) {
             <tr
               key={l.lead_id}
               className="row-click"
+              tabIndex={0}
+              aria-label={`Open assets for ${l.full_name || l.company_name}`}
               onClick={() => navigate(`/assets/${l.lead_id}`)}
+              onKeyDown={(e) => {
+                // Only the row itself; Enter on a button inside keeps its own meaning.
+                if (e.key === "Enter" && e.target === e.currentTarget) navigate(`/assets/${l.lead_id}`);
+              }}
             >
               <td>{l.full_name || <span className="muted">(no contact yet)</span>}</td>
               <td>{l.job_title}</td>
@@ -131,7 +143,7 @@ export default function LeadTable({ leads }) {
               </td>
               <td><EmailCell lead={l} /></td>
               <td><span className="tag">{l.domain_tag}</span></td>
-              <td>{l.assets_generated === "true" ? "✓" : "-"}</td>
+              <td>{l.assets_generated === "true" ? <span className="ok-mark">✓</span> : <span className="muted">-</span>}</td>
               <td><StatusBadge status={l.status} /></td>
               <td><RowActions lead={l} /></td>
             </tr>

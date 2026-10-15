@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { create } from "zustand";
 import { api } from "../services/api";
 import { useStore } from "../store";
 import LeadFieldsEditor, { EMPTY_LEAD, canSubmitLead } from "../components/LeadFieldsEditor.jsx";
 
 // A lead the assistant proposed mid-chat. Editable; nothing is written until
 // the operator clicks Add (which uses the same POST /api/leads as the forms).
-function ProposalCard({ proposal, warnings }) {
+function ProposalCard({ proposal, warnings, added, onAdded }) {
   const addLead = useStore((s) => s.addLead);
   const { persona_tag, ...rest } = proposal;
   const [fields, setFields] = useState({ ...EMPTY_LEAD, ...rest });
   const [persona, setPersona] = useState(persona_tag || "");
   const [busy, setBusy] = useState(false);
-  const [added, setAdded] = useState(false);
   const [error, setError] = useState("");
 
   const confirm = async () => {
@@ -20,7 +20,7 @@ function ProposalCard({ proposal, warnings }) {
     setError("");
     try {
       await addLead({ ...fields, persona_tag: persona });
-      setAdded(true);
+      onAdded();
     } catch (e) {
       setError(e.message);
     } finally {
@@ -78,10 +78,25 @@ function ProposalCard({ proposal, warnings }) {
   );
 }
 
+// Module-level so the conversation (and an in-flight reply) survives leaving
+// the page and coming back. Cleared only by "New chat" or a reload.
+const useChat = create((set) => ({
+  messages: [], // {role, content, proposal?, warnings?}
+  input: "",
+  busy: false,
+  setMessages: (messages) => set({ messages }),
+  setInput: (input) => set({ input }),
+  setBusy: (busy) => set({ busy }),
+}));
+
+const EXAMPLES = [
+  "Add this person: Priya Shah, engineering manager at Razorpay, Bengaluru, priya@razorpay.com",
+  "Who should I follow up with this week?",
+  "Draft a two-line LinkedIn note for a data science lead at Swiggy",
+];
+
 export default function Chat() {
-  const [messages, setMessages] = useState([]); // {role, content, proposal?, warnings?}
-  const [input, setInput] = useState("");
-  const [busy, setBusy] = useState(false);
+  const { messages, input, busy, setMessages, setInput, setBusy } = useChat();
   const endRef = useRef(null);
 
   useEffect(() => {
@@ -115,22 +130,44 @@ export default function Chat() {
 
   return (
     <div className="chat-page">
-      <h1 className="page-title">Chat</h1>
+      <div className="page-head">
+        <h1 className="page-title">Chat</h1>
+        {messages.length > 0 && (
+          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setMessages([])}>
+            New chat
+          </button>
+        )}
+      </div>
       <p className="page-sub">
         Ask about your pipeline, draft outreach, or describe a person/JD, and I'll
         propose a lead you can approve into leads.csv.
       </p>
       <div className="chat-scroll">
         {messages.length === 0 && (
-          <p className="muted">
-            Try: “Add this person: Priya Shah, engineering manager at Razorpay,
-            Bengaluru, priya@razorpay.com”, or paste a whole JD.
-          </p>
+          <div className="chat-examples">
+            <span className="muted">Try one, or paste a whole JD:</span>
+            {EXAMPLES.map((ex) => (
+              <button key={ex} className="chat-example" onClick={() => setInput(ex)}>
+                {ex}
+              </button>
+            ))}
+          </div>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}`}>
             <div className="chat-bubble">{m.content}</div>
-            {m.proposal && <ProposalCard proposal={m.proposal} warnings={m.warnings || []} />}
+            {m.proposal && (
+              <ProposalCard
+                proposal={m.proposal}
+                warnings={m.warnings || []}
+                added={!!m.added}
+                onAdded={() =>
+                  setMessages(
+                    useChat.getState().messages.map((x, j) => (j === i ? { ...x, added: true } : x)),
+                  )
+                }
+              />
+            )}
           </div>
         ))}
         {busy && (

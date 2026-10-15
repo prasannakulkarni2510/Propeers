@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 import re
+from functools import lru_cache
+from pathlib import Path
 
 # House style: no em/en dashes in generated copy (the biggest AI tell). The model
 # is told this in SYSTEM_ASSET, but it still slips in "do X — because Y" phrasing,
@@ -62,6 +64,39 @@ ASSET_SPECS = {
         "project, or experience that is not already in my CV context. Write them as "
         "'I'll ...' or 'Move my ...'. No generic advice like 'use action verbs'."),
 }
+
+# Writing playbook (skills/job_application_playbook): hiring-manager guidance fed
+# to each asset agent. README holds the shared rules; each asset gets its own
+# guide. Style guidance only, never facts about me (the CV stays the only source).
+_PLAYBOOK_DIR = Path(__file__).resolve().parents[1] / "skills" / "job_application_playbook"
+PLAYBOOK_FILES = {
+    "cold_email": ["cold-email.md"],
+    "cold_dm": ["cold-dm.md"],
+    "cover_letter": ["cover-letter.md"],
+    "cv_notes": ["cv-tips.md", "resume-tips.md"],
+}
+# README sections that are not writing rules: the file index, and a sample
+# candidate profile the model could mistake for facts about me.
+_README_SKIP = ("## Files", "## Candidate profile")
+
+
+def _drop_sections(md: str, headings: tuple[str, ...]) -> str:
+    parts = re.split(r"(?m)^(?=## )", md)
+    return "".join(p for p in parts if not p.startswith(headings)).strip()
+
+
+@lru_cache(maxsize=None)
+def playbook_for(asset_key: str) -> str:
+    """Shared playbook rules plus the guide for this asset; '' if files are missing."""
+    try:
+        shared = _drop_sections(
+            (_PLAYBOOK_DIR / "README.md").read_text(encoding="utf-8"), _README_SKIP)
+        guides = [(_PLAYBOOK_DIR / f).read_text(encoding="utf-8").strip()
+                  for f in PLAYBOOK_FILES.get(asset_key, [])]
+    except OSError:
+        return ""
+    return "\n\n".join([shared, *guides])
+
 
 SYSTEM_PERSONALIZATION = (
     "You are the Personalization agent for PACOS. Given a lead and the candidate, "
@@ -151,8 +186,25 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
     facts = {k: lead.get(k, "") for k in (
         "first_name", "full_name", "job_title", "company_name", "city",
         "persona_tag", "domain_tag", "industry", "company_website")}
+    playbook = playbook_for(asset_key)
+    playbook_block = (
+        "WRITING PLAYBOOK (how a hiring manager reads this; follow its structure, "
+        "adapt-by-role tables, and checklists):\n"
+        "- It is guidance on HOW to write, never facts about me or the lead. Its "
+        "examples and sample backgrounds are not my experience.\n"
+        "- Its tables name things a role may value (testing, data quality, "
+        "observability, evaluation, collaboration...). Use them only to pick WHICH of "
+        "my CV facts to lead with. Never claim one unless the CV context shows it.\n"
+        "- Never imply I follow, read, or know the person or company beyond the LEAD "
+        "facts ('I've been following...', 'I read your...').\n"
+        "- Its templates are patterns: never output a [bracketed] placeholder. Fill "
+        "each slot from the LEAD facts or CV context, or drop that sentence.\n"
+        "- Where it conflicts with the SPEC (length, format, sign-off) or the rules "
+        "in your instructions, the SPEC and your instructions win.\n\n"
+        f"<playbook>\n{playbook}\n</playbook>\n\n"
+    ) if playbook else ""
     return (
-        f"Write the {asset_key} asset.\n\nSPEC: {spec}\n\n"
+        f"Write the {asset_key} asset.\n\n{playbook_block}SPEC: {spec}\n\n"
         f"TONE: {tone_for(lead.get('domain_tag',''))}\n"
         f"DOMAIN READ: {domain_read}\n"
         f"SHARED HOOK (open on this, keep all assets consistent): {hook}\n\n"

@@ -13,9 +13,10 @@ popd
 echo [2/3] Freezing PACOS.exe (takes a few minutes)...
 .venv\Scripts\pyinstaller.exe --noconfirm --onefile --name PACOS --paths src ^
   --add-data "frontend/dist;frontend_dist" ^
+  --add-data "src/pacos/skills;pacos/skills" ^
   --collect-all langgraph --collect-all uvicorn ^
   --collect-data googleapiclient ^
-  --hidden-import backend --hidden-import pacos ^
+  --hidden-import backend --hidden-import pacos --hidden-import pypdf ^
   launcher.py
 if errorlevel 1 (echo PYINSTALLER FAILED & exit /b 1)
 

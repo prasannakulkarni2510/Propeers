@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useApprovals } from "../hooks/useApprovals";
 import StatusBadge from "./StatusBadge.jsx";
+import { isFollowUpDue } from "../lib/pipeline";
 
 const FLOW = ["pending", "sent", "replied", "interested", "interview", "offer", "rejected"];
 const PAGE_SIZE = 25;
@@ -74,7 +75,7 @@ export default function OutreachTracker({ leads }) {
         </thead>
         <tbody>
           {rows.map((l) => (
-            <tr key={l.lead_id}>
+            <tr key={l.lead_id} className={isFollowUpDue(l) ? "row-due" : ""}>
               <td>{l.full_name}</td>
               <td>{l.company_name}</td>
               <td><StatusBadge status={l.status} /></td>
@@ -82,10 +83,14 @@ export default function OutreachTracker({ leads }) {
               <td>{l.channel || "-"}</td>
               <td>{l.last_reply_date || "-"}</td>
               <td>{l.reply_intent || "-"}</td>
-              <td>{l.follow_up_due || "-"}</td>
+              <td>
+                {l.follow_up_due || "-"}
+                {isFollowUpDue(l) && <span className="due-chip">due</span>}
+              </td>
               <td>
                 <select
                   className="select"
+                  aria-label={`Status for ${l.full_name}`}
                   value={l.status}
                   onChange={(e) => markStatus(l.lead_id, e.target.value)}
                 >

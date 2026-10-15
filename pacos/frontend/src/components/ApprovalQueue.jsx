@@ -1,15 +1,17 @@
+import { Link } from "react-router-dom";
 import { useApprovals } from "../hooks/useApprovals";
-import StatusBadge from "./StatusBadge.jsx";
+import { isAwaitingReply, isFollowUpDue, isReadyToSend } from "../lib/pipeline";
 
 // Manual approve/act queue (docx: ApprovalQueue.jsx). Leads with assets that are
 // still pending are ready for you to send; sent leads await a reply.
 export default function ApprovalQueue({ leads }) {
   const { markSent, markReply } = useApprovals();
 
-  const ready = leads.filter(
-    (l) => l.assets_generated === "true" && (l.status === "" || l.status === "pending")
-  );
-  const awaiting = leads.filter((l) => l.status === "sent");
+  const ready = leads.filter(isReadyToSend);
+  // Overdue follow-ups first: they're the ones to chase today.
+  const awaiting = leads
+    .filter(isAwaitingReply)
+    .sort((a, b) => (a.follow_up_due || "9").localeCompare(b.follow_up_due || "9"));
 
   return (
     <>
@@ -24,7 +26,7 @@ export default function ApprovalQueue({ leads }) {
         ) : (
           <table className="table">
             <thead>
-              <tr><th>Name</th><th>Company</th><th>Channel</th><th>Mark sent as</th></tr>
+              <tr><th>Name</th><th>Company</th><th>Channel</th><th>Drafts</th><th>Mark sent as</th></tr>
             </thead>
             <tbody>
               {ready.map((l) => (
@@ -32,6 +34,9 @@ export default function ApprovalQueue({ leads }) {
                   <td>{l.full_name}</td>
                   <td>{l.company_name}</td>
                   <td>{l.has_email ? "email + dm" : "dm-only"}</td>
+                  <td>
+                    <Link className="link" to={`/assets/${l.lead_id}`}>Open drafts →</Link>
+                  </td>
                   <td>
                     <div className="btn-row">
                       {l.has_email && (
@@ -67,11 +72,14 @@ export default function ApprovalQueue({ leads }) {
             </thead>
             <tbody>
               {awaiting.map((l) => (
-                <tr key={l.lead_id}>
+                <tr key={l.lead_id} className={isFollowUpDue(l) ? "row-due" : ""}>
                   <td>{l.full_name}</td>
                   <td>{l.company_name}</td>
                   <td>{l.outreach_sent_date}</td>
-                  <td>{l.follow_up_due}</td>
+                  <td>
+                    {l.follow_up_due}
+                    {isFollowUpDue(l) && <span className="due-chip">due</span>}
+                  </td>
                   <td>
                     <div className="btn-row">
                       <button className="btn btn-sm btn-ghost" onClick={() => markReply(l.lead_id, "interested")}>

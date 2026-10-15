@@ -14,6 +14,7 @@ dependencies = [
     "python-dotenv>=1.0.0",
     "beautifulsoup4>=4.12.0",
     "tenacity>=8.2.0",
+    "pypdf>=4.0",
     "langgraph>=1.0.0",
     "langgraph-checkpoint-sqlite>=2.0.0",
     "google-api-python-client>=2.100.0",
@@ -26,3 +27,6 @@ pacos = "pacos.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+pacos = ["skills/**/*.md"]

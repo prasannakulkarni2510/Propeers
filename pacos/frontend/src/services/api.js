@@ -15,8 +15,8 @@ export const authToken = {
 // 401 flow (and the AuthGate) can recover instead of bricking every call.
 const headerSafe = (t) => /^[\x21-\x7E]+$/.test(t);
 
-async function req(path, options = {}) {
-  const headers = { "Content-Type": "application/json" };
+async function req(path, options = {}, contentType = "application/json") {
+  const headers = { "Content-Type": contentType };
   const token = authToken.get();
   if (token && headerSafe(token)) headers["Authorization"] = `Bearer ${token}`;
   const res = await fetch(`${BASE}${path}`, { headers, ...options });
@@ -77,4 +77,12 @@ export const api = {
   getCv: () => req("/api/settings/cv"),
   saveCv: (content) =>
     req("/api/settings/cv", { method: "PUT", body: JSON.stringify({ content }) }),
+  // Raw file bytes in the body (no multipart dependency on the backend).
+  // Returns extracted text only; saving is a separate saveCv call.
+  extractCv: (file) =>
+    req(
+      `/api/settings/cv/extract?filename=${encodeURIComponent(file.name)}`,
+      { method: "POST", body: file },
+      "application/octet-stream",
+    ),
 };

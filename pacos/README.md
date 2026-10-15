@@ -126,7 +126,9 @@ labels, or modifies mail.
 | Env var | Default | Notes |
 |---------|---------|-------|
 | `NVIDIA_API_KEY` | — | required for real generation |
-| `NEMOTRON_MODEL` | `nvidia/llama-3.1-nemotron-70b-instruct` | any Nemotron instruct model |
+| `NEMOTRON_MODEL` | `nvidia/nemotron-3.5-lightning-30b-a3b` | any Nemotron instruct model |
+| `NEMOTRON_THINKING` | `0` | `1` turns on reasoning mode (slower) |
+| `NEMOTRON_REASONING_BUDGET` | `4096` | thinking tokens per call when reasoning is on |
 | `NEMOTRON_BASE_URL` | `https://integrate.api.nvidia.com/v1` | OpenAI-compatible endpoint |
 
 Because the endpoint is OpenAI-compatible, you can point `NEMOTRON_BASE_URL` at a

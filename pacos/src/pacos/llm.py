@@ -58,6 +58,14 @@ class NemotronClient:
     )
     def _chat(self, system: str, user: str, *, temperature: float, max_tokens: int) -> str:
         client = self._ensure_client()
+        thinking = self._cfg.nemotron_thinking
+        extra_body: dict[str, Any] = {"chat_template_kwargs": {"enable_thinking": thinking}}
+        if thinking:
+            # Reasoning tokens share max_tokens with the answer, so grow the
+            # cap by the budget or the visible reply gets starved.
+            budget = self._cfg.nemotron_reasoning_budget
+            extra_body["reasoning_budget"] = budget
+            max_tokens += budget
         resp = client.chat.completions.create(
             model=self._cfg.nemotron_model,
             messages=[
@@ -66,6 +74,7 @@ class NemotronClient:
             ],
             temperature=temperature,
             max_tokens=max_tokens,
+            extra_body=extra_body,
         )
         content = resp.choices[0].message.content
         if not content:

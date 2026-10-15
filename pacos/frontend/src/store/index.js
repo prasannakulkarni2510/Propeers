@@ -12,9 +12,12 @@ export const useStore = create((set, get) => ({
   generating: false, // global so the "Generating…" state survives tab switches
   error: "",
   toast: "",
+  cvIsSample: null, // null until CvEditor has loaded it; drives the setup checklist
 
   setToast: (toast) => set({ toast }),
   clearToast: () => set({ toast: "" }),
+  clearError: () => set({ error: "" }),
+  setCvIsSample: (cvIsSample) => set({ cvIsSample }),
 
   refresh: async () => {
     set({ loading: true, error: "" });
@@ -83,27 +86,29 @@ export const useStore = create((set, get) => ({
     }
   },
 
-  associate: async (reply_id, lead_id) => {
-    const res = await api.associate({ reply_id, lead_id });
-    set({ toast: res.message });
-    await get().refresh();
-  },
+  associate: async (reply_id, lead_id) =>
+    get()._act(() => api.associate({ reply_id, lead_id }), (res) => res.message),
 
-  markSent: async (lead_id, channel) => {
-    const res = await api.markSent({ lead_id, channel });
-    set({ toast: `${lead_id}: ${res.message}` });
-    await get().refresh();
-  },
+  markSent: async (lead_id, channel) =>
+    get()._act(() => api.markSent({ lead_id, channel }), (res) => `${lead_id}: ${res.message}`),
 
-  markReply: async (lead_id, intent) => {
-    const res = await api.markReply({ lead_id, intent });
-    set({ toast: `${lead_id}: ${res.message}` });
-    await get().refresh();
-  },
+  markReply: async (lead_id, intent) =>
+    get()._act(() => api.markReply({ lead_id, intent }), (res) => `${lead_id}: ${res.message}`),
 
-  markStatus: async (lead_id, status) => {
-    const res = await api.markStatus({ lead_id, status });
-    set({ toast: `${lead_id}: ${res.message}` });
-    await get().refresh();
+  markStatus: async (lead_id, status) =>
+    get()._act(() => api.markStatus({ lead_id, status }), (res) => `${lead_id}: ${res.message}`),
+
+  // Shared shape for one-click tracker actions: surface failures in the toast
+  // instead of leaving an unhandled rejection and a silently unchanged table.
+  _act: async (call, message) => {
+    set({ error: "" });
+    try {
+      const res = await call();
+      set({ toast: message(res) });
+      await get().refresh();
+      return res;
+    } catch (e) {
+      set({ error: e.message });
+    }
   },
 }));
