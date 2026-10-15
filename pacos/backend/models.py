@@ -117,6 +117,8 @@ class RegenerateAssetRequest(BaseModel):
     ('cold_email.txt') or the bare asset key ('cold_email')."""
     asset: str = Field(min_length=1)
     dry_run: bool = False
+    # A visitor's temporary CV: grounds this rewrite only, never stored.
+    cv_text: Optional[str] = Field(default=None, max_length=60_000)
 
 
 class GenerateRequest(BaseModel):
@@ -127,6 +129,8 @@ class GenerateRequest(BaseModel):
     # Default: only build assets for leads that don't have them yet (so a click
     # after adding a lead builds that lead, not everyone). False rebuilds all.
     only_missing: bool = True
+    # A visitor's temporary CV: grounds this run only, never stored.
+    cv_text: Optional[str] = Field(default=None, max_length=60_000)
 
 
 class UnmatchedReply(BaseModel):

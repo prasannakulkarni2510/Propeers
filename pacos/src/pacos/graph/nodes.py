@@ -3,6 +3,9 @@ model-agnostic and can report live status to the store as it runs.
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
+from contextvars import ContextVar
+
 from ..config import Config
 from ..llm import NemotronClient
 from . import prompts
@@ -18,7 +21,27 @@ def _candidate(cfg: Config) -> dict:
     }
 
 
+# A visitor's temporary CV for the current generation. It lives in a context
+# variable, NOT in graph state: graph state is checkpointed to disk, and a
+# temporary CV must never be stored anywhere.
+_CV_OVERRIDE: ContextVar[str | None] = ContextVar("pacos_cv_override", default=None)
+
+
+@contextmanager
+def using_cv(text: str | None):
+    """Ground assets generated inside this block in `text` instead of the saved
+    CV file. None or blank means use the saved CV as usual."""
+    token = _CV_OVERRIDE.set(text if text and text.strip() else None)
+    try:
+        yield
+    finally:
+        _CV_OVERRIDE.reset(token)
+
+
 def _base_cv(cfg: Config) -> str:
+    override = _CV_OVERRIDE.get()
+    if override is not None:
+        return override
     return cfg.base_cv.read_text(encoding="utf-8") if cfg.base_cv.exists() else ""
 
 

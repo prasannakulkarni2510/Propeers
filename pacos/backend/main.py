@@ -158,5 +158,11 @@ if _dist is not None:
             raise HTTPException(status_code=404, detail="unknown API path")
         file = (_dist / full_path).resolve()
         if full_path and file.is_file() and file.is_relative_to(_dist.resolve()):
+            if full_path.startswith("assets/"):
+                # Content-hashed bundle files never change under the same name.
+                return FileResponse(file, headers={
+                    "Cache-Control": "public, max-age=31536000, immutable"})
             return FileResponse(file)
-        return FileResponse(_dist / "index.html")
+        # index.html must be revalidated every visit, or browsers keep serving
+        # an old page that points at an old bundle after a deploy.
+        return FileResponse(_dist / "index.html", headers={"Cache-Control": "no-cache"})

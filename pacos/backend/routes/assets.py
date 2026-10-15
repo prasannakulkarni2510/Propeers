@@ -22,7 +22,8 @@ def get_assets(lead_id: str, svc: Service = Depends(get_service)):
 def regenerate_asset(lead_id: str, req: RegenerateAssetRequest,
                      svc: Service = Depends(get_service)):
     try:
-        data = svc.regenerate_asset(lead_id, req.asset, dry_run=req.dry_run)
+        data = svc.regenerate_asset(lead_id, req.asset, dry_run=req.dry_run,
+                                    cv_text=req.cv_text)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     if data is None:

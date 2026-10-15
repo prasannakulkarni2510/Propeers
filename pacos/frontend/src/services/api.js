@@ -15,6 +15,26 @@ export const authToken = {
 // 401 flow (and the AuthGate) can recover instead of bricking every call.
 const headerSafe = (t) => /^[\x21-\x7E]+$/.test(t);
 
+// A visitor's temporary CV. sessionStorage belongs to this one tab and the
+// browser deletes it when the tab closes; the server only ever receives it
+// inside a generate request and never stores it.
+const SESSION_CV_KEY = "pacos_session_cv";
+export const sessionCv = {
+  get: () => {
+    try { return sessionStorage.getItem(SESSION_CV_KEY) || ""; } catch { return ""; }
+  },
+  set: (text) => {
+    try {
+      if (text && text.trim()) sessionStorage.setItem(SESSION_CV_KEY, text);
+      else sessionStorage.removeItem(SESSION_CV_KEY);
+    } catch { /* storage blocked: the temporary CV just isn't kept */ }
+  },
+};
+const withSessionCv = (body) => {
+  const cv = sessionCv.get();
+  return cv ? { ...body, cv_text: cv } : body;
+};
+
 async function req(path, options = {}, contentType = "application/json") {
   const headers = { "Content-Type": contentType };
   const token = authToken.get();
@@ -44,7 +64,7 @@ export const api = {
   regenerateAsset: (id, asset) =>
     req(`/api/assets/${id}/regenerate`, {
       method: "POST",
-      body: JSON.stringify({ asset }),
+      body: JSON.stringify(withSessionCv({ asset })),
     }),
   tracker: () => req("/api/tracker"),
   digest: () => req("/api/tracker/digest"),
@@ -69,7 +89,7 @@ export const api = {
     req(`/api/inbox/scan?days=${days}`, { method: "POST" }),
   jobs: () => req("/api/jobs"),
   generate: (body) =>
-    req("/api/agents/generate", { method: "POST", body: JSON.stringify(body) }),
+    req("/api/agents/generate", { method: "POST", body: JSON.stringify(withSessionCv(body)) }),
   markSent: (body) =>
     req("/api/approvals/sent", { method: "POST", body: JSON.stringify(body) }),
   markReply: (body) =>

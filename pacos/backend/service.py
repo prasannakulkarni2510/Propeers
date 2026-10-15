@@ -13,6 +13,7 @@ from pacos.inbox_monitor import run_monitor
 from pacos.jd_parser import parse_jd
 from pacos.leads import (Lead, append_lead_to_csv, build_lead, load_leads,
                          remove_lead_from_csv)
+from pacos.graph.nodes import using_cv
 from pacos.llm import NemotronClient
 from pacos.pipeline import Pipeline
 from pacos.store import PacosStore
@@ -201,7 +202,8 @@ class Service:
                 "generated": bool(stored) or folder.exists(), "files": files}
 
     def regenerate_asset(self, lead_id: str, asset: str,
-                         *, dry_run: bool = False) -> dict | None:
+                         *, dry_run: bool = False,
+                         cv_text: str | None = None) -> dict | None:
         """Rewrite one asset for a lead and return the full refreshed bundle.
         `asset` may be an asset key ('cold_dm') or its filename ('cold_dm.txt').
         Returns None if the lead is unknown; raises ValueError on a bad asset."""
@@ -221,7 +223,8 @@ class Service:
             if row is None:
                 return None
             lead = build_lead(row)
-            self._pipe().regenerate_asset(lead, asset_key, dry_run=dry_run)
+            with using_cv(cv_text):
+                self._pipe().regenerate_asset(lead, asset_key, dry_run=dry_run)
             return self.assets_for(lead_id)
 
     # ── generation ───────────────────────────────────────────────────────
@@ -235,8 +238,9 @@ class Service:
         return [build_lead(row) for row in self.store.get_leads()]
 
     def generate(self, *, dry_run: bool, limit: int, lead_id: str | None,
-                 review_hooks: bool = False, only_missing: bool = True) -> dict:
-        with self._lock:
+                 review_hooks: bool = False, only_missing: bool = True,
+                 cv_text: str | None = None) -> dict:
+        with self._lock, using_cv(cv_text):
             leads = self._leads_for_generation()
             if lead_id:
                 leads = [ld for ld in leads if ld.lead_id == lead_id]

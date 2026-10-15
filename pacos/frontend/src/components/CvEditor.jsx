@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../services/api";
+import { api, sessionCv } from "../services/api";
 import { useStore } from "../store";
 
 const ACCEPT = ".pdf,.docx,.txt,.md";
@@ -12,6 +12,10 @@ const ACCEPT = ".pdf,.docx,.txt,.md";
 // The operator can paste text or upload a PDF/DOCX. An upload only fills the
 // editor with the extracted text; nothing is saved until they review it and
 // click Save, the same propose-then-confirm rule the extractors follow.
+//
+// "This session only" mode keeps a visitor's own CV in this tab (sessionStorage)
+// instead of saving it to the server: generation uses it, and the browser
+// deletes it when the tab closes.
 export default function CvEditor() {
   const setToast = useStore((s) => s.setToast);
   const setCvIsSample = useStore((s) => s.setCvIsSample);
@@ -26,6 +30,8 @@ export default function CvEditor() {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef(null);
+  const [mode, setMode] = useState("saved"); // which CV the open editor edits
+  const [tempCv, setTempCv] = useState(() => sessionCv.get());
 
   useEffect(() => {
     api
@@ -34,7 +40,7 @@ export default function CvEditor() {
         setContent(res.content);
         setSaved(res.content);
         setIsSample(res.is_sample);
-        setCvIsSample(res.is_sample || !res.content.trim());
+        setCvIsSample((res.is_sample || !res.content.trim()) && !sessionCv.get());
         setLoaded(true);
       })
       .catch((e) => setError(e.message));
@@ -58,7 +64,34 @@ export default function CvEditor() {
     }
   };
 
+  const openTemp = () => {
+    setMode("temp");
+    setContent(tempCv);
+    setFromFile("");
+    setError("");
+    setOpen(true);
+  };
+
+  const useTemp = () => {
+    sessionCv.set(content);
+    setTempCv(content);
+    setCvIsSample(false);
+    setMode("saved");
+    setContent(saved);
+    setFromFile("");
+    setToast("Temporary CV in use for this tab. It's deleted when you close the tab.");
+    setOpen(false);
+  };
+
+  const removeTemp = () => {
+    sessionCv.set("");
+    setTempCv("");
+    setCvIsSample(isSample || !saved.trim());
+    setToast("Temporary CV removed. Generation uses the saved CV again.");
+  };
+
   const save = async () => {
+    if (mode === "temp") return useTemp();
     setBusy(true);
     setError("");
     try {
@@ -77,6 +110,7 @@ export default function CvEditor() {
   };
 
   const cancel = () => {
+    setMode("saved");
     setContent(saved);
     setFromFile("");
     setError("");
@@ -94,7 +128,9 @@ export default function CvEditor() {
     onDrop,
   };
 
-  const needsCv = loaded && (isSample || !saved.trim());
+  const needsCv = loaded && (isSample || !saved.trim()) && !tempCv.trim();
+  const tempWords = tempCv.trim() ? tempCv.trim().split(/s+/).length : 0;
+  const temp = mode === "temp";
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
 
   const fileInput = (
@@ -117,6 +153,16 @@ export default function CvEditor() {
           paste your real CV before generating.
         </div>
       )}
+      {tempCv && !open && (
+        <div className="cv-temp">
+          <span>
+            <b>Using your temporary CV</b> ({tempWords} words) for this tab. It is
+            not saved anywhere and is deleted when you close the tab.
+          </span>
+          <button className="btn btn-ghost" onClick={openTemp}>Edit</button>
+          <button className="btn btn-ghost" onClick={removeTemp}>Remove</button>
+        </div>
+      )}
       {!open ? (
         <div className={`cv-strip ${dragging ? "dragging" : ""}`} {...dropProps}>
           <button
@@ -128,14 +174,20 @@ export default function CvEditor() {
           <button className="btn btn-ghost" onClick={() => setOpen(true)}>
             {needsCv ? "Paste text instead" : "Edit CV text"}
           </button>
+          {!tempCv && (
+            <button className="btn btn-ghost" onClick={openTemp}>
+              Use my own CV for this session
+            </button>
+          )}
           <span className="muted">PDF, DOCX, or TXT. Or drop the file here.</span>
         </div>
       ) : (
         <div className={`panel ${dragging ? "dragging" : ""}`} {...dropProps}>
-          <h3>My CV (grounding for generated assets)</h3>
+          <h3>{temp ? "Temporary CV (this tab only)" : "My CV (grounding for generated assets)"}</h3>
           <p className="muted">
-            Everything the model may claim about you must be in here: skills,
-            projects, real numbers. A few hundred words is plenty.
+            {temp
+              ? "Assets you generate in this tab will be grounded in this CV. It is never saved on the server and is deleted when you close the tab."
+              : "Everything the model may claim about you must be in here: skills, projects, real numbers. A few hundred words is plenty."}
           </p>
           {fromFile && (
             <p className="cv-note">
@@ -157,7 +209,7 @@ export default function CvEditor() {
               disabled={busy || reading || !content.trim()}
               onClick={save}
             >
-              {busy ? "Saving…" : "Save CV"}
+              {temp ? "Use for this session" : busy ? "Saving…" : "Save CV"}
             </button>
             <button
               className="btn"
