@@ -6,8 +6,7 @@ tracker.db*
 tracker.csv
 new_jobs.csv
 output/
-data/leads.csv
-data/base_cv.txt
+
 
 # Build/dev clutter
 .venv/

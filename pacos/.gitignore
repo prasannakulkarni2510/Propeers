@@ -10,10 +10,10 @@ tracker.csv
 new_jobs.csv
 
 # Real lead data (user-supplied; never commit)
-data/leads.csv
+
 data/leads_raw.csv
 data/leads_enriched.csv
-data/base_cv.txt
+
 
 # Python
 __pycache__/

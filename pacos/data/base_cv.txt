@@ -1,0 +1,28 @@
+# Base CV context (sample — replace with your own)
+#
+# The Asset Generator feeds this file to Nemotron as background on the candidate
+# so cover letters and CV-tweak notes are grounded in real experience.
+# Keep it plain text. A few hundred words is plenty.
+
+Name: Prasanna Kulkarni
+Target roles: AI Engineer, ML Engineer, GenAI Engineer
+Location: Open to Bengaluru / Pune / Hyderabad / Gurugram
+
+Summary:
+Aspiring AI engineer focused on building practical LLM-powered systems end to end —
+data pipelines, retrieval, agents, and evaluation. Comfortable shipping Python
+services and wiring them to model APIs.
+
+Skills:
+- Python, pandas, FastAPI
+- LLM application development: prompting, RAG, tool-use, structured output
+- Model APIs: OpenAI-compatible endpoints, NVIDIA NIM / Nemotron
+- Data handling and CSV/ETL workflows
+- Git, basic Docker, cloud deploy (Netlify / Railway)
+
+Selected work:
+- Built PACOS, a multi-layer job-search automation pipeline that generates
+  personalised outreach from a lead CSV using an LLM, and monitors Gmail for
+  recruiter signals — human-in-the-loop for every send.
+
+Education: B.E. / B.Tech (Computer Science).
