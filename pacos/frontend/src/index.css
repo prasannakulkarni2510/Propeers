@@ -183,6 +183,39 @@ a.stat:hover {
 .table tr:hover td { background: #fafafc; }
 .row-click { cursor: pointer; }
 .row-click:focus-visible { outline-offset: -2px; }
+
+/* Phones: each row becomes a card of "label: value" lines (labels are copied
+   from the header by lib/tableLabels.js), so nothing hides off-screen. */
+@media (max-width: 640px) {
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { display: none; }
+  .table tr {
+    border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px;
+    margin-bottom: 10px; background: var(--card);
+  }
+  .table td {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+    padding: 6px 0; border-bottom: 1px solid var(--line); text-align: right;
+    overflow-wrap: anywhere;
+  }
+  .table td:last-child { border-bottom: 0; }
+  .table td::before {
+    content: attr(data-label); flex: 0 0 auto; max-width: 45%; text-align: left;
+    font-size: 11px; font-weight: 700; color: var(--grey);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .table td > * { min-width: 0; max-width: 100%; }
+  /* In-cell controls (e.g. "associate with lead" picker + button) override
+     their desktop inline nowrap/fixed width so they wrap inside the card. */
+  .table td .btn-row { flex-wrap: wrap !important; justify-content: flex-end; flex: 1 1 auto; }
+  .table td .select { width: 100% !important; }
+  .table td[data-label=""]::before { content: none; }
+  .table td[data-label=""] { justify-content: flex-start; text-align: left; }
+  /* First column is the row's name: show it as the card title. */
+  .table td:first-child { font-weight: 700; font-size: 14px; justify-content: flex-start; text-align: left; }
+  .table td:first-child::before { content: none; }
+  .table tr:hover td { background: transparent; }
+}
 .row-due td { background: #fdf6ec; }
 .due-chip {
   display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 6px;
@@ -352,6 +385,12 @@ a.stat:hover {
 
 /* ── chat page ───────────────────────────────────────── */
 .chat-page { display: flex; flex-direction: column; height: calc(100vh - 56px); }
+/* Phones: fit exactly between the content padding (64px top, 24px bottom) so
+   the page itself never scrolls and the heading stays clear of the ☰ button. */
+@media (max-width: 900px) {
+  .chat-page { height: calc(100dvh - 88px); }
+  .chat-bubble { max-width: 100%; }
+}
 .chat-scroll {
   flex: 1; overflow-y: auto; padding: 4px 2px 12px;
   display: flex; flex-direction: column; gap: 12px;
@@ -382,7 +421,10 @@ a.stat:hover {
 /* ── recruiter discovery ─────────────────────────────── */
 .disc-form { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 16px; }
 .disc-form .input { flex: 1 1 180px; margin: 0; }
-.disc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 12px; margin-top: 12px; }
+.disc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(360px, 100%), 1fr)); gap: 12px; margin-top: 12px; }
+@media (max-width: 640px) {
+  .disc-form .input, .disc-form .btn { flex-basis: 100%; }
+}
 .disc-card { display: flex; flex-direction: column; gap: 10px; margin: 0; }
 .disc-head { display: flex; align-items: center; gap: 8px; }
 .disc-group { font-size: 13px; font-weight: 700; }
