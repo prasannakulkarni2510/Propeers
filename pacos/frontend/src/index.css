@@ -308,6 +308,17 @@ a.stat:hover {
 }
 .copy-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
 .copy-bar-actions { display: flex; gap: 8px; align-items: center; }
+.asset-layout > * { min-width: 0; }
+.asset-body { overflow-wrap: anywhere; }
+
+/* Phones: tabs become a 2x2 grid above the text, which gets the full width. */
+@media (max-width: 640px) {
+  .asset-layout { grid-template-columns: 1fr; gap: 12px; }
+  .asset-list { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .asset-item { padding: 8px 10px; }
+  .copy-bar { flex-wrap: wrap; gap: 8px; }
+  .asset-body { padding: 12px; font-size: 12px; min-height: 0; }
+}
 
 /* ── misc ────────────────────────────────────────────── */
 .digest {
