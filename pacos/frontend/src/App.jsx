@@ -108,9 +108,8 @@ export default function App() {
   }, [pathname]);
 
   return (
-    <>
-    <IntroVideo />
     <AuthGate>
+    <IntroVideo />
     <div className={`app ${navOpen ? "" : "nav-closed"}`}>
       <a className="skip-link" href="#main">Skip to content</a>
       {!navOpen && (
@@ -198,6 +197,5 @@ export default function App() {
       <Toast />
     </div>
     </AuthGate>
-    </>
   );
 }

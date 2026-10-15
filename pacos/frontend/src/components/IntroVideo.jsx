@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 
-// Full-screen intro shown on every visit (every page load, not every route
-// change: App mounts once). Closes on Skip, Escape, or when the video ends.
+// Intro shown in a centred window once the visitor is past the login (every
+// page load, not every route change: App mounts once). Closes on Skip, Escape,
+// a click on the dimmed backdrop, or when the video ends.
 const SRC = "/pacos-intro.mp4";
 
 export default function IntroVideo() {
@@ -37,7 +38,8 @@ export default function IntroVideo() {
   };
 
   return (
-    <div className="intro" role="dialog" aria-modal="true" aria-label="PACOS intro video">
+    <div className="intro" onClick={(e) => e.target === e.currentTarget && setOpen(false)}>
+      <div className="intro-window" role="dialog" aria-modal="true" aria-label="PACOS intro video">
       <video
         ref={videoRef}
         className="intro-video"
@@ -54,6 +56,7 @@ export default function IntroVideo() {
         <button ref={skipRef} className="intro-btn intro-skip" onClick={() => setOpen(false)}>
           Skip intro →
         </button>
+      </div>
       </div>
     </div>
   );
