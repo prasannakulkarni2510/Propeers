@@ -40,11 +40,13 @@ pinned: false
 
 """
 
-# What the Docker build needs — nothing personal, nothing generated.
+# What the Docker build needs (data/ = the lead sheet + base CV that seed the
+# deploy); nothing generated.
 COPY_DIRS = {
     "backend": {"__pycache__"},
     "src": {"__pycache__"},
     "frontend": {"node_modules", "dist"},
+    "data": set(),
 }
 COPY_FILES = ["Dockerfile", ".dockerignore", "pyproject.toml"]
 

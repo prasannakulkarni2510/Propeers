@@ -26,6 +26,10 @@ RUN pip install --no-cache-dir -e . -r backend/requirements.txt
 
 COPY --from=frontend /build/dist ./frontend/dist
 
+# Lead sheet + base CV: an empty database is seeded from data/leads.csv on
+# first start, and assets are grounded in data/base_cv.txt.
+COPY data ./data
+
 # Non-root runtime user (uid 1000 — required by Hugging Face Spaces, good
 # hygiene everywhere). /app must stay writable: the workspace defaults
 # (data/leads.csv, tracker.db, output/) live under it when no *_PATH env
