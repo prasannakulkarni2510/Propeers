@@ -14,6 +14,7 @@ import Discovery from "./pages/Discovery.jsx";
 import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
 import IntroVideo from "./components/IntroVideo.jsx";
+import { authToken } from "./services/api";
 
 // `badge` picks a count from pipelineCounts; `badgeTone` colours it.
 const NAV = [
@@ -169,6 +170,14 @@ export default function App() {
           >
             Know more about the project →
           </NavLink>
+          {authToken.get() && (
+            <button
+              className="nav-logout"
+              onClick={() => { authToken.set(""); window.location.reload(); }}
+            >
+              Log out
+            </button>
+          )}
           <span className="sidebar-tag">Nemotron-powered · never auto-sends</span>
         </div>
       </aside>

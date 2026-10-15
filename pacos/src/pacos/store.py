@@ -101,8 +101,26 @@ class _Conn:
 
     def execute(self, sql: str, params: tuple | list = ()):
         if self._is_pg:
-            sql = sql.replace("?", "%s")
+            sql = _to_pg_paramstyle(sql)
         return self._raw.execute(sql, params)
+
+
+def _to_pg_paramstyle(sql: str) -> str:
+    """sqlite '?' placeholders -> psycopg '%s'. Quote-aware: a '?' inside a
+    string literal is data, not a placeholder (the lead_type backfill matches
+    the name '?'), and a literal '%' must be doubled for psycopg."""
+    out, in_str = [], False
+    for ch in sql:
+        if ch == "'":
+            in_str = not in_str  # '' escapes toggle twice, so they net out
+            out.append(ch)
+        elif ch == "%":
+            out.append("%%")
+        elif ch == "?" and not in_str:
+            out.append("%s")
+        else:
+            out.append(ch)
+    return "".join(out)
 
 
 class PacosStore:

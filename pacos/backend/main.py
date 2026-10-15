@@ -7,14 +7,28 @@ Run:  uvicorn backend.main:app --reload   (from the pacos/ folder)
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
 import secrets
 import sys
 from pathlib import Path
 
+from dotenv import dotenv_values
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
+from pacos.config import REPO_ROOT
+
+# The auth middleware reads os.environ, but config.load() only pulls .env in
+# lazily, which left the very first request unauthenticated. Load just the auth
+# keys up front (real environment variables still win, as with load_dotenv).
+_AUTH_KEYS = ("PACOS_LOGIN_EMAIL", "PACOS_LOGIN_PASSWORD", "PACOS_LOGIN_TRIAL",
+              "PACOS_AUTH_TOKEN")
+for _k, _v in dotenv_values(REPO_ROOT / ".env").items():
+    if _k in _AUTH_KEYS and _v is not None:
+        os.environ.setdefault(_k, _v)
 
 from .routes import (agents, approvals, assets, chat, discovery, inbox, leads,
                      settings, tracker)
@@ -39,21 +53,69 @@ app.add_middleware(
 )
 
 # ── auth (cloud deployments) ────────────────────────────────────────────────
-# When PACOS_AUTH_TOKEN is set, every /api/* call must carry
-# `Authorization: Bearer <token>`. Unset (the default) keeps local/exe usage
-# frictionless. /api/health stays open for uptime probes; OPTIONS passes so
+# When PACOS_LOGIN_EMAIL + PACOS_LOGIN_PASSWORD are set, the dashboard shows a
+# login form; POST /api/login trades the credentials for a session token, and
+# every other /api/* call must carry `Authorization: Bearer <token>`. The token
+# is derived from the credentials, so it needs no server-side storage and
+# changing the password logs every browser out. PACOS_AUTH_TOKEN still works
+# as a raw bearer token for scripts. Nothing set (the default) keeps local/exe
+# usage frictionless. /api/health and /api/login stay open; OPTIONS passes so
 # CORS preflights (which never carry credentials) still work.
+_OPEN_PATHS = {"/api/health", "/api/login", "/api/login/trial"}
+
+
+def _login_creds() -> tuple[str, str]:
+    return (os.getenv("PACOS_LOGIN_EMAIL", "").strip().lower(),
+            os.getenv("PACOS_LOGIN_PASSWORD", ""))
+
+
+def _session_token() -> str:
+    email, password = _login_creds()
+    if not (email and password):
+        return ""
+    return hmac.new(f"{email}\n{password}".encode(), b"pacos-session",
+                    hashlib.sha256).hexdigest()
+
+
 @app.middleware("http")
 async def require_bearer_token(request, call_next):
-    token = os.getenv("PACOS_AUTH_TOKEN", "").strip()
+    valid = [t for t in (_session_token(), os.getenv("PACOS_AUTH_TOKEN", "").strip()) if t]
     path = request.url.path
-    if (token and request.method != "OPTIONS"
-            and path.startswith("/api/") and path != "/api/health"):
+    if (valid and request.method != "OPTIONS"
+            and path.startswith("/api/") and path not in _OPEN_PATHS):
         supplied = request.headers.get("authorization", "")
-        if not secrets.compare_digest(supplied, f"Bearer {token}"):
+        if not any(secrets.compare_digest(supplied, f"Bearer {t}") for t in valid):
             return JSONResponse(status_code=401,
-                                content={"detail": "unauthorized: bearer token required"})
+                                content={"detail": "unauthorized: please log in"})
     return await call_next(request)
+
+
+class LoginBody(BaseModel):
+    email: str
+    password: str
+
+
+@app.post("/api/login")
+def login(body: LoginBody):
+    email, password = _login_creds()
+    if not (email and password):
+        raise HTTPException(400, "Login is not configured on this server.")
+    ok_email = secrets.compare_digest(body.email.strip().lower().encode(), email.encode())
+    ok_pass = secrets.compare_digest(body.password.encode(), password.encode())
+    if not (ok_email and ok_pass):
+        raise HTTPException(401, "Wrong email or password.")
+    return {"token": _session_token()}
+
+
+@app.get("/api/login/trial")
+def login_trial():
+    """Trial credentials for the login page's hint box. Only exposed when
+    PACOS_LOGIN_TRIAL=1, i.e. the login is deliberately public (a demo)."""
+    email, password = _login_creds()
+    public = os.getenv("PACOS_LOGIN_TRIAL", "").strip().lower() in {"1", "true", "yes", "on"}
+    if not (public and email and password):
+        return {"email": "", "password": ""}
+    return {"email": email, "password": password}
 
 
 app.include_router(leads.router)

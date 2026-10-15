@@ -54,6 +54,7 @@ SECRET_KEYS = [
     "NVIDIA_API_KEY",
     "CANDIDATE_NAME", "CANDIDATE_HEADLINE", "CANDIDATE_EMAIL",
     "CANDIDATE_LINKEDIN",
+    "PACOS_LOGIN_EMAIL", "PACOS_LOGIN_PASSWORD", "PACOS_LOGIN_TRIAL",
 ]
 
 
@@ -124,7 +125,7 @@ def main() -> int:
 
     print(f"\nUploaded. Build logs: https://huggingface.co/spaces/{repo_id}")
     print(f"App URL when built:  https://{user.lower()}-{args.name.lower()}.hf.space")
-    print("Unlock the dashboard with the PACOS_AUTH_TOKEN value.")
+    print("Log in with PACOS_LOGIN_EMAIL / PACOS_LOGIN_PASSWORD from .env.")
     return 0
 
 

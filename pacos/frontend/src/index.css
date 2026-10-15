@@ -421,6 +421,11 @@ a.stat:hover {
 .nav-about:hover { text-decoration: underline; }
 .nav-about.active { color: #fff; }
 .sidebar-tag { font-size: 11px; opacity: 0.6; }
+.nav-logout {
+  font: inherit; font-size: 13px; color: inherit; opacity: 0.75; cursor: pointer;
+  background: none; border: 0; padding: 4px 0; text-align: left;
+}
+.nav-logout:hover { opacity: 1; text-decoration: underline; }
 
 /* ── About / Know more page ──────────────────────────── */
 .about { max-width: 920px; }
@@ -494,8 +499,23 @@ a.stat:hover {
 
 /* ── auth gate (cloud deployments) ───────────────────── */
 .authgate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-.authgate-card { width: 340px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.authgate-card { width: 100%; max-width: 340px; margin: 0 16px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
 .authgate-card .input { margin: 0; }
+.authgate-trial {
+  border: 1px dashed var(--line); border-radius: 8px; padding: 10px 12px;
+  font-size: 12px; text-align: left; color: var(--grey); background: var(--bg);
+}
+.authgate-trial p { margin: 0 0 6px; }
+.authgate-trial dl {
+  display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 0 0 8px;
+}
+.authgate-trial dt { font-weight: 600; }
+.authgate-trial dd { margin: 0; color: var(--ink); font-family: ui-monospace, Consolas, monospace; }
+.authgate-trial-fill {
+  font: inherit; font-size: 12px; color: var(--accent); font-weight: 600;
+  background: none; border: 0; padding: 0; cursor: pointer;
+}
+.authgate-trial-fill:hover { text-decoration: underline; }
 
 /* ── empty states ────────────────────────────────────── */
 .empty-state { text-align: center; padding: 28px 16px; }

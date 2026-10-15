@@ -1,9 +1,9 @@
 // All FastAPI calls live here. In dev, BASE is "" and Vite proxies /api.
 const BASE = import.meta.env.VITE_API_URL || "";
 
-// Cloud deployments protect /api/* with PACOS_AUTH_TOKEN; the operator's copy
-// lives in localStorage (never in the bundle) and rides along as a Bearer
-// header. Empty when auth is off (local / exe usage).
+// Cloud deployments protect /api/* behind a login; the session token returned
+// by /api/login lives in localStorage (never in the bundle) and rides along as
+// a Bearer header. Empty when auth is off (local / exe usage).
 const TOKEN_KEY = "pacos_token";
 export const authToken = {
   get: () => localStorage.getItem(TOKEN_KEY) || "",
@@ -34,6 +34,9 @@ async function req(path, options = {}, contentType = "application/json") {
 
 export const api = {
   health: () => req("/api/health"),
+  login: (email, password) =>
+    req("/api/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+  loginTrial: () => req("/api/login/trial"),
   stats: () => req("/api/stats"),
   leads: () => req("/api/leads"),
   lead: (id) => req(`/api/leads/${id}`),
