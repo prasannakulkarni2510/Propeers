@@ -62,21 +62,40 @@ def chat_turn(
     convo = "\n\n".join(lines)
 
     system = _SYSTEM.format(stats=stats, keys=", ".join(PROPOSAL_KEYS))
-    try:
-        raw = client.complete_json(
-            system=system,
-            user=f"Conversation so far:\n\n{convo[-16000:]}\n\nRespond to the operator's last message.",
-            temperature=0.5,
-            max_tokens=1536,
-        )
-    except NemotronError as e:
-        return f"Nemotron error: {e}", None, [], False
+    user = f"Conversation so far:\n\n{convo[-16000:]}\n\nRespond to the operator's last message."
+    # The model sometimes returns the lead with an empty or misnamed "reply";
+    # one retry usually fixes it, and a proposal alone still gets a reply.
+    for attempt in range(2):
+        try:
+            raw = client.complete_json(
+                system=system, user=user, temperature=0.5, max_tokens=1536)
+        except NemotronError as e:
+            return f"Nemotron error: {e}", None, [], False
+        proposal, warnings = None, []
+        lead = raw.get("lead")
+        if isinstance(lead, dict) and any(str(v or "").strip() for v in lead.values()):
+            proposal, warnings = normalise_proposal(lead)
+        reply = _reply_text(raw)
+        if reply or proposal:
+            break
 
+    if not reply:
+        reply = (_proposal_reply(proposal) if proposal
+                 else "Sorry, I didn't get a usable answer that time. Please try again.")
     # House style everywhere: no em/en dashes in anything the operator reads.
-    reply = strip_dashes(str(raw.get("reply", "") or "").strip()) \
-        or "(empty reply from model)"
-    proposal, warnings = None, []
-    lead = raw.get("lead")
-    if isinstance(lead, dict) and any(str(v or "").strip() for v in lead.values()):
-        proposal, warnings = normalise_proposal(lead)
-    return reply, proposal, warnings, True
+    return strip_dashes(reply), proposal, warnings, True
+
+
+def _reply_text(raw: dict) -> str:
+    for key in ("reply", "response", "message", "answer", "text"):
+        val = raw.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    return ""
+
+
+def _proposal_reply(proposal: dict) -> str:
+    who = proposal.get("full_name") or "this lead"
+    where = proposal.get("company_name")
+    return (f"I've drafted a lead for {who}" + (f" at {where}" if where else "")
+            + ". Review the card below and fill in anything missing before adding it.")
