@@ -79,7 +79,7 @@ export const api = {
   parseJd: (text) =>
     req("/api/leads/parse-jd", { method: "POST", body: JSON.stringify({ text }) }),
   chat: (messages) =>
-    req("/api/chat", { method: "POST", body: JSON.stringify({ messages }) }),
+    req("/api/chat", { method: "POST", body: JSON.stringify(withSessionCv({ messages })) }),
   discovery: (body) =>
     req("/api/discovery", { method: "POST", body: JSON.stringify(body) }),
   enrich: (body) =>

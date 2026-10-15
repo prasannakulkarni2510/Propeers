@@ -78,10 +78,39 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
   );
 }
 
+const DRAFT_LABEL = { cold_email: "Cold email", cold_dm: "LinkedIn DM", cover_letter: "Cover letter" };
+
+// A piece of outreach the operator asked for in chat. Written with the same
+// rules, playbook and CV as pipeline assets; copy it out, nothing is sent.
+function DraftCard({ draft }) {
+  const setToast = useStore((s) => s.setToast);
+  const words = draft.text.trim().split(/s+/).length;
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(draft.text);
+      setToast("Draft copied.");
+    } catch {
+      setToast("Couldn't copy automatically. Select the text and copy it.");
+    }
+  };
+  return (
+    <div className="proposal-card draft-card">
+      <div className="draft-head">
+        <span className="proposal-title">
+          Draft {DRAFT_LABEL[draft.asset] || draft.asset} · {words} words
+        </span>
+        <button className="btn btn-ghost btn-sm" onClick={copy}>Copy</button>
+      </div>
+      <pre className="draft-text">{draft.text}</pre>
+      <p className="muted draft-note">Review and edit before sending. PACOS never sends anything.</p>
+    </div>
+  );
+}
+
 // Module-level so the conversation (and an in-flight reply) survives leaving
 // the page and coming back. Cleared only by "New chat" or a reload.
 const useChat = create((set) => ({
-  messages: [], // {role, content, proposal?, warnings?}
+  messages: [], // {role, content, proposal?, warnings?, draft?}
   input: "",
   busy: false,
   setMessages: (messages) => set({ messages }),
@@ -92,7 +121,8 @@ const useChat = create((set) => ({
 const EXAMPLES = [
   "Add this person: Priya Shah, engineering manager at Razorpay, Bengaluru, priya@razorpay.com",
   "Who should I follow up with this week?",
-  "Draft a two-line LinkedIn note for a data science lead at Swiggy",
+  "Write an email to the data team at Razorpay asking for a data science internship",
+  "Draft a short LinkedIn DM to an ML engineering manager at Swiggy",
 ];
 
 export default function Chat() {
@@ -119,6 +149,7 @@ export default function Chat() {
           content: res.reply,
           proposal: res.lead_proposal,
           warnings: res.warnings || [],
+          draft: res.draft,
         },
       ]);
     } catch (e) {
@@ -139,8 +170,9 @@ export default function Chat() {
         )}
       </div>
       <p className="page-sub">
-        Ask about your pipeline, draft outreach, or describe a person/JD, and I'll
-        propose a lead you can approve into leads.csv.
+        Ask about your pipeline, ask me to write an email, LinkedIn DM, or cover
+        letter, or describe a person/JD and I'll propose a lead you can approve
+        into leads.csv.
       </p>
       <div className="chat-scroll">
         {messages.length === 0 && (
@@ -156,6 +188,7 @@ export default function Chat() {
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}`}>
             <div className="chat-bubble">{m.content}</div>
+            {m.draft && <DraftCard draft={m.draft} />}
             {m.proposal && (
               <ProposalCard
                 proposal={m.proposal}

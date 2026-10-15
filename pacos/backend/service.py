@@ -43,9 +43,26 @@ class Service:
     def leads_with_state(self) -> list[dict]:
         return self.store.get_leads()
 
-    def chat(self, messages: list[dict]) -> tuple[str, dict | None, list[str], bool]:
-        """One assistant turn. May return a lead proposal — never writes it."""
-        return chat_turn(self._llm(), self.stats(), messages)
+    def chat(self, messages: list[dict], cv_text: str | None = None):
+        """One assistant turn. May return a lead proposal (never written) or a
+        requested draft, grounded in the visitor's temporary CV when given."""
+        with using_cv(cv_text):
+            return chat_turn(self._llm(), self.stats(), messages,
+                             drafter=self._draft)
+
+    def _draft(self, asset: str, to: dict, request: str) -> str:
+        """Write one piece of outreach asked for in chat, with the same spec,
+        playbook and CV grounding as the pipeline's asset agents."""
+        from pacos.graph import prompts
+        from pacos.graph.nodes import _base_cv, _candidate
+
+        return self._llm().complete_text(
+            system=prompts.SYSTEM_ASSET,
+            user=prompts.build_chat_draft_user(
+                asset, to, request, _candidate(self.cfg), _base_cv(self.cfg)),
+            temperature=0.3,  # same as first-pass assets: grounded over varied
+            max_tokens=1600,
+        ).strip()
 
     def discover(self, company: str, role: str = "", city: str = "",
                  keywords: list[str] | None = None) -> list[dict]:
@@ -150,6 +167,19 @@ class Service:
         """
         with self._lock:
             lead = build_lead(raw)
+            # A real person with no email gets a predicted one, the same way
+            # Find-people leads do. Job postings have nobody to predict for.
+            predicted = None
+            if lead.lead_type == "person" and not str(raw.get("email", "") or "").strip():
+                from pacos.enrichment import predict_email
+                pred = predict_email(lead.full_name, lead.company_name,
+                                     lead.company_website)
+                if pred.email:
+                    predicted = pred
+                    raw = {**raw, "email": pred.email, "predicted_email": pred.email,
+                           "email_confidence": pred.confidence,
+                           "email_status": pred.status}
+                    lead = build_lead(raw)
             if not lead.lead_id:
                 raise ValueError(
                     "could not derive a lead_id: full_name and company_name "
@@ -158,6 +188,10 @@ class Service:
             csv_written = append_lead_to_csv(self.cfg.leads_csv, raw)
             created = self.store.add_lead(lead)
             row = self.store.get_lead(lead.lead_id)
+            if predicted:
+                lead.warnings.append(
+                    f"Email {predicted.email} is predicted ({predicted.confidence} "
+                    "confidence), not verified. Check it before sending.")
             row["warnings"] = lead.warnings
             if created:
                 msg = f"Lead {lead.lead_id} added to lead sheet and tracker."

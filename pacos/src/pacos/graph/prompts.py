@@ -221,6 +221,37 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
     )
 
 
+def build_chat_draft_user(asset_key: str, target: dict, request: str,
+                          candidate: dict, base_cv: str) -> str:
+    """A draft the operator asked for in chat ("write an email to X asking
+    for Y"): same spec, playbook and grounding as the pipeline assets, but the
+    target comes from the conversation instead of the lead sheet."""
+    _, spec = ASSET_SPECS[asset_key]
+    facts = {k: str(target.get(k, "") or "") for k in (
+        "full_name", "job_title", "company_name", "city")}
+    playbook = playbook_for(asset_key)
+    playbook_block = (
+        "WRITING PLAYBOOK (guidance on HOW to write, never facts about me or the "
+        "recipient; its templates are patterns, so never output a [bracketed] "
+        "placeholder; where it conflicts with the SPEC, the SPEC wins):\n"
+        f"<playbook>\n{playbook}\n</playbook>\n\n"
+    ) if playbook else ""
+    return (
+        f"Write the {asset_key} asset.\n\n{playbook_block}SPEC: {spec}\n\n"
+        f"WHAT I'M ASKING FOR (my words; make this the ask): {request or '(not stated)'}\n\n"
+        f"RECIPIENT (only what I told you; empty means unknown):\n{json.dumps(facts, indent=2)}\n\n"
+        f"CANDIDATE (sender):\n{json.dumps(candidate, indent=2)}\n\n"
+        f"CANDIDATE CV CONTEXT:\n{base_cv or '(none)'}\n\n"
+        "Write it now, in first person, as me. If the recipient's name is unknown, "
+        "greet with a plain 'Hi,' or 'Hi <company> team,'; never invent a name or "
+        "leave a placeholder. Claim nothing about me that is not in the CV context "
+        "and nothing about the recipient or company beyond the facts above (do not "
+        "say they are hiring, have an opening, or work on anything unless I said "
+        "so). Keep "
+        "inside the SPEC's word count. Use no em dashes. Output only the text."
+    )
+
+
 # ── dry-run templates (no API call) ─────────────────────────────────────────
 def tmpl_hook(lead: dict) -> str:
     return (f"I've been following {lead.get('company_name')}'s work in "

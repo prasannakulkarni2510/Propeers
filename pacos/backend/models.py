@@ -292,11 +292,19 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    # A visitor's temporary CV: grounds drafts in this turn only, never stored.
+    cv_text: Optional[str] = Field(default=None, max_length=60_000)
+
+
+class ChatDraft(BaseModel):
+    asset: str  # cold_email | cold_dm | cover_letter
+    text: str
 
 
 class ChatResult(BaseModel):
     reply: str
     lead_proposal: Optional[ParsedLead] = None
+    draft: Optional[ChatDraft] = None
     warnings: list[str] = []
     llm_used: bool
     model: str
