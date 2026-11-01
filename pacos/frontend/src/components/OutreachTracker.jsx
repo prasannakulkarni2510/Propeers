@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 import { useApprovals } from "../hooks/useApprovals";
 import StatusBadge from "./StatusBadge.jsx";
 import KanbanBoard, { ViewToggle, useViewMode } from "./KanbanBoard.jsx";
+import CalendarButtons from "./CalendarButtons.jsx";
+import { followUpEvent } from "../lib/calendar";
 import { isFollowUpDue } from "../lib/pipeline";
 
 const FLOW = ["pending", "sent", "replied", "interested", "interview", "offer", "rejected"];
@@ -45,6 +47,7 @@ function TrackerCard({ lead, onChange }) {
         </div>
       )}
       <StatusPicker lead={lead} onChange={onChange} />
+      <CalendarButtons event={followUpEvent(lead)} label="Remind me" />
     </div>
   );
 }

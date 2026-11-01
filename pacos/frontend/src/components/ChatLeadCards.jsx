@@ -4,6 +4,8 @@ import { useStore } from "../store";
 import StatusBadge from "./StatusBadge.jsx";
 import { LEAD_STAGES, leadStage } from "../lib/pipeline";
 import { localToday } from "../lib/dates";
+import { followUpEvent, interviewEvent } from "../lib/calendar";
+import CalendarButtons from "./CalendarButtons.jsx";
 
 const STAGE = Object.fromEntries(LEAD_STAGES.map((s) => [s.id, s]));
 const STATUSES = ["pending", "sent", "replied", "interested", "interview", "offer", "rejected"];
@@ -123,6 +125,7 @@ export function RecordCard({ rec, removed, onRemoved }) {
       <Facts rec={rec} />
       <div className="btn-row">
         <Links rec={rec} />
+        <CalendarButtons event={followUpEvent(rec)} label="Remind me" />
         <DeleteLeadButton leadId={rec.lead_id} label="Delete" onDeleted={onRemoved} />
       </div>
     </div>
@@ -207,9 +210,23 @@ export function ChangeCard({ change, state, result, onDone }) {
   const [ch, setCh] = useState({
     action: change.action, channel: change.channel || "email", intent: change.intent || "rejected",
     status: change.status || "interested", date: change.date || "", note: change.note || "",
+    eventDate: change.event_date || "", eventTime: change.event_time || "",
   });
   const [busy, setBusy] = useState(false);
   const set = (k) => (e) => setCh({ ...ch, [k]: e.target.value });
+  // Editing the interview's date/time keeps the "Interview on … at …" note
+  // in step with it.
+  const setEvent = (k) => (e) => {
+    const next = { ...ch, [k]: e.target.value };
+    const when = next.eventDate
+      ? `Interview on ${next.eventDate}${next.eventTime ? ` at ${next.eventTime}` : ""}` : "";
+    const rest = ch.note.replace(/^Interview on \S+( at \d{2}:\d{2})?,?\s*/, "");
+    next.note = [when, rest].filter(Boolean).join(", ");
+    setCh(next);
+  };
+  const isInterview = ch.action === "status" && ch.status === "interview";
+  const interview = isInterview && ch.eventDate
+    ? interviewEvent(rec, ch.eventDate, ch.eventTime, ch.note) : null;
 
   if (state === "applied" && result) {
     return (
@@ -221,6 +238,11 @@ export function ChangeCard({ change, state, result, onDone }) {
           </MiniColumn>
         </div>
         <p className="record-summary">{result.summary}</p>
+        <div className="btn-row">
+          {result.event
+            ? <CalendarButtons event={result.event} />
+            : <CalendarButtons event={followUpEvent(result)} label="Remind me to follow up" />}
+        </div>
       </div>
     );
   }
@@ -241,7 +263,7 @@ export function ChangeCard({ change, state, result, onDone }) {
       status: ch.action === "status" ? ch.status : "" };
     const res = await applyChatChange(body);
     setBusy(false);
-    if (res) onDone("applied", res);
+    if (res) onDone("applied", { ...res, event: interview });
   };
   const canApply = ch.action !== "note" || ch.note.trim();
 
@@ -287,6 +309,18 @@ export function ChangeCard({ change, state, result, onDone }) {
             </select>
           </label>
         )}
+        {isInterview && (
+          <>
+            <label>
+              <span>Interview date</span>
+              <input className="input" type="date" value={ch.eventDate} onChange={setEvent("eventDate")} />
+            </label>
+            <label>
+              <span>Time</span>
+              <input className="input" type="time" value={ch.eventTime} onChange={setEvent("eventTime")} />
+            </label>
+          </>
+        )}
         {(ch.action === "sent" || ch.action === "reply") && (
           <label>
             <span>Date</span>
@@ -318,6 +352,7 @@ export function ChangeCard({ change, state, result, onDone }) {
         <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onDone("dismissed")}>
           Dismiss
         </button>
+        <CalendarButtons event={interview} />
         <Links rec={rec} />
         {/* Kept apart from Apply so a slip can't delete instead of save. */}
         {ch.action !== "delete" && (

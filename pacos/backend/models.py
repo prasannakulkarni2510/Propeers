@@ -356,6 +356,9 @@ class ChatChangeRequest(BaseModel):
 class ChatChange(ChatChangeRequest):
     action: Literal["sent", "reply", "status", "note", "delete"]
     lead: ChatRecord  # the lead as it is now, for the before -> after preview
+    # An interview's date and time (HH:MM, may be ""), for "Add to calendar".
+    event_date: str = ""
+    event_time: str = ""
 
 
 class ChatResult(BaseModel):

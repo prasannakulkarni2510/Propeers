@@ -36,6 +36,11 @@ Personal AI Career Operating System, a local job-search outreach tool.
 PACOS pipeline: leads (people at companies) -> generated outreach assets
 (cold email, cold DM, cover letter, CV notes) -> operator sends manually ->
 replies tracked. PACOS NEVER sends anything itself; never claim otherwise.
+PACOS cannot see or change the operator's calendar. When they mention an
+interview or meeting, record it as a change (status interview, with date and
+time): its card has an "Add to Google Calendar" button. Leads awaiting a
+reply have a "Remind me" button for the follow-up date. Point them to those
+buttons; never say you added anything to a calendar.
 
 Today is {today}. Dates around today: {calendar}
 Current tracker snapshot: {stats}
@@ -92,7 +97,8 @@ replied, interested", "interview with <company> on Friday", "add a note",
     "intent": "interested" | "follow-up" | "rejected" | "",
     "status": "pending" | "sent" | "replied" | "interested" | "interview" | "offer" | "rejected" | "",
     "date": "YYYY-MM-DD" | "",
-    "note": "<short detail worth keeping, e.g. the role or the interview time>"}}
+    "time": "HH:MM" (24-hour, for an interview or meeting) | "",
+    "note": "<short detail worth keeping, e.g. the role or who they'll meet>"}}
 Use "sent" (with channel) when they sent outreach; "reply" (with intent) when
 the person answered, including a rejection; "status" for interview, offer or
 any other direct status; "note" to only record a detail; "delete" only when
@@ -191,6 +197,13 @@ def chat_turn(
         if reply or proposal or want or change:
             break
 
+    # A proposal to add someone who is already a lead (the model missed the
+    # record and says "she isn't in your leads") would only make a duplicate.
+    if proposal and any(_same_person(proposal, found.cards[i]) for i in found.named):
+        proposal, warnings = None, []
+        if _NOT_FOUND.search(reply or ""):
+            reply = ""  # its reasoning was the false "not found"; rebuilt below
+
     # The model often answers "write X a DM" with "I'll draft it…" and no
     # draft. When the operator asked for one (or just confirmed with "yes"),
     # work out what to write from their words and the looked-up lead.
@@ -263,6 +276,7 @@ def chat_turn(
         # Same for lead proposals: "I've added X" when it is only a card.
         reply = _proposal_reply(proposal)
 
+    only_named = False
     if found.missing and not (proposal or draft or change):
         # Asked about a full name no lead has (often: deleted). The model has
         # answered these from earlier messages or other people with the same
@@ -270,12 +284,20 @@ def chat_turn(
         reply = (f"I couldn't find anyone called {found.missing} in PACOS. They may never "
                  f"have been added, or the lead was deleted. If you tell me their role and "
                  f"company, I can add them as a lead.")
+    elif (len(found.named) == 1 and not (proposal or draft or change)
+          and _CALENDAR_RE.search(_typed(question))):
+        # "Add my interview with X to my calendar": the model has refused
+        # and invented reasons (a second X). Say what PACOS can do.
+        card = found.cards[found.named[0]]
+        reply = _calendar_reply(card, _typed(question))
+        only_named = True  # show just their card (it may have "Remind me")
     elif found.named and not (proposal or draft or change) and _NOT_FOUND.search(reply or ""):
         # The lookup found them, yet the reply says it couldn't (copying an
         # earlier "couldn't find" answer). Say what the records say instead.
         reply = _offline_lookup_reply([found.cards[i] for i in found.named])
     if not reply:
         reply = (_proposal_reply(proposal) if proposal
+                 else _offline_lookup_reply([found.cards[i] for i in found.named]) if found.named
                  else "Sorry, I didn't get a usable answer that time. Please try again.")
     # Only cards for leads that were actually looked up, so a made-up id
     # can't surface; if the model forgot to list the people or company the
@@ -286,6 +308,8 @@ def chat_turn(
         ids = found.matched
     if found.missing and not (proposal or draft or change):
         ids = []
+    if only_named:
+        ids = found.named
     skip = change["lead_id"] if change else None
     cards = [found.cards[i] for i in dict.fromkeys(ids) if i != skip]
     # House style everywhere: no em/en dashes in anything the operator reads.
@@ -309,13 +333,35 @@ _AFFIRM_RE = re.compile(
 
 
 _NOT_FOUND = re.compile(
-    r"couldn'?t find|could not find|can'?t find|not (in|found in) (your )?(pacos|records)"
-    r"|no record of|isn'?t in (your )?(pacos|records)", re.I)
+    r"couldn'?t find|could not find|can'?t find"
+    r"|(isn'?t|is not|not|aren'?t) (yet )?(in|found in) (your )?(pacos|records|leads|tracker)"
+    r"|no record of", re.I)
 _ADD_RE = re.compile(r"\b(add|track|save|create)\b", re.I)
 
 _RESTATE = ("To update a lead, tell me what happened in one sentence, for example "
             "\"Priya rejected me\" or \"I emailed Karan today\", and I'll set up the "
             "update card for you to check.")
+
+_CALENDAR_RE = re.compile(r"\b(calendar|calender|remind(er|ers)?|schedule|invite)\b", re.I)
+
+
+def _calendar_reply(card: dict, question: str = "") -> str:
+    who = card["full_name"] + (f" at {card['company_name']}" if card["company_name"] else "")
+    msg = ("PACOS can't change your calendar itself, but its cards can add events to "
+           "Google Calendar (or download them for Outlook/Apple). ")
+    follow_up = re.search(r"\b(follow|remind|chase|nudge)", question, re.I)
+    if card["status"] == "sent" and card["follow_up_due"]:
+        msg += f"For a follow-up reminder, use Remind me on {who}'s card below. "
+    elif follow_up:
+        # No follow-up date until outreach is marked as sent.
+        return msg + (f"{who} hasn't been marked as contacted yet, so there's no follow-up "
+                      f"date. Once you send your outreach, tell me (\"I emailed "
+                      f"{card['full_name']} today\") and apply the card; it will then offer "
+                      f"Remind me for the follow-up date.")
+    return msg + (f"For an interview, tell me when it is, for example \"Interview with "
+                  f"{card['full_name']} on Friday at 3pm\", and the update card will have "
+                  f"an Add to Google Calendar button.")
+
 
 _DRAFT_DONE = ("The draft is above. Copy it, edit anything you like, and send it "
                "yourself; PACOS never sends anything. Want me to change anything in it?")
@@ -402,10 +448,19 @@ def _change_request(raw: dict, found: Retrieval, today: date) -> dict | None:
     # reply so the reply date and intent are kept too.
     if action == "status" and status in ("rejected", "interested"):
         action, intent = "reply", status
+    at = _clock(str(c.get("time", "") or "")) or _clock(note)
+    # An interview is an event the operator may want in their calendar; the
+    # card offers that from these two fields.
+    event_date = when if action == "status" and status == "interview" else ""
+    event_time = at if event_date else ""
+    if at and _clock(note) == at:
+        # The time is kept as the time; don't say it twice in the note.
+        note = re.sub(r"^(at|@)\s+|\s+(at|@)$", "", _CLOCK.sub("", note, count=1).strip(" ,.;"),
+                      flags=re.I).strip(" ,.;")
     if action == "status" and when and status:
         # A status has no date of its own; an interview/offer date is worth
         # keeping, so it goes into the note.
-        dated = f"{status.capitalize()} on {when}"
+        dated = f"{status.capitalize()} on {when}" + (f" at {at}" if at else "")
         note = dated if not note else (note if when in note else f"{dated}, {note}")
     # A sent date or reply date can't be in the future.
     if when > today.isoformat():
@@ -429,7 +484,28 @@ def _change_request(raw: dict, found: Retrieval, today: date) -> dict | None:
             "status": status if action == "status" else "",
             "date": when if action in ("sent", "reply") else "",
             "note": note if action != "delete" else "",
+            "event_date": event_date, "event_time": event_time,
             "lead": found.cards[lead_id]}
+
+
+_CLOCK = re.compile(r"\b(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm|a\.m\.|p\.m\.)?(?![\d-])", re.I)
+
+
+def _clock(text: str) -> str:
+    """'15:00', '3pm', '3:30 PM', 'at 11' -> 'HH:MM' (24h), else ''. Bare
+    numbers count only with minutes or am/pm, so '2 weeks' isn't a time."""
+    for m in _CLOCK.finditer(text or ""):
+        h, mins, ampm = int(m.group(1)), m.group(2), (m.group(3) or "").lower()
+        if not (mins or ampm):
+            continue
+        if ampm.startswith("p") and h < 12:
+            h += 12
+        elif ampm.startswith("a") and h == 12:
+            h = 0
+        mm = int(mins or 0)
+        if 0 <= h <= 23 and 0 <= mm <= 59:
+            return f"{h:02d}:{mm:02d}"
+    return ""
 
 
 _NOTE_FILLER = set("""
@@ -469,7 +545,11 @@ def _change_reply(change: dict, found: Retrieval) -> str:
         "sent": f"you sent outreach to {who}{when} {_CHANNEL_WORDS.get(change['channel'], '')}",
         "reply": _REPLY_WORDS.get(change["intent"], "{who} replied{when}").format(
             who=who, when=when),
-        "status": f"{who} is now at {change['status']}",
+        "status": (f"you have an interview with {who}"
+                   + (f" on {change['event_date']}" if change.get("event_date") else "")
+                   + (f" at {change['event_time']}" if change.get("event_time") else "")
+                   if change["status"] == "interview"
+                   else f"{who} moves to status {change['status']}"),
         "note": f"a note on {who}",
     }.get(change["action"])
     if change["action"] == "delete":
@@ -511,13 +591,14 @@ Reply with ONLY a JSON object:
     "intent": "interested" | "follow-up" | "rejected" | "",
     "status": "pending" | "sent" | "replied" | "interested" | "interview" | "offer" | "rejected" | "",
     "date": "YYYY-MM-DD" | "",
+    "time": "HH:MM" | "",
     "note": ""}}}}
 
 Rules: they sent an email/DM/message -> "sent" with channel. The person
 answered (including any rejection or "not a fit") -> "reply" with intent.
 Interview or offer -> "status", with the interview/offer date in "date"
-(it may be upcoming) and any time in "note". Only a detail to remember ->
-"note". Explicit
+(it may be upcoming) and its time in "time" as 24-hour HH:MM ("3pm" ->
+"15:00"). Only a detail to remember -> "note". Explicit
 request to delete/remove the lead -> "delete". Relative dates ("yesterday",
 "Monday") become YYYY-MM-DD from today; empty means today. "note" is only
 for a detail the other fields don't already capture (the role, the interview

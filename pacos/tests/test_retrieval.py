@@ -269,7 +269,8 @@ def test_interview_date_kept_in_note_and_unwrapped_change_accepted():
          "date": "2026-11-06", "note": "3pm"})
     msgs = [{"role": "user", "content": "Interview with Abhishek Gupta from ABB on Friday at 3pm"}]
     change = chat_turn(c, {}, msgs, retriever=_retriever, today=TODAY)[6]
-    assert change["note"] == "Interview on 2026-11-06, 3pm" and change["date"] == ""
+    assert change["note"] == "Interview on 2026-11-06 at 15:00" and change["date"] == ""
+    assert (change["event_date"], change["event_time"]) == ("2026-11-06", "15:00")
     assert "Friday 2026-11-06" in c.systems[1]  # the calendar the model reads
 
 
@@ -498,3 +499,45 @@ def test_event_about_a_unique_first_name_gets_a_change_and_ambiguous_asks():
                     retriever=lambda m: retrieve(m, two, {}, [], None), today=TODAY)
     assert out[0].startswith("Which one do you mean: Priya Shah at Razorpay or Priya Iyer at Acme")
     assert {x["lead_id"] for x in out[5]} == {"razorpay-priya", "acme-priya"} and out[6] is None
+
+
+def test_interview_time_field_and_note_detail_are_kept():
+    ch = _change({"lead_id": "abb-abhishek", "action": "status", "status": "interview",
+                  "date": "2026-11-06", "time": "15:30", "note": "with the hiring manager"})[6]
+    assert (ch["event_date"], ch["event_time"]) == ("2026-11-06", "15:30")
+    assert ch["note"] == "Interview on 2026-11-06 at 15:30, with the hiring manager"
+    sent = _change({"lead_id": "abb-abhishek", "action": "sent", "channel": "email"})[6]
+    assert sent["event_date"] == "" and sent["event_time"] == ""
+
+
+# ── calendar ────────────────────────────────────────────────────────────────
+def test_calendar_request_gets_a_truthful_reply_and_the_leads_card():
+    c = FakeClient({"reply": "There are multiple Abhishek Guptas, which one?",
+                    "records": ["abb-abhishek", "razorpay-priya"]})
+    msgs = [{"role": "user", "content": "add my follow up with Abhishek Gupta to my calendar"}]
+    reply, *_, cards, change = chat_turn(c, {}, msgs, retriever=_retriever, today=TODAY)
+    assert "multiple" not in reply and "Remind me" in reply and "Add to Google Calendar" in reply
+    assert [x["lead_id"] for x in cards] == ["abb-abhishek"] and change is None
+
+
+def test_interview_change_reply_reads_naturally():
+    ch = _change({"lead_id": "abb-abhishek", "action": "status", "status": "interview",
+                  "date": "2026-11-06", "time": "15:00"})
+    assert "you have an interview with Abhishek Gupta at ABB on 2026-11-06 at 15:00" in ch[0]
+
+
+def test_duplicate_proposal_for_an_existing_lead_is_dropped_everywhere():
+    c = FakeClient({"reply": "Abhishek Gupta from ABB isn't in your leads yet, want to add him?",
+                    "lead": {"full_name": "Abhishek Gupta", "company_name": "ABB"}})
+    msgs = [{"role": "user", "content": "Can you add my interview with Abhishek Gupta to my calendar?"}]
+    reply, proposal, *_ = chat_turn(c, {}, msgs, retriever=_retriever, today=TODAY)
+    assert proposal is None and "isn't in your leads" not in reply
+    assert "Add to Google Calendar" in reply
+
+
+def test_follow_up_reminder_for_an_uncontacted_lead_explains_how():
+    c = FakeClient({"reply": "Sure."})
+    msgs = [{"role": "user", "content": "remind me to follow up with Priya Shah"}]
+    reply = chat_turn(c, {}, msgs, retriever=lambda m: retrieve(
+        m, [lead("razorpay-priya", "Priya Shah", "Razorpay")], {}, [], None))[0]
+    assert "hasn't been marked as contacted" in reply and "I emailed Priya Shah today" in reply
