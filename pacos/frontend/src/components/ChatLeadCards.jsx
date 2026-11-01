@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "../store";
 import StatusBadge from "./StatusBadge.jsx";
 import { LEAD_STAGES, leadStage } from "../lib/pipeline";
+import { localToday } from "../lib/dates";
 
 const STAGE = Object.fromEntries(LEAD_STAGES.map((s) => [s.id, s]));
 const STATUSES = ["pending", "sent", "replied", "interested", "interview", "offer", "rejected"];
@@ -14,29 +15,35 @@ const ACTIONS = {
   note: "Add a note",
   delete: "Delete lead",
 };
-const today = () => new Date().toISOString().slice(0, 10);
 
 // Two-click delete (no native dialogs), same as Remove on the Leads page.
 // Removes the lead from the tracker, the lead sheet and its assets.
 export function DeleteLeadButton({ leadId, label = "Delete lead", onDeleted, accent = false }) {
   const deleteLead = useStore((s) => s.deleteLead);
-  const [confirming, setConfirming] = useState(false);
+  const [confirming, setConfirming] = useState(0); // when it was armed, or 0
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     if (!confirming) return;
-    const id = setTimeout(() => setConfirming(false), 4000); // auto-cancel
+    const id = setTimeout(() => setConfirming(0), 4000); // auto-cancel
     return () => clearTimeout(id);
   }, [confirming]);
 
-  const click = async () => {
-    if (!confirming) return setConfirming(true);
+  const click = async (e) => {
+    // A double-click must never delete: its second click arrives as
+    // detail 2, or within a moment of arming. Only a deliberate second
+    // click on "Click again to delete" confirms.
+    if (!confirming) {
+      if (e.detail <= 1) setConfirming(Date.now());
+      return;
+    }
+    if (e.detail > 1 || Date.now() - confirming < 600) return;
     setBusy(true);
     try {
       await deleteLead(leadId);
       onDeleted?.();
     } catch {
       setBusy(false);
-      setConfirming(false);
+      setConfirming(0);
     }
   };
   return (
@@ -227,7 +234,8 @@ export function ChangeCard({ change, state, result, onDone }) {
   const after = preview(rec, ch);
   const apply = async () => {
     setBusy(true);
-    const body = { lead_id: rec.lead_id, action: ch.action, date: ch.date, note: ch.note,
+    // Blank date = the operator's today, not the server's (it runs on UTC).
+    const body = { lead_id: rec.lead_id, action: ch.action, date: ch.date || localToday(), note: ch.note,
       channel: ch.action === "sent" ? ch.channel : "",
       intent: ch.action === "reply" ? ch.intent : "",
       status: ch.action === "status" ? ch.status : "" };
@@ -282,7 +290,7 @@ export function ChangeCard({ change, state, result, onDone }) {
         {(ch.action === "sent" || ch.action === "reply") && (
           <label>
             <span>Date</span>
-            <input className="input" type="date" max={today()} value={ch.date} onChange={set("date")} />
+            <input className="input" type="date" max={localToday()} value={ch.date} onChange={set("date")} />
           </label>
         )}
         {ch.action !== "delete" && (
@@ -303,17 +311,20 @@ export function ChangeCard({ change, state, result, onDone }) {
         {ch.action === "delete" ? (
           <DeleteLeadButton leadId={rec.lead_id} accent onDeleted={() => onDone("deleted")} />
         ) : (
-          <>
-            <button className="btn btn-accent btn-sm" disabled={busy || !canApply} onClick={apply}>
-              {busy ? "Saving…" : "Apply"}
-            </button>
-            <DeleteLeadButton leadId={rec.lead_id} onDeleted={() => onDone("deleted")} />
-          </>
+          <button className="btn btn-accent btn-sm" disabled={busy || !canApply} onClick={apply}>
+            {busy ? "Saving…" : "Apply"}
+          </button>
         )}
         <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => onDone("dismissed")}>
           Dismiss
         </button>
         <Links rec={rec} />
+        {/* Kept apart from Apply so a slip can't delete instead of save. */}
+        {ch.action !== "delete" && (
+          <span className="change-danger">
+            <DeleteLeadButton leadId={rec.lead_id} onDeleted={() => onDone("deleted")} />
+          </span>
+        )}
       </div>
     </div>
   );

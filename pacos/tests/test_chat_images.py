@@ -57,3 +57,13 @@ def test_images_without_a_key_get_a_clear_reply():
     _, _, error = _Svc(available=False)._read_images(
         [{"role": "user", "content": "", "images": [PNG]}])
     assert "NVIDIA_API_KEY" in error
+
+
+def test_operator_date_is_used_when_plausible():
+    from datetime import datetime, timedelta, timezone
+
+    server = datetime.now(timezone.utc).date()
+    ahead = (server + timedelta(days=1)).isoformat()
+    assert service_mod.Service._operator_today(ahead).isoformat() == ahead
+    assert service_mod.Service._operator_today("1999-01-01") == server
+    assert service_mod.Service._operator_today("not-a-date") == server

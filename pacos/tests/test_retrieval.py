@@ -293,3 +293,45 @@ def test_rejected_status_is_recorded_as_a_reply():
     ch = _change({"lead_id": "abb-abhishek", "action": "status", "status": "rejected",
                   "date": "2026-10-31"})[6]
     assert ch["action"] == "reply" and ch["intent"] == "rejected" and ch["date"] == "2026-10-31"
+
+
+# ── regressions from the first live conversation ───────────────────────────
+def test_deleted_person_is_reported_missing_not_swapped_for_a_namesake():
+    gone = [l for l in LEADS if l["lead_id"] != "abb-abhishek"]
+    gone.append(lead("x-gupta", "Avni Gupta", "Accenture"))  # Gupta is a known surname
+    r = retrieve([{"role": "user", "content": "where am I with Abhishek Gupta?"}],
+                 gone, {}, [], None)
+    assert 'nobody called "Abhishek Gupta" is in PACOS' in r.context
+    assert "tcs-abhishek" not in r.matched  # Abhishek Rao is someone else
+
+
+def test_status_question_lists_leads_with_that_status():
+    leads = LEADS + [lead("acme-offer", "Neha Rao", "Acme", status="offer")]
+    r = retrieve([{"role": "user", "content": "Do I have any offers?"}], leads, {}, [], None)
+    assert r.matched == ["acme-offer"]
+    assert "1 lead(s) in PACOS have status offer" in r.context
+
+
+def test_overdue_list_only_for_general_or_follow_up_questions():
+    ask = lambda q: retrieve([{"role": "user", "content": q}], LEADS, ASSETS, REPLIES, None).context
+    assert "Follow-ups due" not in ask("what's up with Priya Shah?")
+    assert "Follow-ups due" in ask("who should I follow up with?")
+    assert "Follow-ups due" in ask("anything I should do today")
+
+
+def test_missing_person_gets_a_fixed_reply_and_no_cards():
+    gone = [l for l in LEADS if l["lead_id"] != "abb-abhishek"]
+    gone.append(lead("x-gupta", "Avni Gupta", "Accenture"))
+    c = FakeClient({"reply": "He's still pending.", "records": ["tcs-abhishek"]})
+    msgs = [{"role": "user", "content": "where am I with Abhishek Gupta?"}]
+    reply, _, _, _, _, cards, _ = chat_turn(
+        c, {}, msgs, retriever=lambda m: retrieve(m, gone, {}, [], None))
+    assert reply.startswith("I couldn't find anyone called Abhishek Gupta") and cards == []
+
+
+def test_adding_a_missing_person_still_proposes_a_lead():
+    c = FakeClient({"reply": "Drafted.", "lead": {"full_name": "Abhishek Gupta", "company_name": "ABB"}})
+    gone = [l for l in LEADS if l["lead_id"] != "abb-abhishek"] + [lead("x", "Avni Gupta", "Acc")]
+    msgs = [{"role": "user", "content": "add Abhishek Gupta, EM at ABB"}]
+    reply, proposal, *_ = chat_turn(c, {}, msgs, retriever=lambda m: retrieve(m, gone, {}, [], None))
+    assert proposal["full_name"] == "Abhishek Gupta" and reply == "Drafted."

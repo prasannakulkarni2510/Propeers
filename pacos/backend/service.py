@@ -52,7 +52,8 @@ class Service:
     def leads_with_state(self) -> list[dict]:
         return self.store.get_leads()
 
-    def chat(self, messages: list[dict], cv_text: str | None = None):
+    def chat(self, messages: list[dict], cv_text: str | None = None,
+             today: str | None = None):
         """One assistant turn. May return a lead proposal (never written) or a
         requested draft, grounded in the visitor's temporary CV when given.
         Questions about the operator's data are answered from looked-up
@@ -67,7 +68,21 @@ class Service:
             return error, None, [], False, None, [], None, ""
         with using_cv(cv_text):
             return (*chat_turn(self._llm(), self.stats(), messages,
-                               drafter=self._draft, retriever=self._retrieve), image_text)
+                               drafter=self._draft, retriever=self._retrieve,
+                               today=self._operator_today(today)), image_text)
+
+    @staticmethod
+    def _operator_today(s: str | None):
+        """The browser's local date when it's plausible (within a day of the
+        server's UTC date), else the server's. Time zones only differ by a day."""
+        from datetime import date, timedelta, timezone
+
+        server = datetime.now(timezone.utc).date()
+        try:
+            d = date.fromisoformat(s) if s else None
+        except ValueError:
+            d = None
+        return d if d and abs(d - server) <= timedelta(days=1) else server
 
     def _read_images(self, messages: list[dict]) -> tuple[list[dict], str, str]:
         """(messages with image text folded in, image text, error reply).

@@ -88,3 +88,10 @@ def test_linkedin_dm_draft():
 def test_unknown_draft_type_is_ignored():
     c = FakeClient({"reply": "ok", "draft": {"asset": "poem", "to": {}, "request": "x"}})
     assert chat_turn(c, {}, ASK, drafter=lambda a, t, r: "never")[4] is None
+
+
+def test_claim_that_a_proposal_was_saved_is_replaced():
+    c = FakeClient({"reply": "OK, I've added Priya Shah as a new lead.", "lead": LEAD})
+    reply = chat_turn(c, {}, MSG)[0]
+    assert "added" not in reply.split(".")[0] or "drafted" in reply
+    assert "Review the card below" in reply

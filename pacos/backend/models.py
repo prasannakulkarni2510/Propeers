@@ -305,6 +305,9 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=40)
+    # The operator's local date. The server may run on UTC, where it can
+    # still be yesterday for someone in India; "today"/"yesterday" mean theirs.
+    today: Optional[str] = Field(default=None, pattern=r"^\d{4}-\d{2}-\d{2}$")
     # A visitor's temporary CV: grounds drafts in this turn only, never stored.
     cv_text: Optional[str] = Field(default=None, max_length=60_000)
 

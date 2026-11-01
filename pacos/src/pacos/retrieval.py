@@ -154,7 +154,9 @@ def record_context(card: dict, lead: dict) -> str:
     lines = [f"[lead_id: {card['lead_id']}] {head}" + (f", {role}" if role else "")
              + (f" ({card['city']})" if card["city"] else "")]
     lines.append(f"  Where it stands: {card['summary']}")
-    lines.append(f"  Tracker status: {card['status'] or 'none'} | Board column: {STAGE_TITLES[card['stage']]}")
+    # Worded as sentences: the model tends to copy these lines verbatim.
+    lines.append(f"  Their tracker status is {card['status'] or 'not set'}, and they sit in the "
+                 f"{STAGE_TITLES[card['stage']]} column of the board.")
     facts = {
         "Sent": card["outreach_sent_date"], "Channel": card["channel"],
         "Last reply": card["last_reply_date"], "Reply intent": card["reply_intent"],
@@ -625,6 +627,36 @@ def unknown_company(question: str, leads: list[dict]) -> str:
     return ""
 
 
+def unknown_person(question: str, leads: list[dict]) -> str:
+    """A full name in the question ("Abhishek Gupta") that looks like a person
+    (a first name and a surname that both occur among the leads) but belongs
+    to no lead, e.g. because they were deleted. "" if none. Without this the
+    model answers from earlier messages about someone who is gone."""
+    firsts, lasts, fulls = set(), set(), []
+    for l in leads:
+        n = _tokens(l.get("full_name"))
+        if len(n) >= 2:
+            firsts.add(n[0])
+            lasts.add(n[-1])
+            fulls.append(set(n))
+    q = _tokens(question)
+    for a, b in zip(q, q[1:]):
+        if a in firsts and b in lasts and not any({a, b} <= f for f in fulls):
+            return f"{a.capitalize()} {b.capitalize()}"
+    return ""
+
+
+# Question words -> the tracker status they ask about.
+_STATUS_WORDS = {
+    "offer": "offer", "offers": "offer",
+    "interview": "interview", "interviews": "interview", "interviewing": "interview",
+    "interested": "interested",
+    "rejected": "rejected", "rejection": "rejected", "rejections": "rejected",
+    "replied": "replied",
+}
+_FOLLOW_UP_WORDS = {"follow", "followup", "chase", "due", "overdue", "remind", "nudge"}
+
+
 # ── putting it together for one chat turn ───────────────────────────────────
 @dataclass
 class Retrieval:
@@ -632,6 +664,7 @@ class Retrieval:
     cards: dict[str, dict] = field(default_factory=dict)  # lead_id -> card, in order
     named: list[str] = field(default_factory=list)  # leads the operator named outright
     matched: list[str] = field(default_factory=list)  # named, else matched by company/first name
+    missing: str = ""  # a full name asked about that no lead has (e.g. deleted)
 
 
 def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str, str]],
@@ -649,16 +682,24 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
     named = [l["lead_id"] for l, s in matches if s == 3]
     company_only = [l["lead_id"] for l, s in matches if s < 3]
     missing_company = unknown_company(question, leads)
-    if missing_company and not named:
+    missing_person = "" if named else unknown_person(question, leads)
+    if (missing_company or missing_person) and not named:
         company_only = []  # a same-first-name lead elsewhere isn't who they mean
+
+    # "Do I have any offers?": a status question is a filter, not a search
+    # ("offers" doesn't even match the word "offer" in the index).
+    qset = set(_tokens(question))
+    asked_status = sorted({_STATUS_WORDS[t] for t in qset if t in _STATUS_WORDS})
+    by_status = [] if named else [
+        l["lead_id"] for l in leads if (l.get("status") or "") in asked_status]
 
     hits = index.search(question) if index is not None else []
 
     chosen: list[str] = []
-    for lid in named + company_only[: max(0, MAX_RECORDS - len(named))]:
-        if lid not in chosen:
+    for lid in named + company_only[: max(0, MAX_RECORDS - len(named))] + by_status:
+        if lid not in chosen and len(chosen) < MAX_RECORDS:
             chosen.append(lid)
-    if not named:  # a general question: let the search pick the leads
+    if not named and not missing_person:  # a general question: let the search pick the leads
         for h in hits:
             if len(chosen) >= MAX_RECORDS:
                 break
@@ -671,13 +712,21 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
         blocks.insert(0, f"Note: no lead in PACOS works at \"{missing_company}\". The person "
                          f"the operator mentions is not a lead yet, and any leads below are "
                          f"other people: say so, and offer to add them (attach \"lead\").")
+    elif missing_person:
+        blocks.insert(0, f"Note: nobody called \"{missing_person}\" is in PACOS now (never "
+                         f"added, or deleted). Say exactly that. Do not describe them from "
+                         f"earlier messages; any leads below are other people.")
+    for status in asked_status:
+        n = sum(1 for l in leads if l.get("status") == status)
+        listed = sum(1 for lid in cards if by_id[lid].get("status") == status)
+        blocks.insert(0, f"Note: {n} lead(s) in PACOS have status {status}"
+                         + (f"; {listed} of them are listed below." if n else "."))
     if len(company_only) > MAX_RECORDS - len(named) > 0:
         blocks.append(f"Note: only {MAX_RECORDS} of the {len(company_only)} leads at that "
                       f"company are listed here; say how many there are and offer to "
                       f"narrow down by name, role or city.")
 
     # Asset text: what the search pointed at, plus the asset the question names.
-    qset = set(_tokens(question))
     excerpts = []
     wanted = [n for n, words in _ASSET_WORDS.items() if qset & words]
     for lid in list(cards)[:3]:
@@ -704,13 +753,15 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
                 + (f", linked to lead_id {r['associated_lead_id']}" if r.get("associated_lead_id")
                    else ", not linked to a lead"))
 
-    # Always-useful pipeline lists for "who should I chase?"-style questions.
+    # The overdue list, only when it's asked about or the question is general
+    # (otherwise every answer about one person tacks on unrelated chasers).
     due = [l for l in leads if follow_up_overdue(l)]
-    if due:
+    if due and (qset & _FOLLOW_UP_WORDS or not (named or company_only or by_status)):
         blocks.append("Follow-ups due today or overdue: " + "; ".join(
             f"{l.get('full_name') or l['company_name']} @ {l['company_name']} "
             f"(lead_id {l['lead_id']}, due {l['follow_up_due']})" for l in due[:15])
             + (f"; and {len(due) - 15} more" if len(due) > 15 else ""))
 
-    matched = [lid for lid in cards if lid in named or lid in company_only]
-    return Retrieval(context="\n\n".join(blocks), cards=cards, named=named, matched=matched)
+    matched = [lid for lid in cards if lid in named or lid in company_only or lid in by_status]
+    return Retrieval(context="\n\n".join(blocks), cards=cards, named=named, matched=matched,
+                     missing=missing_person)

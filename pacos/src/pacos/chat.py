@@ -72,7 +72,12 @@ are guidance for you; never quote them. Say plainly where each person stands (se
 and when, any reply and its intent, when to follow up), quoting dates exactly.
 Several people with the same name: list each with their company and ask which
 one is meant. Nobody in RECORDS fits: say you couldn't find them in PACOS and
-suggest adding them as a lead. Never guess a status, date or reply. Put the
+suggest adding them as a lead. Never guess a status, date or reply. RECORDS is
+the only truth about the data: earlier messages may be out of date (a lead
+can be updated or deleted since), so never repeat facts about a person from
+the conversation unless RECORDS still shows them. Write plain sentences: do
+not copy labels like "Tracker status:", "Board column:" or lead_ids into the
+reply, and only mention follow-ups or other leads when asked about them. Put the
 lead_id of every lead your reply talks about into "records" (they are shown
 to the operator as cards under your reply); otherwise leave it empty.
 
@@ -217,7 +222,17 @@ def chat_turn(
         # Fixed line, not the model's: it has claimed "Removed X" or "already
         # rejected" when nothing was saved. Only the card can save.
         reply = _change_reply(change, found)
+    elif proposal and _claims_saved(reply):
+        # Same for lead proposals: "I've added X" when it is only a card.
+        reply = _proposal_reply(proposal)
 
+    if found.missing and not (proposal or draft or change):
+        # Asked about a full name no lead has (often: deleted). The model has
+        # answered these from earlier messages or other people with the same
+        # first name, so the answer is fixed. An "add <name>" still proposes.
+        reply = (f"I couldn't find anyone called {found.missing} in PACOS. They may never "
+                 f"have been added, or the lead was deleted. If you tell me their role and "
+                 f"company, I can add them as a lead.")
     if not reply:
         reply = (_proposal_reply(proposal) if proposal
                  else "Sorry, I didn't get a usable answer that time. Please try again.")
@@ -228,6 +243,8 @@ def chat_turn(
     ids = [i for i in _record_ids(raw) if i in found.cards]
     if not ids and not (proposal or draft or change):
         ids = found.matched
+    if found.missing and not (proposal or draft or change):
+        ids = []
     skip = change["lead_id"] if change else None
     cards = [found.cards[i] for i in dict.fromkeys(ids) if i != skip]
     # House style everywhere: no em/en dashes in anything the operator reads.
@@ -458,6 +475,17 @@ def _reply_text(raw: dict) -> str:
         if isinstance(val, str) and val.strip():
             return val.strip()
     return ""
+
+
+_SAVED_CLAIM = re.compile(
+    r"\b(i'?ve|i have|i)\s+(just\s+)?(added|saved|created|recorded|updated|deleted|removed)\b"
+    r"|\b(has|have)\s+been\s+(added|saved|created|recorded|updated|deleted|removed)\b"
+    r"|\bis now (in|on) your\b", re.I)
+
+
+def _claims_saved(reply: str) -> bool:
+    """Says something was written. Nothing in chat writes; only cards do."""
+    return bool(_SAVED_CLAIM.search(reply or ""))
 
 
 def _proposal_reply(proposal: dict) -> str:
