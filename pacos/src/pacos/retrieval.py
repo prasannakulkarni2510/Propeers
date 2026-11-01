@@ -27,6 +27,7 @@ import logging
 import re
 import sqlite3
 import threading
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import date
@@ -131,7 +132,7 @@ def describe_stage(lead: dict, today: date | None = None) -> str:
     return "Not contacted yet; outreach drafts haven't been generated."
 
 
-def record_card(lead: dict, assets: dict[str, str]) -> dict:
+def record_card(lead: dict, assets: dict[str, str], today: date | None = None) -> dict:
     """What the chat UI shows for a lead it talked about."""
     return {
         "lead_id": lead["lead_id"],
@@ -142,13 +143,13 @@ def record_card(lead: dict, assets: dict[str, str]) -> dict:
         "lead_type": lead.get("lead_type") or "person",
         "status": lead.get("status") or "",
         "stage": lead_stage(lead),
-        "summary": describe_stage(lead),
+        "summary": describe_stage(lead, today),
         "channel": lead.get("channel") or "",
         "outreach_sent_date": lead.get("outreach_sent_date") or "",
         "last_reply_date": lead.get("last_reply_date") or "",
         "reply_intent": lead.get("reply_intent") or "",
         "follow_up_due": lead.get("follow_up_due") or "",
-        "follow_up_overdue": follow_up_overdue(lead),
+        "follow_up_overdue": follow_up_overdue(lead, today),
         "email": lead.get("predicted_email") or lead.get("email") or "",
         "email_status": lead.get("email_status") or "",
         "linkedin_url": lead.get("linkedin_url") or "",
@@ -248,6 +249,7 @@ class _IndexBase:
         self._embedding = False
         self.last_error = ""
         self.vec_supported = True
+        self._failed_until = 0.0  # time.monotonic() until which embedding is paused
 
     @property
     def _semantic(self) -> bool:
@@ -260,8 +262,15 @@ class _IndexBase:
             self._sync_rows(docs, {d.doc_id: _hash(d.text) for d in docs})
         self._kick_embedding()
 
+    # After an embedding failure, wait this long before calling the
+    # endpoint again (it is often a rate limit that retrying makes worse).
+    COOLDOWN_S = 300
+
+    def _cooling_down(self) -> bool:
+        return time.monotonic() < self._failed_until
+
     def _kick_embedding(self) -> None:
-        if not self._semantic or self._embedding:
+        if not self._semantic or self._embedding or self._cooling_down():
             return
         self._embedding = True
         threading.Thread(target=self._embed_pending, daemon=True,
@@ -280,8 +289,9 @@ class _IndexBase:
                 with self._lock:
                     self._store(batch, vectors)
             self.last_error = ""
-        except Exception as e:  # keep chatting on keyword search; retry next sync
+        except Exception as e:  # keep chatting on keyword search; retry later
             self.last_error = str(e)
+            self._failed_until = time.monotonic() + self.COOLDOWN_S
             log.warning("Chat index embedding stopped: %s", e)
         finally:
             self._embedding = False
@@ -298,10 +308,13 @@ class _IndexBase:
         terms = [t for t in _tokens(query) if t not in _STOP and len(t) > 1]
         if terms:
             ranked.append(self._keyword(terms))
-        if self._semantic and self._has_vectors():
+        if self._semantic and not self._cooling_down() and self._has_vectors():
             try:
                 ranked.append(self._nearest(self.embedder.embed([query], "query")[0]))
             except Exception as e:
+                # Keyword search carries this turn; skip the endpoint for a
+                # while so every following turn doesn't wait on it too.
+                self._failed_until = time.monotonic() + self.COOLDOWN_S
                 log.warning("Semantic search skipped: %s", e)
         return _fuse(ranked, k)
 
@@ -620,10 +633,13 @@ def unknown_company(question: str, leads: list[dict]) -> str:
     """A company the operator names ("Rajesh from Capgemini") that no lead
     works at, or "". Lets the chat say "not in PACOS yet" instead of
     offering someone else with the same first name."""
+    # "Got a reply from Priya": a capitalised word after "from" is often a
+    # person, not a company. Names of leads never count as unknown companies.
+    people = {t for l in leads for t in _tokens(l.get("full_name"))}
     for m in _COMPANY_PHRASE.finditer(question):
         phrase = m.group(1).strip(" .")
         want = {t for t in _tokens(phrase) if t not in _COMPANY_FILLER}
-        if not want:
+        if not want or want <= people:
             continue
         known = False
         for l in leads:
@@ -677,7 +693,10 @@ class Retrieval:
 
 
 def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str, str]],
-             replies: list[dict], index: _IndexBase | None) -> Retrieval:
+             replies: list[dict], index: _IndexBase | None,
+             today: date | None = None) -> Retrieval:
+    """`today` is the operator's local date (overdue flags, "N days ago");
+    the server's date can be a day off."""
     asks = [m.get("content", "") for m in messages if m.get("role") == "user"]
     if not asks:
         return Retrieval()
@@ -721,11 +740,16 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
     if not named and qset & _FOLLOW_UP_WORDS:
         # "Who should I follow up with?" is about the overdue leads; pick them
         # so they show as cards too, most overdue first.
-        overdue = sorted((l for l in leads if follow_up_overdue(l)),
+        overdue = sorted((l for l in leads if follow_up_overdue(l, today)),
                          key=lambda l: l.get("follow_up_due") or "")
         by_status = [l["lead_id"] for l in overdue] + by_status
 
-    hits = index.search(question) if index is not None else []
+    hits = []
+    if index is not None:
+        try:
+            hits = index.search(question)
+        except Exception as e:  # a broken index mustn't break chat; names still match
+            log.warning("Chat record search failed: %s", e)
 
     chosen: list[str] = []
     for lid in named + company_only[: max(0, MAX_RECORDS - len(named))] + by_status:
@@ -738,7 +762,8 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
             if h["lead_id"] in by_id and h["lead_id"] not in chosen:
                 chosen.append(h["lead_id"])
 
-    cards = {lid: record_card(by_id[lid], assets.get(lid, {})) for lid in chosen[:MAX_RECORDS]}
+    cards = {lid: record_card(by_id[lid], assets.get(lid, {}), today)
+             for lid in chosen[:MAX_RECORDS]}
     blocks = [record_context(cards[lid], by_id[lid]) for lid in cards]
     if missing_company and not named:
         blocks.insert(0, f"Note: no lead in PACOS works at \"{missing_company}\". The person "
@@ -787,11 +812,11 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
 
     # The overdue list, only when it's asked about or the question is general
     # (otherwise every answer about one person tacks on unrelated chasers).
-    due = [l for l in leads if follow_up_overdue(l)]
+    due = [l for l in leads if follow_up_overdue(l, today)]
     if due and (qset & _FOLLOW_UP_WORDS or not (named or company_only or by_status)):
         blocks.append("Follow-ups due today or overdue: " + "; ".join(
             f"{l.get('full_name') or l['company_name']} @ {l['company_name']} "
-            f"(lead_id {l['lead_id']}, due {l['follow_up_due']}{_days_ago(l['follow_up_due'])})"
+            f"(lead_id {l['lead_id']}, due {l['follow_up_due']}{_days_ago(l['follow_up_due'], today)})"
             for l in due[:15])
             + (f"; and {len(due) - 15} more" if len(due) > 15 else ""))
 

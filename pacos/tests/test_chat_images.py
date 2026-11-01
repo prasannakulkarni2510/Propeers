@@ -67,3 +67,11 @@ def test_operator_date_is_used_when_plausible():
     assert service_mod.Service._operator_today(ahead).isoformat() == ahead
     assert service_mod.Service._operator_today("1999-01-01") == server
     assert service_mod.Service._operator_today("not-a-date") == server
+
+
+def test_retired_embedding_model_is_replaced(monkeypatch):
+    from pacos.config import DEFAULT_EMBEDDING_MODEL, _embedding_model
+    assert _embedding_model("BAAI/bge-m3") == DEFAULT_EMBEDDING_MODEL
+    assert _embedding_model(None) == DEFAULT_EMBEDDING_MODEL
+    assert _embedding_model("") == ""  # explicitly off stays off
+    assert _embedding_model("nvidia/other-embed") == "nvidia/other-embed"

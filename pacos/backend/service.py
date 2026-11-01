@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dataclasses import asdict
 
-from pacos.chat import chat_turn
+from pacos.chat import SCREENSHOT_MARK, chat_turn
 from pacos.config import Config, load
 from pacos.discovery import build_searches
 from pacos.inbox_monitor import run_monitor
@@ -66,10 +66,12 @@ class Service:
         messages, image_text, error = self._read_images(messages)
         if error:
             return error, None, [], False, None, [], None, ""
+        day = self._operator_today(today)
         with using_cv(cv_text):
             return (*chat_turn(self._llm(), self.stats(), messages,
-                               drafter=self._draft, retriever=self._retrieve,
-                               today=self._operator_today(today)), image_text)
+                               drafter=self._draft,
+                               retriever=lambda m: self._retrieve(m, day),
+                               today=day), image_text)
 
     @staticmethod
     def _operator_today(s: str | None):
@@ -101,7 +103,7 @@ class Service:
         except NemotronError as e:
             return messages, "", f"{e} Try again, or type what it says."
         said = (last.get("content") or "").strip()
-        read = f"[Attached screenshot, as read by the vision model]\n{text}"
+        read = f"{SCREENSHOT_MARK}\n{text}"
         messages[-1]["content"] = f"{said}\n\n{read}" if said else read
         return messages, text, ""
 
@@ -135,9 +137,9 @@ class Service:
                 pass  # a broken index mustn't break chat; name matching remains
         return leads, assets, replies, index
 
-    def _retrieve(self, messages: list[dict]):
+    def _retrieve(self, messages: list[dict], today=None):
         leads, assets, replies, index = self._sync_index()
-        return retrieve(messages, leads, assets, replies, index)
+        return retrieve(messages, leads, assets, replies, index, today)
 
     def apply_chat_change(self, ch: dict) -> dict:
         """Apply one confirmed chat change through the same store calls as the
@@ -169,7 +171,10 @@ class Service:
             ok = self.store.add_note(lead_id, ch["note"], self._d(when))
         if not ok:
             raise LookupError("lead not found")
-        return record_card(self.store.get_lead(lead_id), self.store.get_assets(lead_id))
+        # The card's date (blank ones are filled with the browser's today)
+        # stands in for the operator's day when it is plausible.
+        return record_card(self.store.get_lead(lead_id), self.store.get_assets(lead_id),
+                           self._operator_today(ch.get("date")))
 
     def chat_index_status(self) -> dict:
         index = self._record_index()

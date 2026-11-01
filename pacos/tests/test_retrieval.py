@@ -421,3 +421,80 @@ def test_draft_request_drops_an_unasked_lead_proposal():
     reply, proposal, _, _, draft, _, _ = chat_turn(c, {}, msgs, drafter=lambda *a: "Hi,",
                                                    retriever=_retriever)
     assert draft["asset"] == "cold_dm" and proposal is None and reply.startswith("Here's a draft")
+
+
+# ── findings from the code review on PR #1 ─────────────────────────────────
+def test_search_failure_falls_back_to_name_matching():
+    class Broken:
+        def search(self, q):
+            raise RuntimeError("connection reset")
+    r = retrieve([{"role": "user", "content": "where am I with Priya Shah?"}],
+                 LEADS, ASSETS, REPLIES, Broken())
+    assert r.named == ["razorpay-priya"]
+
+
+def test_first_name_after_from_is_not_an_unknown_company():
+    msgs = [{"role": "user", "content": "Got a reply from Priya, she's interested"}]
+    r = retrieve(msgs, LEADS, ASSETS, REPLIES, None)
+    assert "no lead in PACOS works at" not in r.context and "razorpay-priya" in r.matched
+
+
+def test_draft_words_inside_screenshot_text_or_a_long_paste_do_not_trigger_drafts():
+    from pacos.chat import SCREENSHOT_MARK, _draft_ask
+    shot = [{"role": "user", "content": f"{SCREENSHOT_MARK}\nHi, feel free to write back to this email."}]
+    assert _draft_ask(shot) == ""
+    jd = "Senior ML Engineer at Acme. " + "Build models. " * 60 + "Please write a cover letter."
+    assert _draft_ask([{"role": "user", "content": jd}]) == ""
+    assert _draft_ask([{"role": "user", "content": "write Priya an email"}]) == "write Priya an email"
+
+
+def test_bare_yes_with_a_dropped_change_does_not_promise_a_card():
+    c = FakeClient({"reply": "Ready to record that Priya rejected you. Click Apply on the card.",
+                    "change": {"lead_id": "razorpay-priya", "action": "reply", "intent": "rejected"}})
+    msgs = [{"role": "user", "content": "Priya Shah"},
+            {"role": "assistant", "content": "Should I record that Priya Shah rejected you?"},
+            {"role": "user", "content": "yes"}]
+    reply, *_, change = chat_turn(c, {}, msgs, retriever=_retriever)
+    assert change is None and "card" in reply and "Click Apply" not in reply
+    assert "tell me what happened" in reply
+
+
+def test_overdue_uses_the_operators_date():
+    soon = [lead("x", "Neha Rao", "Acme", status="sent", follow_up_due="2026-11-02")]
+    msgs = [{"role": "user", "content": "who should I follow up with?"}]
+    assert retrieve(msgs, soon, {}, [], None, date(2026, 11, 1)).matched == []
+    assert retrieve(msgs, soon, {}, [], None, date(2026, 11, 2)).matched == ["x"]
+
+
+def test_embedding_failure_pauses_semantic_search(tmp_path):
+    class Flaky(FakeEmbedder):
+        calls = 0
+        def embed(self, texts, kind="passage"):
+            if kind == "query":
+                Flaky.calls += 1
+                raise RuntimeError("429")
+            return super().embed(texts, kind)
+    idx = RecordIndex(tmp_path / "i.db", embedder=Flaky())
+    idx.sync(build_docs(LEADS, ASSETS, REPLIES))
+    for _ in range(50):
+        if idx.status()["embedded"] == 6:
+            break
+        time.sleep(0.05)
+    idx.search("anyone keen?")
+    idx.search("anyone keen?")
+    assert Flaky.calls == 1  # second turn didn't wait on the failing endpoint
+
+
+def test_event_about_a_unique_first_name_gets_a_change_and_ambiguous_asks():
+    c = TwoStepClient({"reply": "Let me check."},
+                      {"change": {"lead_id": "razorpay-priya", "action": "reply",
+                                  "intent": "interested"}})
+    msgs = [{"role": "user", "content": "Got a reply from Priya, she's interested"}]
+    change = chat_turn(c, {}, msgs, retriever=_retriever, today=TODAY)[6]
+    assert change and change["lead_id"] == "razorpay-priya"
+
+    two = LEADS + [lead("acme-priya", "Priya Iyer", "Acme")]
+    out = chat_turn(FakeClient({"reply": "Let me check."}), {}, msgs,
+                    retriever=lambda m: retrieve(m, two, {}, [], None), today=TODAY)
+    assert out[0].startswith("Which one do you mean: Priya Shah at Razorpay or Priya Iyer at Acme")
+    assert {x["lead_id"] for x in out[5]} == {"razorpay-priya", "acme-priya"} and out[6] is None

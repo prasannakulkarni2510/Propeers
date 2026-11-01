@@ -9,6 +9,7 @@ tenacity>=8.2.0          # retry Nemotron calls on transient errors
 pypdf>=4.0               # read uploaded PDF CVs (pure Python)
 langgraph>=1.0.0         # multi-agent generation pipeline (ADR 0002)
 langgraph-checkpoint-sqlite>=2.0.0
+sqlite-vec>=0.1.6        # chat search vectors (local SQLite index)
 
 # --- Optional: headless-browser Google fetch for Discovery auto-import ---
 # Not installed on cloud hosts (Chromium is too big for the Render free tier);

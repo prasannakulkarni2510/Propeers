@@ -203,10 +203,13 @@ def chat_turn(
         # A bare "yes"/"correct" reports nothing; the model has turned one
         # into an invented update ("replied, interested"). Cards apply
         # themselves with their own button.
-        change = None
+        dropped, change = change, None
         if after_draft and not (want or proposal):
             # …and after a draft it has claimed to be "sending" it.
             return (_DRAFT_DONE, None, [], True, None, [], None)
+        if dropped and not (ask or proposal):
+            # Its reply points at a card that won't be shown.
+            return (_RESTATE, None, [], True, None, [], None)
     if not (want or change) and ask:
         want = _infer_draft(ask, found)
 
@@ -221,7 +224,7 @@ def chat_turn(
         # Fixed line, not the model's: it sometimes writes its own rough
         # draft into "reply", which would show twice and skip the rules.
         reply = f"Here's a draft {_DRAFT_NAMES[asset]}. Review it before sending."
-        if proposal and not _ADD_RE.search(question):
+        if proposal and not _ADD_RE.search(_typed(question)):
             # "Draft a DM to an ML manager at Swiggy" asks for writing, not a
             # new lead; the model proposes one anyway (and withholds the draft).
             proposal, warnings = None, []
@@ -229,16 +232,29 @@ def chat_turn(
     # The main call often answers an event ("X rejected me") in prose without
     # attaching the change. When the message reports one about exactly one
     # named lead, a narrow second call extracts just the change.
-    if (change is None and not want and len(found.named) == 1
-            and _reports_event(question)):
+    # Who an event is about: the lead named in full, else the only lead whose
+    # first name (or company) was used ("got a reply from Aditi").
+    target = (found.named if len(found.named) == 1
+              else found.matched if not found.named and len(found.matched) == 1 else [])
+    reports = change is None and not want and _reports_event(question)
+    if reports and target:
         # The model sometimes misses the record and offers to add the person
         # as a new lead instead; a proposal for the lead already found is
         # a duplicate, so it gives way to the change.
-        named = found.cards[found.named[0]]
-        if proposal and _same_person(proposal, named):
+        if proposal and _same_person(proposal, found.cards[target[0]]):
             proposal, warnings = None, []
         if not proposal:
-            change = _extract_change(client, question, found, today)
+            change = _extract_change(client, question, found, today, target[0])
+    elif (reports and not ask and not found.named and not proposal
+          and 1 < len(found.matched) <= 6):
+        # Two Aditis: ask which, instead of the model's "let me check".
+        cards = [found.cards[i] for i in found.matched]
+        options = " or ".join(
+            f"{c['full_name']} at {c['company_name']}" if c["company_name"] else c["full_name"]
+            for c in cards)
+        return (_plain(strip_dashes(f"Which one do you mean: {options}? Tell me the full name "
+                                    f"and I'll set up the update.")),
+                None, [], True, None, cards, None)
     if change:
         # Fixed line, not the model's: it has claimed "Removed X" or "already
         # rejected" when nothing was saved. Only the card can save.
@@ -297,19 +313,39 @@ _NOT_FOUND = re.compile(
     r"|no record of|isn'?t in (your )?(pacos|records)", re.I)
 _ADD_RE = re.compile(r"\b(add|track|save|create)\b", re.I)
 
+_RESTATE = ("To update a lead, tell me what happened in one sentence, for example "
+            "\"Priya rejected me\" or \"I emailed Karan today\", and I'll set up the "
+            "update card for you to check.")
+
 _DRAFT_DONE = ("The draft is above. Copy it, edit anything you like, and send it "
                "yourself; PACOS never sends anything. Want me to change anything in it?")
+
+
+SCREENSHOT_MARK = "[Attached screenshot, as read by the vision model]"
+
+
+def _typed(content: str) -> str:
+    """What the operator typed, without text read from attached screenshots
+    (service.py folds that in after this marker)."""
+    return content.split(SCREENSHOT_MARK, 1)[0].strip()
+
+
+def _asks_to_write(typed: str) -> bool:
+    """An instruction to write something. In a long paste (a JD, a recruiter
+    message) only the opening counts: "please write a cover letter…" deep
+    inside a job post is the post talking, not the operator."""
+    return bool(_DRAFT_RE.search(typed if len(typed) <= 400 else typed[:300]))
 
 
 def _draft_ask(messages: list[dict]) -> str:
     """The operator's request for a piece of writing: their latest message,
     or the one before it when the latest just says "yes"/"correct"."""
-    asks = [m.get("content", "") for m in messages if m.get("role") == "user"]
+    asks = [_typed(m.get("content", "")) for m in messages if m.get("role") == "user"]
     if not asks:
         return ""
-    if _DRAFT_RE.search(asks[-1]):
+    if _asks_to_write(asks[-1]):
         return asks[-1]
-    if len(asks) > 1 and _AFFIRM_RE.match(asks[-1]) and _DRAFT_RE.search(asks[-2]):
+    if len(asks) > 1 and _AFFIRM_RE.match(asks[-1]) and _asks_to_write(asks[-2]):
         last_answer = next((m.get("content", "") for m in reversed(messages)
                             if m.get("role") == "assistant"), "")
         if not last_answer.startswith("Here's a draft"):  # already written
@@ -352,6 +388,8 @@ def _change_request(raw: dict, found: Retrieval, today: date) -> dict | None:
     action = str(c.get("action", "") or "").strip().lower()
     if lead_id not in found.cards or action not in CHANGE_ACTIONS:
         return None
+    if lead_id not in found.named and len(found.matched) > 1:
+        return None  # "Aditi" with two Aditis: the model would be guessing
     pick = lambda key, allowed: (v if (v := str(c.get(key, "") or "").strip().lower()) in allowed
                                  else "")
     channel, intent, status = pick("channel", CHANNELS), pick("intent", INTENTS), pick("status", STATUSES)
@@ -398,7 +436,7 @@ _NOTE_FILLER = set("""
 a an the to from at for with on via by of and me i my you he she they them his her
 sent send dm dmed email emailed mail mailed message messaged linkedin outreach
 reply replied rejected rejection interested interview scheduled offer status
-follow up followup lead today yesterday
+follow up followup lead today yesterday operator said says told mentioned
 """.split())
 
 
@@ -489,9 +527,8 @@ when there is nothing extra.
 """
 
 
-def _extract_change(client, question: str, found: Retrieval, today: date) -> dict | None:
-    lead_id = found.named[0]
-
+def _extract_change(client, question: str, found: Retrieval, today: date,
+                    lead_id: str) -> dict | None:
     card = found.cards[lead_id]
     system = _EXTRACT_SYSTEM.format(
         today=_day(today), lead_id=lead_id, calendar=_calendar(today),

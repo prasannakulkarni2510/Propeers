@@ -21,6 +21,25 @@ else:
     REPO_ROOT = Path(__file__).resolve().parents[2]
 
 
+DEFAULT_EMBEDDING_MODEL = "nvidia/nemotron-3.5-embed-1b"
+# Shipped in older .env.example files, before embeddings moved to NVIDIA NIM.
+# NIM has retired it, so sending it would only fail on every chat turn.
+_RETIRED_EMBEDDING_MODELS = {"baai/bge-m3"}
+
+
+def _embedding_model(value: str | None) -> str:
+    """EMBEDDING_MODEL, with a retired legacy value swapped for the default.
+    Unset means the default; set but empty means "no semantic search"."""
+    if value is None:
+        return DEFAULT_EMBEDDING_MODEL
+    value = value.strip()
+    if value.lower() in _RETIRED_EMBEDDING_MODELS:
+        print(f"[pacos] EMBEDDING_MODEL={value} is retired; using "
+              f"{DEFAULT_EMBEDDING_MODEL}. Update your .env.", file=sys.stderr)
+        return DEFAULT_EMBEDDING_MODEL
+    return value
+
+
 def _path(env_value: str) -> Path:
     """Resolve a configured path relative to the repo root when not absolute."""
     p = Path(env_value)
@@ -104,7 +123,7 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
         in {"1", "true", "yes", "on"},
         nemotron_reasoning_budget=int(os.getenv("NEMOTRON_REASONING_BUDGET", "4096")),
         database_url=os.getenv("DATABASE_URL", "").strip(),
-        embedding_model=os.getenv("EMBEDDING_MODEL", "nvidia/nemotron-3.5-embed-1b").strip(),
+        embedding_model=_embedding_model(os.getenv("EMBEDDING_MODEL")),
         hf_token=os.getenv("HF_TOKEN", "").strip(),
         leads_csv=_path(os.getenv("LEADS_CSV_PATH", "data/leads.csv")),
         output_dir=_path(os.getenv("OUTPUT_DIR", "output")),

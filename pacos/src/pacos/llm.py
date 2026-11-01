@@ -132,20 +132,25 @@ class NemotronEmbedder:
     def model(self) -> str:
         return self._cfg.embedding_model
 
-    @retry(reraise=True, stop=stop_after_attempt(3),
-           wait=wait_exponential(multiplier=1, min=2, max=20))
-    def _embed_batch(self, texts: list[str], kind: str) -> list[list[float]]:
+    def _embed_once(self, texts: list[str], kind: str, *, timeout: float,
+                    max_retries: int) -> list[list[float]]:
         if self._client is None:
             from openai import OpenAI
 
             self._client = OpenAI(api_key=self._cfg.nvidia_api_key,
                                   base_url=self._cfg.nemotron_base_url)
-        resp = self._client.embeddings.create(
+        resp = self._client.with_options(timeout=timeout, max_retries=max_retries).embeddings.create(
             model=self._cfg.embedding_model,
             input=texts,
             extra_body={"input_type": kind, "truncate": "END"},
         )
         return [d.embedding for d in sorted(resp.data, key=lambda d: d.index)]
+
+    @retry(reraise=True, stop=stop_after_attempt(3),
+           wait=wait_exponential(multiplier=1, min=2, max=20))
+    def _embed_batch(self, texts: list[str], kind: str) -> list[list[float]]:
+        # Background indexing: patient, it isn't blocking anyone.
+        return self._embed_once(texts, kind, timeout=60, max_retries=2)
 
     def embed(self, texts: list[str], kind: str = "passage") -> list[list[float]]:
         if not self.available:
@@ -153,7 +158,13 @@ class NemotronEmbedder:
         out: list[list[float]] = []
         for i in range(0, len(texts), self.BATCH):
             try:
-                out.extend(self._embed_batch(texts[i:i + self.BATCH], kind))
+                if kind == "query":
+                    # A chat turn is waiting: one short try, then the caller
+                    # falls back to keyword search.
+                    out.extend(self._embed_once(texts[i:i + self.BATCH], kind,
+                                                timeout=8, max_retries=0))
+                else:
+                    out.extend(self._embed_batch(texts[i:i + self.BATCH], kind))
             except Exception as e:  # network/API errors -> one error type for callers
                 raise NemotronError(f"Embedding call failed: {e}") from e
         return out

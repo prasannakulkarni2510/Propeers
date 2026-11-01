@@ -11,12 +11,18 @@ const READ_LABEL = "[Attached screenshot, as read by the vision model]";
 
 // What a past message says to the server. Images are sent once, with the
 // message they're attached to; afterwards their text stands in for them.
-const forServer = (m) => ({
-  role: m.role,
-  content: m.imageText
-    ? [m.content, `${READ_LABEL}\n${m.imageText}`].filter(Boolean).join("\n\n")
-    : m.content,
-});
+// Server limit per message (backend/models.py ChatMessage.content). A long
+// paste plus the text read from its screenshot can exceed it, which would
+// make every later turn fail; the image text is kept, the typed text trimmed.
+const MAX_CONTENT = 20000;
+
+const forServer = (m) => {
+  if (!m.imageText) return { role: m.role, content: m.content.slice(0, MAX_CONTENT) };
+  const read = `${READ_LABEL}\n${m.imageText}`.slice(0, MAX_CONTENT);
+  const room = MAX_CONTENT - read.length - 2;
+  const typed = room > 0 ? m.content.slice(0, room) : "";
+  return { role: m.role, content: [typed, read].filter(Boolean).join("\n\n") };
+};
 
 // A lead the assistant proposed mid-chat. Editable; nothing is written until
 // the operator clicks Add (which uses the same POST /api/leads as the forms).
@@ -361,7 +367,11 @@ export default function Chat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onPaste={(e) => {
-            if (imageFiles(e.clipboardData?.files).length) {
+            // Word/Excel/Outlook put a picture of the text on the clipboard
+            // next to the text itself; then the text is what was meant.
+            const types = [...(e.clipboardData?.types || [])];
+            const hasText = types.includes("text/plain") || types.includes("text/html");
+            if (!hasText && imageFiles(e.clipboardData?.files).length) {
               e.preventDefault();
               attach(e.clipboardData.files);
             }
