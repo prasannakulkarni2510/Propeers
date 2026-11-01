@@ -91,6 +91,18 @@ PACOS where the frontend needs a CDN.
   free managed Postgres (Neon) in the cloud via `DATABASE_URL`, because free
   hosts have no persistent disks. Neon's free tier (0.5 GB) is orders of
   magnitude beyond what one operator's tracker will ever need.
+- **Vector DB (chat search)** — no extra service: with `DATABASE_URL` set,
+  the chat's record index lives in the same Postgres, using **pgvector** for
+  embeddings and Postgres full-text search for keywords (tables `chat_docs`,
+  `chat_meta`). The app runs `CREATE EXTENSION IF NOT EXISTS vector` on start;
+  Neon allows that for the database owner, so there is nothing to click.
+  Vectors survive restarts, so a sleeping free instance doesn't re-embed every
+  lead on wake (only new or changed leads are embedded, in the background).
+  Check it at `GET /api/chat/index`: `"backend": "postgres"`, `"semantic":
+  true`, and `embedded` equal to `documents` once the first pass is done. If
+  the extension can't be created, chat falls back to keyword + name search
+  and the log says why. Without `DATABASE_URL` (local/exe) the index is a
+  SQLite file (`chat_index.db`, sqlite-vec) next to `tracker.db`.
 - **Authentication** — single-operator bearer token (`PACOS_AUTH_TOKEN`).
   The backend middleware 401s any `/api/*` call without
   `Authorization: Bearer <token>`; the dashboard prompts once and stores it

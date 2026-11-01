@@ -112,6 +112,84 @@ class NemotronClient:
         ).strip()
 
 
+class NemotronEmbedder:
+    """Text embeddings from the same NVIDIA NIM endpoint and key as generation.
+    Used by the chat's record retrieval (retrieval.py). `kind` is "query" for
+    the operator's question and "passage" for the records being indexed;
+    retrieval models embed the two differently."""
+
+    BATCH = 50
+
+    def __init__(self, cfg: Config):
+        self._cfg = cfg
+        self._client = None
+
+    @property
+    def available(self) -> bool:
+        return self._cfg.has_nemotron_key and bool(self._cfg.embedding_model)
+
+    @property
+    def model(self) -> str:
+        return self._cfg.embedding_model
+
+    @retry(reraise=True, stop=stop_after_attempt(3),
+           wait=wait_exponential(multiplier=1, min=2, max=20))
+    def _embed_batch(self, texts: list[str], kind: str) -> list[list[float]]:
+        if self._client is None:
+            from openai import OpenAI
+
+            self._client = OpenAI(api_key=self._cfg.nvidia_api_key,
+                                  base_url=self._cfg.nemotron_base_url)
+        resp = self._client.embeddings.create(
+            model=self._cfg.embedding_model,
+            input=texts,
+            extra_body={"input_type": kind, "truncate": "END"},
+        )
+        return [d.embedding for d in sorted(resp.data, key=lambda d: d.index)]
+
+    def embed(self, texts: list[str], kind: str = "passage") -> list[list[float]]:
+        if not self.available:
+            raise NemotronError("Embeddings need NVIDIA_API_KEY and EMBEDDING_MODEL.")
+        out: list[list[float]] = []
+        for i in range(0, len(texts), self.BATCH):
+            try:
+                out.extend(self._embed_batch(texts[i:i + self.BATCH], kind))
+            except Exception as e:  # network/API errors -> one error type for callers
+                raise NemotronError(f"Embedding call failed: {e}") from e
+        return out
+
+
+_VISION_PROMPT = """These are screenshots a job seeker attached to a message
+about their job search (emails, LinkedIn messages, job posts, calendar
+invites). Transcribe all readable text exactly, keeping names, email
+addresses, companies, roles and dates. Then add one line starting
+"Summary:" saying what it is, who it is from and at which company, the date,
+and what it means for the job seeker. If an image has no text, describe it
+in one sentence. Plain text only."""
+
+
+def describe_images(client: NemotronClient, images: list[str], cfg: Config) -> str:
+    """Read attached images (data: URLs) with the vision model. The images
+    are only sent to NVIDIA for this call; nothing is stored."""
+    oc = client._ensure_client()
+    content: list[dict[str, Any]] = [{"type": "text", "text": _VISION_PROMPT}]
+    content += [{"type": "image_url", "image_url": {"url": u}} for u in images]
+    try:
+        resp = oc.chat.completions.create(
+            model=cfg.vision_model,
+            messages=[{"role": "user", "content": content}],
+            temperature=0.0,
+            max_tokens=1500,
+            extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+        )
+    except Exception as e:
+        raise NemotronError(f"Couldn't read the image: {e}") from e
+    text = (resp.choices[0].message.content or "").strip()
+    if not text:
+        raise NemotronError("The vision model returned nothing for that image.")
+    return text
+
+
 _FENCE_RE = re.compile(r"```(?:json)?\s*(\{.*?\})\s*```", re.DOTALL)
 
 
@@ -119,13 +197,15 @@ def _extract_json(text: str) -> dict[str, Any] | None:
     """Pull the first JSON object out of a model reply.
 
     Handles three cases: clean JSON, a ```json fenced block, and JSON embedded in
-    surrounding prose (by scanning for the first balanced { ... }).
+    surrounding prose (by scanning for the first balanced { ... }). Raw line
+    breaks inside strings are accepted (strict=False): models emit them in
+    long replies, and rejecting the whole answer over that helps no one.
     """
     text = text.strip()
 
     # 1) Whole response is JSON.
     try:
-        parsed = json.loads(text)
+        parsed = json.loads(text, strict=False)
         if isinstance(parsed, dict):
             return parsed
     except json.JSONDecodeError:
@@ -135,7 +215,7 @@ def _extract_json(text: str) -> dict[str, Any] | None:
     m = _FENCE_RE.search(text)
     if m:
         try:
-            return json.loads(m.group(1))
+            return json.loads(m.group(1), strict=False)
         except json.JSONDecodeError:
             pass
 
@@ -164,7 +244,7 @@ def _extract_json(text: str) -> dict[str, Any] | None:
                 if depth == 0:
                     candidate = text[start : i + 1]
                     try:
-                        parsed = json.loads(candidate)
+                        parsed = json.loads(candidate, strict=False)
                         if isinstance(parsed, dict):
                             return parsed
                     except json.JSONDecodeError:

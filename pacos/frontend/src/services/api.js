@@ -1,3 +1,5 @@
+import { localToday } from "../lib/dates";
+
 // All FastAPI calls live here. In dev, BASE is "" and Vite proxies /api.
 const BASE = import.meta.env.VITE_API_URL || "";
 
@@ -79,7 +81,12 @@ export const api = {
   parseJd: (text) =>
     req("/api/leads/parse-jd", { method: "POST", body: JSON.stringify({ text }) }),
   chat: (messages) =>
-    req("/api/chat", { method: "POST", body: JSON.stringify(withSessionCv({ messages })) }),
+    req("/api/chat", {
+      method: "POST",
+      body: JSON.stringify(withSessionCv({ messages, today: localToday() })),
+    }),
+  applyChatChange: (body) =>
+    req("/api/chat/apply", { method: "POST", body: JSON.stringify(body) }),
   discovery: (body) =>
     req("/api/discovery", { method: "POST", body: JSON.stringify(body) }),
   enrich: (body) =>

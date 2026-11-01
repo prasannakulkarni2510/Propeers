@@ -1,4 +1,4 @@
-import { Link, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
 import { useAgentPolling } from "./hooks/useAgentStatus";
@@ -18,18 +18,18 @@ import { authToken } from "./services/api";
 
 // `badge` picks a count from pipelineCounts; `badgeTone` colours it.
 const NAV = [
-  { to: "/", label: "Dashboard", end: true },
+  { to: "/", label: "Chat", end: true },
+  { to: "/dashboard", label: "Dashboard" },
   { to: "/leads", label: "Leads" },
   { to: "/assets", label: "Assets" },
   { to: "/approvals", label: "Approvals", badge: "ready", hint: "ready to send" },
   { to: "/tracker", label: "Tracker", badge: "due", badgeTone: "warn", hint: "follow-ups due" },
-  { to: "/chat", label: "Chat" },
   { to: "/discovery", label: "Discovery" },
 ];
 
 const TITLES = {
-  "/": "Dashboard", "/leads": "Leads", "/assets": "Assets", "/approvals": "Approvals",
-  "/tracker": "Tracker", "/chat": "Chat", "/discovery": "Discovery", "/about": "About",
+  "/": "Chat", "/dashboard": "Dashboard", "/leads": "Leads", "/assets": "Assets", "/approvals": "Approvals",
+  "/tracker": "Tracker", "/discovery": "Discovery", "/about": "About",
 };
 
 function Toast() {
@@ -64,7 +64,7 @@ function NotFound() {
     <div className="empty-state">
       <h1 className="page-title">Page not found</h1>
       <p className="page-sub">That address isn't part of PACOS.</p>
-      <Link className="btn btn-accent" to="/">Back to the dashboard</Link>
+      <Link className="btn btn-accent" to="/dashboard">Back to the dashboard</Link>
     </div>
   );
 }
@@ -158,7 +158,7 @@ export default function App() {
         </nav>
         <div className="sidebar-foot">
           {generating && (
-            <NavLink to="/" onClick={onNavigate} className="sidebar-live">
+            <NavLink to="/dashboard" onClick={onNavigate} className="sidebar-live">
               <span className="dot running" /> Generating assets…
             </NavLink>
           )}
@@ -182,13 +182,15 @@ export default function App() {
       </aside>
       <main className="content" id="main">
         <Routes>
-          <Route path="/" element={<Home />} />
+          <Route path="/" element={<Chat />} />
+          <Route path="/dashboard" element={<Home />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/assets" element={<Assets />} />
           <Route path="/assets/:leadId" element={<Assets />} />
           <Route path="/approvals" element={<Approvals />} />
           <Route path="/tracker" element={<Tracker />} />
-          <Route path="/chat" element={<Chat />} />
+          {/* Old bookmarks: chat used to live here before it became the home page. */}
+          <Route path="/chat" element={<Navigate to="/" replace />} />
           <Route path="/discovery" element={<Discovery />} />
           <Route path="/about" element={<About />} />
           <Route path="*" element={<NotFound />} />

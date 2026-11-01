@@ -344,6 +344,14 @@ class PacosStore:
             cols["follow_up_due"] = ""
         return self._tracker_update(lead_id, **cols)
 
+    def add_note(self, lead_id, text: str, on: date | None = None) -> bool:
+        """Append a dated line to the lead's tracker notes."""
+        line = f"{(on or date.today()).isoformat()}: {text.strip()}"
+        with self._conn() as c:
+            row = c.execute("SELECT notes FROM tracker WHERE lead_id=?", (lead_id,)).fetchone()
+        old = ((row["notes"] if row else "") or "").strip()
+        return self._tracker_update(lead_id, notes=f"{old}\n{line}" if old else line)
+
     # ── queries ──────────────────────────────────────────────────────────
     def due_followups(self, on: date | None = None) -> list[dict]:
         on = on or date.today()
@@ -436,6 +444,14 @@ class PacosStore:
                 "SELECT name, content FROM assets WHERE lead_id=?", (lead_id,)
             ).fetchall()
         return {r["name"]: r["content"] or "" for r in rows}
+
+    def all_assets(self) -> dict[str, dict[str, str]]:
+        """Every stored asset in one query: {lead_id: {name: content}}."""
+        out: dict[str, dict[str, str]] = {}
+        with self._conn() as c:
+            for r in c.execute("SELECT lead_id, name, content FROM assets").fetchall():
+                out.setdefault(r["lead_id"], {})[r["name"]] = r["content"] or ""
+        return out
 
     # ── unmatched replies ────────────────────────────────────────────────
     def add_unmatched_reply(self, *, received_date, sender, subject, intent) -> None:

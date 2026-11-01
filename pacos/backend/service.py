@@ -1,6 +1,7 @@
 """Service layer: bridges the FastAPI routes to the store + LangGraph pipeline."""
 from __future__ import annotations
 
+import logging
 import threading
 from datetime import datetime
 
@@ -14,9 +15,13 @@ from pacos.jd_parser import parse_jd
 from pacos.leads import (Lead, append_lead_to_csv, build_lead, load_leads,
                          remove_lead_from_csv)
 from pacos.graph.nodes import using_cv
-from pacos.llm import NemotronClient
+from pacos.llm import NemotronClient, NemotronEmbedder, NemotronError, describe_images
+from pacos.retrieval import build_docs, open_index, retrieve
 from pacos.pipeline import Pipeline
 from pacos.store import PacosStore
+
+
+log = logging.getLogger(__name__)
 
 
 class Service:
@@ -28,6 +33,10 @@ class Service:
         self._pipeline: Pipeline | None = None
         self._client: NemotronClient | None = None
         self._lock = threading.Lock()
+        self._index = None  # chat record index, opened on first use
+        # Build the chat's record index in the background so the first
+        # question doesn't wait on it (embedding is the slow part).
+        threading.Thread(target=self._sync_index, daemon=True).start()
 
     def _llm(self) -> NemotronClient:
         if self._client is None:
@@ -43,12 +52,128 @@ class Service:
     def leads_with_state(self) -> list[dict]:
         return self.store.get_leads()
 
-    def chat(self, messages: list[dict], cv_text: str | None = None):
+    def chat(self, messages: list[dict], cv_text: str | None = None,
+             today: str | None = None):
         """One assistant turn. May return a lead proposal (never written) or a
-        requested draft, grounded in the visitor's temporary CV when given."""
+        requested draft, grounded in the visitor's temporary CV when given.
+        Questions about the operator's data are answered from looked-up
+        records (leads, tracker, assets, inbox replies).
+
+        Images on the latest message are read first, and their text joins
+        that message, so a screenshot of a rejection email is looked up and
+        turned into a change card like the typed sentence would be. Returns
+        chat_turn's tuple plus the text read from the images."""
+        messages, image_text, error = self._read_images(messages)
+        if error:
+            return error, None, [], False, None, [], None, ""
         with using_cv(cv_text):
-            return chat_turn(self._llm(), self.stats(), messages,
-                             drafter=self._draft)
+            return (*chat_turn(self._llm(), self.stats(), messages,
+                               drafter=self._draft, retriever=self._retrieve,
+                               today=self._operator_today(today)), image_text)
+
+    @staticmethod
+    def _operator_today(s: str | None):
+        """The browser's local date when it's plausible (within a day of the
+        server's UTC date), else the server's. Time zones only differ by a day."""
+        from datetime import date, timedelta, timezone
+
+        server = datetime.now(timezone.utc).date()
+        try:
+            d = date.fromisoformat(s) if s else None
+        except ValueError:
+            d = None
+        return d if d and abs(d - server) <= timedelta(days=1) else server
+
+    def _read_images(self, messages: list[dict]) -> tuple[list[dict], str, str]:
+        """(messages with image text folded in, image text, error reply).
+        Only the latest message's images are read; earlier turns already
+        carry their text. Images are not kept anywhere."""
+        last = messages[-1] if messages else {}
+        images = last.get("images") or []
+        messages = [{k: v for k, v in m.items() if k != "images"} for m in messages]
+        if not images or last.get("role") != "user":
+            return messages, "", ""
+        if not self._llm().available:
+            return messages, "", ("Reading images needs Nemotron, and NVIDIA_API_KEY is "
+                                  "not set in .env. Type what the image says instead.")
+        try:
+            text = describe_images(self._llm(), images, self.cfg)
+        except NemotronError as e:
+            return messages, "", f"{e} Try again, or type what it says."
+        said = (last.get("content") or "").strip()
+        read = f"[Attached screenshot, as read by the vision model]\n{text}"
+        messages[-1]["content"] = f"{said}\n\n{read}" if said else read
+        return messages, text, ""
+
+    # ── chat record search ───────────────────────────────────────────────
+    def _record_index(self):
+        if self._index is None:
+            try:
+                # Same database as the tracker in the cloud (Postgres +
+                # pgvector, survives restarts); its own disposable SQLite
+                # file locally, rebuilt from the store when missing.
+                self._index = open_index(
+                    database_url=self.cfg.database_url,
+                    sqlite_path=self.cfg.db_path.with_name("chat_index.db"),
+                    embedder=NemotronEmbedder(self.cfg))
+            except Exception as e:  # DB unreachable etc.: chat still matches by name
+                log.warning("Chat record index unavailable: %s", e)
+                return None
+        return self._index
+
+    def _sync_index(self):
+        """Bring the index up to date with the store. Returns the snapshot it
+        used, so a chat turn reasons over exactly what it searched."""
+        leads = self.store.get_leads()
+        assets = self.store.all_assets()
+        replies = self.store.list_unmatched(include_associated=True)
+        index = self._record_index()
+        if index is not None:
+            try:
+                index.sync(build_docs(leads, assets, replies))
+            except Exception:
+                pass  # a broken index mustn't break chat; name matching remains
+        return leads, assets, replies, index
+
+    def _retrieve(self, messages: list[dict]):
+        leads, assets, replies, index = self._sync_index()
+        return retrieve(messages, leads, assets, replies, index)
+
+    def apply_chat_change(self, ch: dict) -> dict:
+        """Apply one confirmed chat change through the same store calls as the
+        Approvals/Tracker buttons. Raises LookupError / ValueError."""
+        from pacos.retrieval import record_card
+
+        lead_id = ch["lead_id"]
+        if self.store.get_lead(lead_id) is None:
+            raise LookupError("lead not found")
+        when = ch.get("date") or None
+        action = ch["action"]
+        if action == "sent":
+            ok, _ = self.mark_sent(lead_id, ch.get("channel") or "email", when)
+        elif action == "reply":
+            if not ch.get("intent"):
+                raise ValueError("A reply needs an intent.")
+            ok, _ = self.mark_reply(lead_id, ch["intent"], when)
+        elif action == "status":
+            if not ch.get("status"):
+                raise ValueError("Pick a status.")
+            ok, _ = self.mark_status(lead_id, ch["status"])
+        elif action == "note":
+            if not (ch.get("note") or "").strip():
+                raise ValueError("The note is empty.")
+            ok = True
+        else:
+            raise ValueError(f"Unknown action {action!r}.")
+        if ok and (ch.get("note") or "").strip():
+            ok = self.store.add_note(lead_id, ch["note"], self._d(when))
+        if not ok:
+            raise LookupError("lead not found")
+        return record_card(self.store.get_lead(lead_id), self.store.get_assets(lead_id))
+
+    def chat_index_status(self) -> dict:
+        index = self._record_index()
+        return index.status() if index is not None else {"documents": 0, "semantic": False}
 
     def _draft(self, asset: str, to: dict, request: str) -> str:
         """Write one piece of outreach asked for in chat, with the same spec,
