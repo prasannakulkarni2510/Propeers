@@ -1,6 +1,7 @@
 """Service layer: bridges the FastAPI routes to the store + LangGraph pipeline."""
 from __future__ import annotations
 
+import logging
 import threading
 from datetime import datetime
 
@@ -15,9 +16,12 @@ from pacos.leads import (Lead, append_lead_to_csv, build_lead, load_leads,
                          remove_lead_from_csv)
 from pacos.graph.nodes import using_cv
 from pacos.llm import NemotronClient, NemotronEmbedder, NemotronError, describe_images
-from pacos.retrieval import RecordIndex, build_docs, retrieve
+from pacos.retrieval import build_docs, open_index, retrieve
 from pacos.pipeline import Pipeline
 from pacos.store import PacosStore
+
+
+log = logging.getLogger(__name__)
 
 
 class Service:
@@ -29,7 +33,7 @@ class Service:
         self._pipeline: Pipeline | None = None
         self._client: NemotronClient | None = None
         self._lock = threading.Lock()
-        self._index: RecordIndex | None = None
+        self._index = None  # chat record index, opened on first use
         # Build the chat's record index in the background so the first
         # question doesn't wait on it (embedding is the slow part).
         threading.Thread(target=self._sync_index, daemon=True).start()
@@ -87,14 +91,18 @@ class Service:
         return messages, text, ""
 
     # ── chat record search ───────────────────────────────────────────────
-    def _record_index(self) -> RecordIndex | None:
+    def _record_index(self):
         if self._index is None:
             try:
-                # Its own file: the index is disposable and rebuilt from the
-                # store, and stays SQLite even when the store is Postgres.
-                self._index = RecordIndex(
-                    self.cfg.db_path.with_name("chat_index.db"), NemotronEmbedder(self.cfg))
-            except Exception:  # unwritable dir etc.: chat still matches by name
+                # Same database as the tracker in the cloud (Postgres +
+                # pgvector, survives restarts); its own disposable SQLite
+                # file locally, rebuilt from the store when missing.
+                self._index = open_index(
+                    database_url=self.cfg.database_url,
+                    sqlite_path=self.cfg.db_path.with_name("chat_index.db"),
+                    embedder=NemotronEmbedder(self.cfg))
+            except Exception as e:  # DB unreachable etc.: chat still matches by name
+                log.warning("Chat record index unavailable: %s", e)
                 return None
         return self._index
 

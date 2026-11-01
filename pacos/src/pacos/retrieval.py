@@ -211,14 +211,99 @@ def build_docs(leads: list[dict], assets: dict[str, dict[str, str]],
 
 
 # ── the index ───────────────────────────────────────────────────────────────
-class RecordIndex:
-    def __init__(self, path: str | Path, embedder=None):
-        self.path = Path(path)
+def _fuse(ranked: list[list[dict]], k: int) -> list[dict]:
+    """Reciprocal-rank fusion of keyword and semantic result lists."""
+    scores: dict[str, float] = {}
+    rows: dict[str, dict] = {}
+    for result in ranked:
+        for rank, r in enumerate(result):
+            scores[r["doc_id"]] = scores.get(r["doc_id"], 0.0) + 1.0 / (60 + rank)
+            rows[r["doc_id"]] = r
+    best = sorted(scores, key=scores.get, reverse=True)[:k]
+    return [{"doc_id": d, "lead_id": rows[d]["lead_id"], "kind": rows[d]["kind"],
+             "score": scores[d]} for d in best]
+
+
+class _IndexBase:
+    """What both backends share: change detection by content hash, background
+    embedding of changed documents, and hybrid search. Subclasses supply the
+    storage (`_sync_rows`, `_keyword`, `_nearest`, `_pending`, `_store`...)."""
+
+    backend = ""
+
+    def __init__(self, embedder=None):
         self.embedder = embedder
         self._lock = threading.Lock()
         self._embedding = False
         self.last_error = ""
         self.vec_supported = True
+
+    @property
+    def _semantic(self) -> bool:
+        return bool(self.vec_supported and self.embedder is not None
+                    and self.embedder.available)
+
+    def sync(self, docs: list[Doc]) -> None:
+        """Make the index match `docs`; queue changed ones for embedding."""
+        with self._lock:
+            self._sync_rows(docs, {d.doc_id: _hash(d.text) for d in docs})
+        self._kick_embedding()
+
+    def _kick_embedding(self) -> None:
+        if not self._semantic or self._embedding:
+            return
+        self._embedding = True
+        threading.Thread(target=self._embed_pending, daemon=True,
+                         name="pacos-embed").start()
+
+    def _embed_pending(self) -> None:
+        try:
+            with self._lock:
+                # A different model means different vectors: start over.
+                self._reset_vectors_if_model_changed(self.embedder.model)
+            while True:
+                batch = self._pending(200)  # [(key, text, hash)]
+                if not batch:
+                    break
+                vectors = self.embedder.embed([b[1] for b in batch], "passage")
+                with self._lock:
+                    self._store(batch, vectors)
+            self.last_error = ""
+        except Exception as e:  # keep chatting on keyword search; retry next sync
+            self.last_error = str(e)
+            log.warning("Chat index embedding stopped: %s", e)
+        finally:
+            self._embedding = False
+
+    def status(self) -> dict:
+        total, done = self._counts()
+        return {"backend": self.backend, "documents": total, "embedded": done,
+                "semantic": self._semantic, "embedding_now": self._embedding,
+                "error": self.last_error}
+
+    def search(self, query: str, k: int = 12) -> list[dict]:
+        """Hybrid keyword + semantic search, fused by reciprocal rank."""
+        ranked: list[list[dict]] = []
+        terms = [t for t in _tokens(query) if t not in _STOP and len(t) > 1]
+        if terms:
+            ranked.append(self._keyword(terms))
+        if self._semantic and self._has_vectors():
+            try:
+                ranked.append(self._nearest(self.embedder.embed([query], "query")[0]))
+            except Exception as e:
+                log.warning("Semantic search skipped: %s", e)
+        return _fuse(ranked, k)
+
+
+class RecordIndex(_IndexBase):
+    """Local backend: one SQLite file with FTS5 (keyword) and sqlite-vec
+    (vectors). Disposable; rebuilt from the store whenever it's missing."""
+
+    backend = "sqlite"
+
+    def __init__(self, path: str | Path, embedder=None):
+        super().__init__(embedder)
+        self.path = Path(path)
         with self._db() as c:
             c.executescript("""
                 CREATE TABLE IF NOT EXISTS docs (
@@ -255,26 +340,19 @@ class RecordIndex:
         row = c.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
         return row["value"] if row else ""
 
-    @property
-    def _semantic(self) -> bool:
-        return bool(self.vec_supported and self.embedder is not None
-                    and self.embedder.available)
-
-    def sync(self, docs: list[Doc]) -> None:
-        """Make the index match `docs`; queue changed ones for embedding."""
-        with self._lock, self._db() as c:
+    def _sync_rows(self, docs: list[Doc], hashes: dict[str, str]) -> None:
+        with self._db() as c:
             have = {r["doc_id"]: (r["id"], r["hash"])
                     for r in c.execute("SELECT id, doc_id, hash FROM docs")}
             vec_table = self.vec_supported and bool(self._meta(c, "vec_dim"))
-            want = {d.doc_id for d in docs}
             for doc_id, (rid, _) in have.items():
-                if doc_id not in want:
+                if doc_id not in hashes:
                     c.execute("DELETE FROM docs WHERE id=?", (rid,))
                     c.execute("DELETE FROM docs_fts WHERE rowid=?", (rid,))
                     if vec_table:
                         c.execute("DELETE FROM vec_docs WHERE rowid=?", (rid,))
             for d in docs:
-                h = _hash(d.text)
+                h = hashes[d.doc_id]
                 old = have.get(d.doc_id)
                 if old and old[1] == h:
                     continue
@@ -288,94 +366,200 @@ class RecordIndex:
                         "INSERT INTO docs(doc_id, lead_id, kind, text, hash) VALUES (?,?,?,?,?)",
                         (d.doc_id, d.lead_id, d.kind, d.text, h)).lastrowid
                 c.execute("INSERT INTO docs_fts(rowid, text) VALUES (?,?)", (rid, d.text))
-        self._kick_embedding()
 
-    def _kick_embedding(self) -> None:
-        if not self._semantic or self._embedding:
-            return
-        self._embedding = True
-        threading.Thread(target=self._embed_pending, daemon=True,
-                         name="pacos-embed").start()
+    def _reset_vectors_if_model_changed(self, model: str) -> None:
+        with self._db() as c:
+            if self._meta(c, "vec_model") != model:
+                c.execute("DROP TABLE IF EXISTS vec_docs")
+                c.execute("DELETE FROM meta WHERE key IN ('vec_model','vec_dim')")
+                c.execute("UPDATE docs SET vec_hash=''")
 
-    def _embed_pending(self) -> None:
-        try:
-            with self._lock, self._db() as c:
-                # A different model means different vectors: start over.
-                if self._meta(c, "vec_model") != self.embedder.model:
-                    c.execute("DROP TABLE IF EXISTS vec_docs")
-                    c.execute("DELETE FROM meta WHERE key IN ('vec_model','vec_dim')")
-                    c.execute("UPDATE docs SET vec_hash=''")
-            while True:
-                with self._db() as c:
-                    batch = c.execute(
-                        "SELECT id, text, hash FROM docs WHERE vec_hash != hash LIMIT 200"
-                    ).fetchall()
-                if not batch:
-                    break
-                vectors = self.embedder.embed([r["text"] for r in batch], "passage")
-                import sqlite_vec
+    def _pending(self, limit: int) -> list[tuple]:
+        with self._db() as c:
+            return [(r["id"], r["text"], r["hash"]) for r in c.execute(
+                "SELECT id, text, hash FROM docs WHERE vec_hash != hash LIMIT ?", (limit,))]
 
-                with self._lock, self._db() as c:
-                    if not self._meta(c, "vec_dim"):
-                        dim = len(vectors[0])
-                        c.execute(f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_docs USING "
-                                  f"vec0(embedding float[{dim}] distance_metric=cosine)")
-                        c.execute("INSERT OR REPLACE INTO meta VALUES ('vec_dim', ?)", (str(dim),))
-                        c.execute("INSERT OR REPLACE INTO meta VALUES ('vec_model', ?)",
-                                  (self.embedder.model,))
-                    for r, v in zip(batch, vectors):
-                        c.execute("DELETE FROM vec_docs WHERE rowid=?", (r["id"],))
-                        c.execute("INSERT INTO vec_docs(rowid, embedding) VALUES (?,?)",
-                                  (r["id"], sqlite_vec.serialize_float32(v)))
-                        c.execute("UPDATE docs SET vec_hash=? WHERE id=?", (r["hash"], r["id"]))
-            self.last_error = ""
-        except Exception as e:  # keep chatting on keyword search; retry next sync
-            self.last_error = str(e)
-            log.warning("Chat index embedding stopped: %s", e)
-        finally:
-            self._embedding = False
+    def _store(self, batch: list[tuple], vectors: list[list[float]]) -> None:
+        import sqlite_vec
 
-    def status(self) -> dict:
+        with self._db() as c:
+            if not self._meta(c, "vec_dim"):
+                dim = len(vectors[0])
+                c.execute(f"CREATE VIRTUAL TABLE IF NOT EXISTS vec_docs USING "
+                          f"vec0(embedding float[{dim}] distance_metric=cosine)")
+                c.execute("INSERT OR REPLACE INTO meta VALUES ('vec_dim', ?)", (str(dim),))
+                c.execute("INSERT OR REPLACE INTO meta VALUES ('vec_model', ?)",
+                          (self.embedder.model,))
+            for (rid, _, h), v in zip(batch, vectors):
+                c.execute("DELETE FROM vec_docs WHERE rowid=?", (rid,))
+                c.execute("INSERT INTO vec_docs(rowid, embedding) VALUES (?,?)",
+                          (rid, sqlite_vec.serialize_float32(v)))
+                c.execute("UPDATE docs SET vec_hash=? WHERE id=?", (h, rid))
+
+    def _counts(self) -> tuple[int, int]:
         with self._db() as c:
             total = c.execute("SELECT COUNT(*) n FROM docs").fetchone()["n"]
             done = c.execute("SELECT COUNT(*) n FROM docs WHERE vec_hash = hash").fetchone()["n"]
-        return {"documents": total, "embedded": done, "semantic": self._semantic,
-                "embedding_now": self._embedding, "error": self.last_error}
+        return total, done
 
-    def search(self, query: str, k: int = 12) -> list[dict]:
-        """Hybrid keyword + semantic search, fused by reciprocal rank."""
-        ranked: list[list[sqlite3.Row]] = []
-        terms = [t for t in _tokens(query) if t not in _STOP and len(t) > 1]
+    def _has_vectors(self) -> bool:
         with self._db() as c:
-            if terms:
-                match = " OR ".join(f'"{t}"' for t in terms)
-                ranked.append(c.execute(
-                    """SELECT d.id, d.doc_id, d.lead_id, d.kind FROM docs_fts f
-                       JOIN docs d ON d.id = f.rowid
-                       WHERE docs_fts MATCH ? ORDER BY bm25(docs_fts) LIMIT 30""",
-                    (match,)).fetchall())
-            if self._semantic and self._meta(c, "vec_dim"):
-                try:
-                    import sqlite_vec
+            return bool(self._meta(c, "vec_dim"))
 
-                    qv = self.embedder.embed([query], "query")[0]
-                    ranked.append(c.execute(
-                        """SELECT d.id, d.doc_id, d.lead_id, d.kind FROM
-                             (SELECT rowid, distance FROM vec_docs
-                              WHERE embedding MATCH ? AND k = 30) v
-                           JOIN docs d ON d.id = v.rowid ORDER BY v.distance""",
-                        (sqlite_vec.serialize_float32(qv),)).fetchall())
-                except Exception as e:
-                    log.warning("Semantic search skipped: %s", e)
-        scores: dict[str, float] = {}
-        rows: dict[str, sqlite3.Row] = {}
-        for result in ranked:
-            for rank, r in enumerate(result):
-                scores[r["doc_id"]] = scores.get(r["doc_id"], 0.0) + 1.0 / (60 + rank)
-                rows[r["doc_id"]] = r
-        best = sorted(scores, key=scores.get, reverse=True)[:k]
-        return [{"doc_id": d, "lead_id": rows[d]["lead_id"], "kind": rows[d]["kind"],
-                 "score": scores[d]} for d in best]
+    def _keyword(self, terms: list[str]) -> list[dict]:
+        match = " OR ".join(f'"{t}"' for t in terms)
+        with self._db() as c:
+            return [dict(r) for r in c.execute(
+                """SELECT d.doc_id, d.lead_id, d.kind FROM docs_fts f
+                   JOIN docs d ON d.id = f.rowid
+                   WHERE docs_fts MATCH ? ORDER BY bm25(docs_fts) LIMIT 30""", (match,))]
+
+    def _nearest(self, qv: list[float]) -> list[dict]:
+        import sqlite_vec
+
+        with self._db() as c:
+            return [dict(r) for r in c.execute(
+                """SELECT d.doc_id, d.lead_id, d.kind FROM
+                     (SELECT rowid, distance FROM vec_docs
+                      WHERE embedding MATCH ? AND k = 30) v
+                   JOIN docs d ON d.id = v.rowid ORDER BY v.distance""",
+                (sqlite_vec.serialize_float32(qv),))]
+
+
+class PgRecordIndex(_IndexBase):
+    """Cloud backend: the same Postgres the tracker uses (DATABASE_URL), with
+    pgvector for vectors and built-in full-text search for keywords. Survives
+    restarts, so a free host that sleeps doesn't re-embed everything.
+
+    Vectors are stored in an untyped `vector` column and searched exactly
+    (no ANN index): pgvector can't index more than 2000 dimensions and the
+    default embedder has 2048. A sequential scan over a few thousand rows
+    still takes milliseconds."""
+
+    backend = "postgres"
+
+    def __init__(self, database_url: str, embedder=None):
+        super().__init__(embedder)
+        self.database_url = database_url
+        with self._db() as c:
+            try:
+                c.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                c.commit()
+            except Exception as e:  # not allowed / not installed: keyword only
+                c.rollback()
+                log.warning("pgvector unavailable, chat search is keyword-only: %s", e)
+                self.vec_supported = False
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS chat_docs (
+                    doc_id TEXT PRIMARY KEY, lead_id TEXT, kind TEXT, text TEXT,
+                    hash TEXT, vec_hash TEXT DEFAULT '',
+                    tsv tsvector GENERATED ALWAYS AS (to_tsvector('simple', text)) STORED)""")
+            c.execute("CREATE INDEX IF NOT EXISTS chat_docs_tsv ON chat_docs USING gin (tsv)")
+            c.execute("CREATE TABLE IF NOT EXISTS chat_meta (key TEXT PRIMARY KEY, value TEXT)")
+            if self.vec_supported:
+                c.execute("ALTER TABLE chat_docs ADD COLUMN IF NOT EXISTS embedding vector")
+
+    @contextmanager
+    def _db(self):
+        import psycopg  # lazy: only the cloud deployment needs it
+        from psycopg.rows import dict_row
+
+        conn = psycopg.connect(self.database_url, row_factory=dict_row)
+        try:
+            yield conn
+            conn.commit()
+        finally:
+            conn.close()
+
+    @staticmethod
+    def _meta(c, key: str) -> str:
+        row = c.execute("SELECT value FROM chat_meta WHERE key=%s", (key,)).fetchone()
+        return row["value"] if row else ""
+
+    @staticmethod
+    def _set_meta(c, key: str, value: str) -> None:
+        c.execute("""INSERT INTO chat_meta(key, value) VALUES (%s, %s)
+                     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value""", (key, value))
+
+    def _sync_rows(self, docs: list[Doc], hashes: dict[str, str]) -> None:
+        with self._db() as c:
+            have = {r["doc_id"]: r["hash"]
+                    for r in c.execute("SELECT doc_id, hash FROM chat_docs")}
+            gone = [d for d in have if d not in hashes]
+            if gone:
+                c.execute("DELETE FROM chat_docs WHERE doc_id = ANY(%s)", (gone,))
+            changed = [(d.doc_id, d.lead_id, d.kind, d.text, hashes[d.doc_id])
+                       for d in docs if have.get(d.doc_id) != hashes[d.doc_id]]
+            if changed:
+                # vec_hash stays as it was, so a changed text reads as
+                # "needs embedding" until the background pass catches up.
+                with c.cursor() as cur:
+                    cur.executemany(
+                        """INSERT INTO chat_docs(doc_id, lead_id, kind, text, hash)
+                           VALUES (%s, %s, %s, %s, %s)
+                           ON CONFLICT (doc_id) DO UPDATE SET lead_id = EXCLUDED.lead_id,
+                             kind = EXCLUDED.kind, text = EXCLUDED.text, hash = EXCLUDED.hash""",
+                        changed)
+
+    def _reset_vectors_if_model_changed(self, model: str) -> None:
+        with self._db() as c:
+            if self._meta(c, "vec_model") != model:
+                c.execute("UPDATE chat_docs SET embedding = NULL, vec_hash = ''")
+                self._set_meta(c, "vec_model", model)
+
+    def _pending(self, limit: int) -> list[tuple]:
+        with self._db() as c:
+            return [(r["doc_id"], r["text"], r["hash"]) for r in c.execute(
+                "SELECT doc_id, text, hash FROM chat_docs WHERE vec_hash <> hash LIMIT %s",
+                (limit,))]
+
+    def _store(self, batch: list[tuple], vectors: list[list[float]]) -> None:
+        with self._db() as c, c.cursor() as cur:
+            # Only if the text hasn't changed since it was read for embedding.
+            cur.executemany(
+                """UPDATE chat_docs SET embedding = %s::vector, vec_hash = %s
+                   WHERE doc_id = %s AND hash = %s""",
+                [(_pg_vector(v), h, key, h) for (key, _, h), v in zip(batch, vectors)])
+
+    def _counts(self) -> tuple[int, int]:
+        with self._db() as c:
+            r = c.execute("""SELECT COUNT(*) AS total,
+                                    COUNT(*) FILTER (WHERE vec_hash = hash) AS done
+                             FROM chat_docs""").fetchone()
+        return r["total"], r["done"]
+
+    def _has_vectors(self) -> bool:
+        with self._db() as c:
+            return c.execute(
+                "SELECT 1 FROM chat_docs WHERE embedding IS NOT NULL LIMIT 1").fetchone() is not None
+
+    def _keyword(self, terms: list[str]) -> list[dict]:
+        # Terms are [a-z0-9]+ tokens, so the OR query can't break tsquery syntax.
+        q = " | ".join(terms)
+        with self._db() as c:
+            return c.execute(
+                """SELECT doc_id, lead_id, kind FROM chat_docs,
+                          to_tsquery('simple', %s) q
+                   WHERE tsv @@ q ORDER BY ts_rank(tsv, q) DESC LIMIT 30""", (q,)).fetchall()
+
+    def _nearest(self, qv: list[float]) -> list[dict]:
+        with self._db() as c:
+            return c.execute(
+                """SELECT doc_id, lead_id, kind FROM chat_docs
+                   WHERE embedding IS NOT NULL
+                   ORDER BY embedding <=> %s::vector LIMIT 30""", (_pg_vector(qv),)).fetchall()
+
+
+def _pg_vector(v: list[float]) -> str:
+    return "[" + ",".join(f"{x:.7g}" for x in v) + "]"
+
+
+def open_index(*, database_url: str = "", sqlite_path: str | Path = "", embedder=None):
+    """Postgres + pgvector when the tracker is on Postgres (cloud), else the
+    local SQLite file. Mirrors PacosStore's choice of backend."""
+    if database_url:
+        return PgRecordIndex(database_url, embedder)
+    return RecordIndex(sqlite_path, embedder)
 
 
 # ── entity matching ─────────────────────────────────────────────────────────
@@ -451,7 +635,7 @@ class Retrieval:
 
 
 def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str, str]],
-             replies: list[dict], index: RecordIndex | None) -> Retrieval:
+             replies: list[dict], index: _IndexBase | None) -> Retrieval:
     asks = [m.get("content", "") for m in messages if m.get("role") == "user"]
     if not asks:
         return Retrieval()
