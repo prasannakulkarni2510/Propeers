@@ -96,6 +96,14 @@ def follow_up_overdue(lead: dict, today: date | None = None) -> bool:
             and due <= (today or date.today()).isoformat())
 
 
+def _days_ago(iso: str, today: date | None = None) -> str:
+    try:
+        n = ((today or date.today()) - date.fromisoformat(iso)).days
+    except ValueError:
+        return ""
+    return "" if n <= 0 else f", {n} day{'s' if n != 1 else ''} ago"
+
+
 def describe_stage(lead: dict, today: date | None = None) -> str:
     """One plain sentence on where this lead is in the outreach loop."""
     status = lead.get("status") or ""
@@ -109,7 +117,8 @@ def describe_stage(lead: dict, today: date | None = None) -> str:
         due = lead.get("follow_up_due")
         tail = ""
         if due:
-            tail = (f" Follow-up was due on {due}, so it's time to chase."
+            # Day counts are given, not left to the model: it miscounts them.
+            tail = (f" Follow-up was due on {due}{_days_ago(due, today)}, so it's time to chase."
                     if follow_up_overdue(lead, today) else f" Follow up on {due} if there's no reply.")
         return f"{sent_bit or 'Marked as sent'}; no reply yet.{tail}"
     if status in ENGAGED or status == "rejected":
@@ -593,7 +602,7 @@ def match_leads(question: str, leads: list[dict]) -> list[tuple[dict, int]]:
             score = 1
         elif (name and len(name[0]) > 2 and name[0] in qset and name[0] not in _STOP
               and first_counts.get(name[0], 0) <= 3):
-            score = 1
+            score = 2  # first name only: maybe them, maybe a namesake
         if score:
             out.append((lead, score))
     # Someone named in full: the loose matches (same first name, same
@@ -676,13 +685,30 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
     by_id = {l["lead_id"]: l for l in leads}
 
     matches = match_leads(question, leads)
-    if not matches and len(asks) > 1:
+    # A full name nobody has (e.g. deleted) is decided before anything is
+    # borrowed from earlier turns, or it gets swapped for whoever came up last.
+    missing_person = ("" if any(s == 3 for _, s in matches)
+                      else unknown_person(question, leads))
+    if not matches and not missing_person and len(asks) > 1:
         # "and when should I follow up?" refers back to the previous question.
-        matches = [(l, min(s, 1)) for l, s in match_leads(asks[-2], leads)]
+        matches = [(l, 2 if s >= 2 else 1) for l, s in match_leads(asks[-2], leads)]
     named = [l["lead_id"] for l, s in matches if s == 3]
     company_only = [l["lead_id"] for l, s in matches if s < 3]
+    if not named and not missing_person:
+        # "Write avni a DM" right after an answer about Avni Gupta: a first
+        # name means the person the assistant just talked about, not every
+        # Avni in the sheet.
+        # Look back a few answers ("Here's a draft…" names nobody).
+        answers = [m.get("content", "").lower() for m in messages
+                   if m.get("role") == "assistant"][-3:]
+        for answer in reversed(answers):
+            said = [l["lead_id"] for l, s in matches if s == 2 and l.get("full_name")
+                    and l["full_name"].lower() in answer]
+            if said:
+                if len(said) == 1:
+                    named, company_only = said, []
+                break
     missing_company = unknown_company(question, leads)
-    missing_person = "" if named else unknown_person(question, leads)
     if (missing_company or missing_person) and not named:
         company_only = []  # a same-first-name lead elsewhere isn't who they mean
 
@@ -692,6 +718,12 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
     asked_status = sorted({_STATUS_WORDS[t] for t in qset if t in _STATUS_WORDS})
     by_status = [] if named else [
         l["lead_id"] for l in leads if (l.get("status") or "") in asked_status]
+    if not named and qset & _FOLLOW_UP_WORDS:
+        # "Who should I follow up with?" is about the overdue leads; pick them
+        # so they show as cards too, most overdue first.
+        overdue = sorted((l for l in leads if follow_up_overdue(l)),
+                         key=lambda l: l.get("follow_up_due") or "")
+        by_status = [l["lead_id"] for l in overdue] + by_status
 
     hits = index.search(question) if index is not None else []
 
@@ -759,7 +791,8 @@ def retrieve(messages: list[dict], leads: list[dict], assets: dict[str, dict[str
     if due and (qset & _FOLLOW_UP_WORDS or not (named or company_only or by_status)):
         blocks.append("Follow-ups due today or overdue: " + "; ".join(
             f"{l.get('full_name') or l['company_name']} @ {l['company_name']} "
-            f"(lead_id {l['lead_id']}, due {l['follow_up_due']})" for l in due[:15])
+            f"(lead_id {l['lead_id']}, due {l['follow_up_due']}{_days_ago(l['follow_up_due'])})"
+            for l in due[:15])
             + (f"; and {len(due) - 15} more" if len(due) > 15 else ""))
 
     matched = [lid for lid in cards if lid in named or lid in company_only or lid in by_status]

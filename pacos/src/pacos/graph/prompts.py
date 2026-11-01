@@ -247,7 +247,10 @@ def build_chat_draft_user(asset_key: str, target: dict, request: str,
         "leave a placeholder. Claim nothing about me that is not in the CV context "
         "and nothing about the recipient or company beyond the facts above (do not "
         "say they are hiring, have an opening, or work on anything unless I said "
-        "so). Keep "
+        "so). Say what I asked to say and nothing more: the SPEC sets the length "
+        "and tone, not the purpose. If I'm thanking, declining, or replying, the "
+        "message only does that; never add a request, a condition, a delay or a "
+        "plan I didn't mention. Keep "
         "inside the SPEC's word count. Use no em dashes. Output only the text."
     )
 

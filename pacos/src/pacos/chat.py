@@ -191,6 +191,25 @@ def chat_turn(
         if reply or proposal or want or change:
             break
 
+    # The model often answers "write X a DM" with "I'll draft it…" and no
+    # draft. When the operator asked for one (or just confirmed with "yes"),
+    # work out what to write from their words and the looked-up lead.
+    question = next((m.get("content", "") for m in reversed(messages)
+                     if m.get("role") == "user"), "")
+    ask = _draft_ask(messages) if drafter is not None else ""
+    after_draft = next((m.get("content", "") for m in reversed(messages)
+                        if m.get("role") == "assistant"), "").startswith("Here's a draft")
+    if _AFFIRM_RE.match(question):
+        # A bare "yes"/"correct" reports nothing; the model has turned one
+        # into an invented update ("replied, interested"). Cards apply
+        # themselves with their own button.
+        change = None
+        if after_draft and not (want or proposal):
+            # …and after a draft it has claimed to be "sending" it.
+            return (_DRAFT_DONE, None, [], True, None, [], None)
+    if not (want or change) and ask:
+        want = _infer_draft(ask, found)
+
     draft = None
     if want and drafter is not None:
         asset, to, request = want
@@ -202,12 +221,14 @@ def chat_turn(
         # Fixed line, not the model's: it sometimes writes its own rough
         # draft into "reply", which would show twice and skip the rules.
         reply = f"Here's a draft {_DRAFT_NAMES[asset]}. Review it before sending."
+        if proposal and not _ADD_RE.search(question):
+            # "Draft a DM to an ML manager at Swiggy" asks for writing, not a
+            # new lead; the model proposes one anyway (and withholds the draft).
+            proposal, warnings = None, []
 
     # The main call often answers an event ("X rejected me") in prose without
     # attaching the change. When the message reports one about exactly one
     # named lead, a narrow second call extracts just the change.
-    question = next((m.get("content", "") for m in reversed(messages)
-                     if m.get("role") == "user"), "")
     if (change is None and not want and len(found.named) == 1
             and _reports_event(question)):
         # The model sometimes misses the record and offers to add the person
@@ -233,6 +254,10 @@ def chat_turn(
         reply = (f"I couldn't find anyone called {found.missing} in PACOS. They may never "
                  f"have been added, or the lead was deleted. If you tell me their role and "
                  f"company, I can add them as a lead.")
+    elif found.named and not (proposal or draft or change) and _NOT_FOUND.search(reply or ""):
+        # The lookup found them, yet the reply says it couldn't (copying an
+        # earlier "couldn't find" answer). Say what the records say instead.
+        reply = _offline_lookup_reply([found.cards[i] for i in found.named])
     if not reply:
         reply = (_proposal_reply(proposal) if proposal
                  else "Sorry, I didn't get a usable answer that time. Please try again.")
@@ -248,7 +273,65 @@ def chat_turn(
     skip = change["lead_id"] if change else None
     cards = [found.cards[i] for i in dict.fromkeys(ids) if i != skip]
     # House style everywhere: no em/en dashes in anything the operator reads.
-    return strip_dashes(reply), proposal, warnings, True, draft, cards, change
+    return _plain(strip_dashes(reply)), proposal, warnings, True, draft, cards, change
+
+
+def _plain(text: str) -> str:
+    """The chat shows plain text, so drop markdown the model adds anyway
+    (**bold**, # headings) instead of showing the asterisks."""
+    text = re.sub(r"\*\*(.+?)\*\*", r"\1", text)
+    text = re.sub(r"__(.+?)__", r"\1", text)
+    return re.sub(r"(?m)^#{1,6}\s+", "", text)
+
+
+_DRAFT_RE = re.compile(
+    r"\b(write|draft|compose|prepare|craft)\b.{0,80}?"
+    r"\b(e-?mail|mail|dm|message|note|inmail|cover\s+letter|letter|reply)\b", re.I | re.S)
+_AFFIRM_RE = re.compile(
+    r"^\s*(yes|yeah|yep|yup|correct|right|ok|okay|sure|go ahead|do it|please|please do|"
+    r"sounds good|exactly|that's right|go on)\b[\s.!]*$", re.I)
+
+
+_NOT_FOUND = re.compile(
+    r"couldn'?t find|could not find|can'?t find|not (in|found in) (your )?(pacos|records)"
+    r"|no record of|isn'?t in (your )?(pacos|records)", re.I)
+_ADD_RE = re.compile(r"\b(add|track|save|create)\b", re.I)
+
+_DRAFT_DONE = ("The draft is above. Copy it, edit anything you like, and send it "
+               "yourself; PACOS never sends anything. Want me to change anything in it?")
+
+
+def _draft_ask(messages: list[dict]) -> str:
+    """The operator's request for a piece of writing: their latest message,
+    or the one before it when the latest just says "yes"/"correct"."""
+    asks = [m.get("content", "") for m in messages if m.get("role") == "user"]
+    if not asks:
+        return ""
+    if _DRAFT_RE.search(asks[-1]):
+        return asks[-1]
+    if len(asks) > 1 and _AFFIRM_RE.match(asks[-1]) and _DRAFT_RE.search(asks[-2]):
+        last_answer = next((m.get("content", "") for m in reversed(messages)
+                            if m.get("role") == "assistant"), "")
+        if not last_answer.startswith("Here's a draft"):  # already written
+            return asks[-2]
+    return ""
+
+
+def _infer_draft(ask: str, found: Retrieval) -> tuple[str, dict, str] | None:
+    """(asset, to, request) for a draft the model didn't attach. None when
+    several leads could be meant: the model's reply should ask which."""
+    t = ask.lower()
+    asset = ("cover_letter" if re.search(r"cover\s+letter", t)
+             else "cold_dm" if re.search(r"\b(dm|linkedin|message|note|inmail)\b", t)
+             else "cold_email")
+    ids = found.named or found.matched
+    if len(ids) > 1:
+        return None
+    to = {}
+    if ids:
+        card = found.cards[ids[0]]
+        to = {k: card[k] for k in ("full_name", "job_title", "company_name", "city")}
+    return asset, to, ask.strip()
 
 
 CHANGE_ACTIONS = ("sent", "reply", "status", "note", "delete")

@@ -86,8 +86,12 @@ def test_linkedin_dm_draft():
 
 
 def test_unknown_draft_type_is_ignored():
+    # The model's "poem" never gets through; the operator asked for an email,
+    # so their words decide what is written.
     c = FakeClient({"reply": "ok", "draft": {"asset": "poem", "to": {}, "request": "x"}})
-    assert chat_turn(c, {}, ASK, drafter=lambda a, t, r: "never")[4] is None
+    seen = []
+    draft = chat_turn(c, {}, ASK, drafter=lambda a, t, r: seen.append((a, r)) or "Hi,")[4]
+    assert draft["asset"] == "cold_email" and seen == [("cold_email", ASK[0]["content"])]
 
 
 def test_claim_that_a_proposal_was_saved_is_replaced():
