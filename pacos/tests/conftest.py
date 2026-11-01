@@ -9,3 +9,7 @@ import os
 for _key in ("PACOS_LOGIN_EMAIL", "PACOS_LOGIN_PASSWORD", "PACOS_LOGIN_TRIAL",
              "PACOS_AUTH_TOKEN"):
     os.environ[_key] = ""
+
+# No network from tests: the chat's background indexer would otherwise embed
+# every lead through the operator's real NVIDIA key. Keyword search remains.
+os.environ["EMBEDDING_MODEL"] = ""

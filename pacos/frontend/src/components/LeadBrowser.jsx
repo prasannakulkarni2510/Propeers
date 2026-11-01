@@ -1,5 +1,9 @@
 import { useMemo, useState } from "react";
-import LeadTable from "./LeadTable.jsx";
+import { useNavigate } from "react-router-dom";
+import LeadTable, { EmailCell, RowActions } from "./LeadTable.jsx";
+import KanbanBoard, { ViewToggle, useViewMode } from "./KanbanBoard.jsx";
+import StatusBadge from "./StatusBadge.jsx";
+import { LEAD_STAGES, leadStage } from "../lib/pipeline";
 
 const PAGE_SIZE = 25;
 
@@ -28,6 +32,49 @@ function CopyEmailsButton({ leads }) {
   );
 }
 
+// One lead on the board. Clicking the card body opens its assets; the email,
+// LinkedIn and action buttons keep their own behaviour.
+function LeadCard({ lead }) {
+  const navigate = useNavigate();
+  const open = () => navigate(`/assets/${lead.lead_id}`);
+  return (
+    <div className="kb-lead">
+      <div
+        className="kb-card-main"
+        role="link"
+        tabIndex={0}
+        aria-label={`Open assets for ${lead.full_name || lead.company_name}`}
+        onClick={open}
+        onKeyDown={(e) => e.key === "Enter" && open()}
+      >
+        <div className="kb-card-title">
+          {lead.full_name || <span className="muted">(no contact yet)</span>}
+          {lead.status && <StatusBadge status={lead.status} />}
+        </div>
+        <div className="kb-card-sub">
+          {[lead.job_title, lead.company_name].filter(Boolean).join(" · ")}
+        </div>
+        <div className="kb-card-meta">
+          {lead.domain_tag && <span className="tag">{lead.domain_tag}</span>}
+          {lead.linkedin_url && (
+            <a
+              className="link"
+              href={lead.linkedin_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+            >
+              LinkedIn ↗
+            </a>
+          )}
+        </div>
+      </div>
+      <EmailCell lead={lead} />
+      <RowActions lead={lead} />
+    </div>
+  );
+}
+
 // Search + filter + paginate the lead list so the table stays usable at any
 // size (the dataset can run to hundreds of rows). All client-side: the full
 // list is already in the store, we just slice what we render.
@@ -36,6 +83,7 @@ export default function LeadBrowser({ leads }) {
   const [domain, setDomain] = useState("");
   const [assets, setAssets] = useState(""); // "", "yes", "no"
   const [page, setPage] = useState(1);
+  const [view, setView] = useViewMode("leads");
 
   const domains = useMemo(
     () => [...new Set(leads.map((l) => l.domain_tag).filter(Boolean))].sort(),
@@ -54,6 +102,15 @@ export default function LeadBrowser({ leads }) {
       );
     });
   }, [leads, q, domain, assets]);
+
+  const columns = useMemo(
+    () =>
+      LEAD_STAGES.map((st) => ({
+        ...st,
+        items: filtered.filter((l) => leadStage(l) === st.id),
+      })),
+    [filtered],
+  );
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pageCount);
@@ -87,6 +144,7 @@ export default function LeadBrowser({ leads }) {
           <option value="no">Needs assets</option>
           <option value="yes">Has assets</option>
         </select>
+        <ViewToggle mode={view} setMode={setView} />
         <CopyEmailsButton leads={filtered} />
         <span className="muted">
           {filtered.length} match{filtered.length === 1 ? "" : "es"}
@@ -96,6 +154,12 @@ export default function LeadBrowser({ leads }) {
 
       {filtered.length === 0 ? (
         <p className="muted">No leads match your search.</p>
+      ) : view === "board" ? (
+        <KanbanBoard
+          columns={columns}
+          getId={(l) => l.lead_id}
+          renderCard={(l) => <LeadCard lead={l} />}
+        />
       ) : (
         <>
           <LeadTable leads={pageLeads} />

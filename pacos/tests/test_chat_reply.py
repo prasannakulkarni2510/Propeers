@@ -27,14 +27,14 @@ class FakeClient:
 
 def test_normal_reply_passes_through():
     c = FakeClient({"reply": "Got it — drafted.", "lead": LEAD})
-    reply, proposal, _, used, _ = chat_turn(c, {}, MSG)
+    reply, proposal, _, used, _, _, _ = chat_turn(c, {}, MSG)
     assert reply == "Got it, drafted." and proposal["full_name"] == "Priya Shah"
     assert used and c.calls == 1
 
 
 def test_lead_without_reply_gets_a_written_reply():
     c = FakeClient({"lead": LEAD})
-    reply, proposal, _, _, _ = chat_turn(c, {}, MSG)
+    reply, proposal, _, _, _, _, _ = chat_turn(c, {}, MSG)
     assert "Priya Shah" in reply and "Razorpay" in reply
     assert proposal["company_name"] == "Razorpay" and c.calls == 1
 
@@ -69,7 +69,7 @@ def test_draft_request_returns_the_written_draft():
         seen.update(asset=asset, to=to, request=request)
         return "Subject: Data science internship — OML\n\nHi OML team,"
 
-    reply, proposal, _, used, draft = chat_turn(c, {}, ASK, drafter=drafter)
+    reply, proposal, _, used, draft, _, _ = chat_turn(c, {}, ASK, drafter=drafter)
     assert seen == {"asset": "cold_email", "to": {"company_name": "OML"},
                     "request": "a data science internship"}
     assert draft == {"asset": "cold_email",
@@ -80,7 +80,7 @@ def test_draft_request_returns_the_written_draft():
 
 def test_linkedin_dm_draft():
     c = FakeClient({"draft": {"asset": "cold_dm", "to": {}, "request": "intro"}})
-    reply, _, _, _, draft = chat_turn(c, {}, ASK, drafter=lambda a, t, r: "Hi, quick note.")
+    reply, _, _, _, draft, _, _ = chat_turn(c, {}, ASK, drafter=lambda a, t, r: "Hi, quick note.")
     assert draft == {"asset": "cold_dm", "text": "Hi, quick note."}
     assert reply  # a reply line is written even when the model omits it
 

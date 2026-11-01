@@ -1,9 +1,9 @@
 """Pydantic models for the API surface."""
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 
 class LeadOut(BaseModel):
@@ -285,9 +285,22 @@ class CvExtractOut(BaseModel):
     filename: str = ""
 
 
+_IMAGE_URL = r"^data:image/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$"
+_ImageUrl = Annotated[str, StringConstraints(pattern=_IMAGE_URL, max_length=8_000_000)]
+
+
 class ChatMessage(BaseModel):
     role: Literal["user", "assistant"]
-    content: str = Field(min_length=1, max_length=20000)
+    content: str = Field(default="", max_length=20000)
+    # Screenshots on the operator's latest message, as data: URLs (~6 MB
+    # each at most). Read once by the vision model and never stored.
+    images: list[_ImageUrl] = Field(default_factory=list, max_length=3)
+
+    @model_validator(mode="after")
+    def _not_empty(self):
+        if not self.content.strip() and not self.images:
+            raise ValueError("A message needs text or an image.")
+        return self
 
 
 class ChatRequest(BaseModel):
@@ -301,10 +314,56 @@ class ChatDraft(BaseModel):
     text: str
 
 
+class ChatRecord(BaseModel):
+    """A lead the chat reply talks about, with its live pipeline state."""
+    lead_id: str
+    full_name: str = ""
+    job_title: str = ""
+    company_name: str = ""
+    city: str = ""
+    lead_type: str = "person"
+    status: str = ""
+    stage: str = ""  # needs_assets | ready | awaiting | engaged | closed
+    summary: str = ""
+    channel: str = ""
+    outreach_sent_date: str = ""
+    last_reply_date: str = ""
+    reply_intent: str = ""
+    follow_up_due: str = ""
+    follow_up_overdue: bool = False
+    email: str = ""
+    email_status: str = ""
+    linkedin_url: str = ""
+    assets: list[str] = []
+
+
+class ChatChangeRequest(BaseModel):
+    """An update the chat proposed and the operator confirmed (maybe edited).
+    Deletes go through DELETE /api/leads/<id> instead."""
+    lead_id: str
+    action: Literal["sent", "reply", "status", "note"]
+    channel: Literal["email", "dm", "both", ""] = ""
+    intent: Literal["interested", "follow-up", "rejected", ""] = ""
+    status: Literal["pending", "sent", "replied", "interested", "interview",
+                    "offer", "rejected", ""] = ""
+    date: str = ""
+    note: str = Field(default="", max_length=500)
+
+
+class ChatChange(ChatChangeRequest):
+    action: Literal["sent", "reply", "status", "note", "delete"]
+    lead: ChatRecord  # the lead as it is now, for the before -> after preview
+
+
 class ChatResult(BaseModel):
     reply: str
     lead_proposal: Optional[ParsedLead] = None
     draft: Optional[ChatDraft] = None
+    records: list[ChatRecord] = []
+    change: Optional[ChatChange] = None
+    # What the vision model read from the attached images, so the UI can show
+    # it and later turns can refer back without resending the images.
+    image_text: str = ""
     warnings: list[str] = []
     llm_used: bool
     model: str

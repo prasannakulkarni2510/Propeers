@@ -6,7 +6,7 @@ import StatusBadge from "./StatusBadge.jsx";
 // Per-row actions: discovery jump + delete with an inline two-click confirm
 // (no native dialogs). Deleting removes the lead from the tracker, the lead
 // sheet, and its generated assets.
-function RowActions({ lead }) {
+export function RowActions({ lead }) {
   const navigate = useNavigate();
   const deleteLead = useStore((s) => s.deleteLead);
   const [confirming, setConfirming] = useState(false);
@@ -58,7 +58,7 @@ function RowActions({ lead }) {
 // Predicted work email + a confidence chip. Falls back to a plain verified/typed
 // email when the lead wasn't auto-enriched. Predicted emails are flagged so they
 // read as "likely", never "confirmed".
-function EmailCell({ lead }) {
+export function EmailCell({ lead }) {
   const email = lead.predicted_email || lead.email;
   const [copied, setCopied] = useState(false);
   if (!email) return <span className="muted">-</span>;

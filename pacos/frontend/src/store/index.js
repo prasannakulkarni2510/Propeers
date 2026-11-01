@@ -95,6 +95,11 @@ export const useStore = create((set, get) => ({
   markReply: async (lead_id, intent) =>
     get()._act(() => api.markReply({ lead_id, intent }), (res) => `${lead_id}: ${res.message}`),
 
+  // A change confirmed on a chat card. Resolves to the lead's new card, or
+  // undefined on failure (shown in the toast).
+  applyChatChange: async (change) =>
+    get()._act(() => api.applyChatChange(change), (res) => `${res.full_name || res.lead_id}: saved.`),
+
   markStatus: async (lead_id, status) =>
     get()._act(() => api.markStatus({ lead_id, status }), (res) => `${lead_id}: ${res.message}`),
 

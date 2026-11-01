@@ -33,15 +33,17 @@ class Config:
     nvidia_api_key: str
     nemotron_base_url: str
     nemotron_model: str
+    # Reads images attached in chat (screenshots of emails, DMs, job posts).
+    vision_model: str
     # Reasoning mode for models that support it (the 3.5 family). Off by
     # default: thinking tokens count against max_tokens, and with our small
     # per-call budgets the answer itself can come back empty.
     nemotron_thinking: bool
     nemotron_reasoning_budget: int
 
-    # ── Embeddings (Hugging Face) ────────────────────────────────────────
+    # ── Embeddings (chat record retrieval, via NVIDIA NIM) ──────────────
     embedding_model: str
-    hf_token: str
+    hf_token: str  # Hugging Face: only used to deploy to Spaces now
 
     # ── Tracker backend ──────────────────────────────────────────────────
     # Empty = SQLite file next to tracker.csv (local/exe mode). A Postgres
@@ -95,11 +97,14 @@ def load(dotenv_path: str | os.PathLike | None = None) -> Config:
         nemotron_model=os.getenv(
             "NEMOTRON_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b"
         ).strip(),
+        vision_model=os.getenv(
+            "VISION_MODEL", "nvidia/nemotron-3.5-super-vl-120b-a12b"
+        ).strip(),
         nemotron_thinking=os.getenv("NEMOTRON_THINKING", "0").strip().lower()
         in {"1", "true", "yes", "on"},
         nemotron_reasoning_budget=int(os.getenv("NEMOTRON_REASONING_BUDGET", "4096")),
         database_url=os.getenv("DATABASE_URL", "").strip(),
-        embedding_model=os.getenv("EMBEDDING_MODEL", "BAAI/bge-m3").strip(),
+        embedding_model=os.getenv("EMBEDDING_MODEL", "nvidia/nemotron-3.5-embed-1b").strip(),
         hf_token=os.getenv("HF_TOKEN", "").strip(),
         leads_csv=_path(os.getenv("LEADS_CSV_PATH", "data/leads.csv")),
         output_dir=_path(os.getenv("OUTPUT_DIR", "output")),

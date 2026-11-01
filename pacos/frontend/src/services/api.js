@@ -80,6 +80,8 @@ export const api = {
     req("/api/leads/parse-jd", { method: "POST", body: JSON.stringify({ text }) }),
   chat: (messages) =>
     req("/api/chat", { method: "POST", body: JSON.stringify(withSessionCv({ messages })) }),
+  applyChatChange: (body) =>
+    req("/api/chat/apply", { method: "POST", body: JSON.stringify(body) }),
   discovery: (body) =>
     req("/api/discovery", { method: "POST", body: JSON.stringify(body) }),
   enrich: (body) =>

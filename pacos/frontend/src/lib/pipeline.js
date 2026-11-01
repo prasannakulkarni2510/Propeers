@@ -25,3 +25,23 @@ export function pipelineCounts(leads) {
   }
   return { ready, awaiting, due, needAssets };
 }
+
+// Where a lead sits in the overall loop, for the Leads board. Every lead lands
+// in exactly one stage; outreach status wins over asset state once it's sent.
+export const LEAD_STAGES = [
+  { id: "needs_assets", title: "Needs assets", hint: "Generate outreach from the Dashboard." },
+  { id: "ready", title: "Ready to send", hint: "Drafts built. Send by hand.", tone: "accent" },
+  { id: "awaiting", title: "Awaiting reply", hint: "Sent. Chase on the follow-up date." },
+  { id: "engaged", title: "Engaged", hint: "Replied, interested, interviewing or offer.", tone: "ok" },
+  { id: "closed", title: "Closed", hint: "Rejected." },
+];
+
+const ENGAGED = new Set(["replied", "interested", "interview", "offer"]);
+
+export function leadStage(l) {
+  if (ENGAGED.has(l.status)) return "engaged";
+  if (l.status === "rejected") return "closed";
+  if (l.status === "sent") return "awaiting";
+  if (l.assets_generated === "true") return "ready";
+  return "needs_assets";
+}

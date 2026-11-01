@@ -33,6 +33,7 @@ PACOS.exe
 tracker.db
 tracker.db-shm
 tracker.db-wal
+chat_index.db*
 
 # Built frontend (bundled into the exe; rebuilt by build_exe.bat)
 frontend/dist/
