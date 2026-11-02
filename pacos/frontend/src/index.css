@@ -134,6 +134,8 @@ nav { display: flex; flex-direction: column; gap: var(--space-2xs); }
   padding: var(--space-xl) var(--space-xl) var(--space-2xl);
 }
 .content > * { max-width: 1280px; margin-inline: auto; }
+/* A page with a pipeline board takes the full width: every column should be in view, not scrolled off. */
+.content > *:has(.kb-board) { max-width: none; }
 .app.nav-closed .content { padding-left: calc(var(--space-xl) + 48px); }
 
 @media (max-width: 900px) {
@@ -425,6 +427,11 @@ a.stat:hover { background: var(--color-paper-2); }
 .kb-count { font-family: var(--font-outlier); font-size: var(--text-xs); color: var(--color-muted); font-variant-numeric: tabular-nums; }
 .kb-col-hint { font-size: var(--text-sm); color: var(--color-muted); margin: 0 var(--space-2xs) var(--space-sm); line-height: 1.4; }
 .kb-cards { display: flex; flex-direction: column; gap: var(--space-xs); }
+/* Each column scrolls on its own, so the board stays about one screen tall
+   and its sideways scrollbar is always in view. */
+@media (min-width: 641px) {
+  .kb-board:not(.cc-board) .kb-cards { max-height: max(360px, calc(100dvh - 420px)); overflow-y: auto; overscroll-behavior: contain; padding: var(--space-2xs); margin: calc(var(--space-2xs) * -1); scrollbar-width: thin; }
+}
 .kb-empty {
   font-size: var(--text-sm); color: var(--color-muted); text-align: center; padding: var(--space-md) var(--space-xs);
   border: var(--rule-hair) dashed var(--color-rule-2); border-radius: var(--radius-input);
