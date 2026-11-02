@@ -23,9 +23,9 @@ function Counter({ name, content }) {
   const over = name === "cold_dm.txt" && chars > DM_LIMIT;
   return (
     <span className={`asset-count ${over ? "over" : ""}`}>
-      {words} words · {chars}
+      {words} words, {chars}
       {name === "cold_dm.txt" ? ` / ${DM_LIMIT}` : ""} chars
-      {over && " · too long for a LinkedIn connection note"}
+      {over && ", too long for a LinkedIn connection note"}
     </span>
   );
 }

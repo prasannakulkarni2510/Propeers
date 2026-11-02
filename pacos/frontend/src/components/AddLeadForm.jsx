@@ -29,7 +29,7 @@ export default function AddLeadForm() {
 
   if (!open) {
     return (
-      <button className="btn" onClick={() => setOpen(true)}>
+      <button className="btn btn-ghost" onClick={() => setOpen(true)}>
         + Add lead manually
       </button>
     );

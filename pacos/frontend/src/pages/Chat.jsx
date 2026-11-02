@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "../components/Icon.jsx";
 import { Link } from "react-router-dom";
 import { create } from "zustand";
 import { api } from "../services/api";
@@ -49,7 +50,7 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
 
   return (
     <div className="proposal-card">
-      <div className="proposal-title">Proposed lead {added && "· added ✓"}</div>
+      <div className="proposal-title">Proposed lead{added && ", added"}</div>
       {!added && warnings.length > 0 && (
         <ul className="jd-warnings">
           {warnings.map((w, i) => (
@@ -116,7 +117,7 @@ function DraftCard({ draft }) {
     <div className="proposal-card draft-card">
       <div className="draft-head">
         <span className="proposal-title">
-          Draft {DRAFT_LABEL[draft.asset] || draft.asset} · {words} words
+          Draft {DRAFT_LABEL[draft.asset] || draft.asset}, {words} words
         </span>
         <button className="btn btn-ghost btn-sm" onClick={copy}>Copy</button>
       </div>
@@ -242,7 +243,7 @@ export default function Chat() {
               New chat
             </button>
           )}
-          <Link className="btn btn-accent btn-sm" to="/dashboard">Dashboard</Link>
+          <Link className="btn btn-ghost btn-sm" to="/dashboard">Dashboard</Link>
         </div>
       </div>
       <p className="page-sub">
@@ -332,7 +333,7 @@ export default function Chat() {
                 aria-label={`Remove image ${k + 1}`}
                 onClick={() => setAttachments(attachments.filter((_, j) => j !== k))}
               >
-                ✕
+                <Icon name="close" size={12} />
               </button>
             </div>
           ))}
@@ -358,12 +359,12 @@ export default function Chat() {
           disabled={busy || attachments.length >= MAX_IMAGES}
           onClick={() => fileRef.current?.click()}
         >
-          🖼
+          <Icon name="image" size={18} />
         </button>
         <textarea
           className="textarea chat-input"
           rows={2}
-          placeholder="Message the PACOS assistant, or paste a screenshot… (Enter to send, Shift+Enter for newline)"
+          placeholder="Message PACOS, or paste a screenshot"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onPaste={(e) => {

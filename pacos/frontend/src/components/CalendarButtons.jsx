@@ -1,3 +1,4 @@
+import Icon from "./Icon.jsx";
 import { downloadIcs, googleCalendarUrl } from "../lib/calendar";
 
 // Opens Google Calendar with the event filled in (the operator saves it
@@ -7,7 +8,8 @@ export default function CalendarButtons({ event, label = "Add to Google Calendar
   return (
     <span className="cal-buttons">
       <a className="btn btn-ghost btn-sm" href={googleCalendarUrl(event)} target="_blank" rel="noopener noreferrer">
-        📅 {label}
+        <Icon name="calendar" size={14} />
+        {label}
       </a>
       <button className="btn btn-ghost btn-sm" title="Download for Outlook or Apple Calendar"
         onClick={() => downloadIcs(event)}>

@@ -10,7 +10,7 @@ function ReadyCard({ lead, markSent }) {
       <div className="kb-card-sub">{lead.company_name}</div>
       <div className="kb-card-meta">
         <span className="tag">{lead.has_email ? "email + dm" : "dm-only"}</span>
-        <Link className="link" to={`/assets/${lead.lead_id}`}>Open drafts →</Link>
+        <Link className="link" to={`/assets/${lead.lead_id}`}>Open drafts</Link>
       </div>
       <div className="kb-card-label">Mark sent as</div>
       <div className="btn-row">

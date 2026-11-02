@@ -7,7 +7,7 @@ export default function Approvals() {
   return (
     <div>
       <h1 className="page-title">Approvals</h1>
-      <p className="page-sub">Human-in-the-loop · mark what you actually sent and heard back</p>
+      <p className="page-sub">Mark what you actually sent and what you heard back.</p>
       {loading ? (
         <p className="muted">Loading…</p>
       ) : (

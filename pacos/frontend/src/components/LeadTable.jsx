@@ -1,3 +1,4 @@
+import Icon from "./Icon.jsx";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStore } from "../store";
@@ -44,7 +45,7 @@ export function RowActions({ lead }) {
         Find people
       </button>
       <button
-        className={`btn btn-sm ${confirming ? "btn-accent" : "btn-ghost"}`}
+        className={`btn btn-sm ${confirming ? "btn-accent" : "btn-danger-quiet"}`}
         title="Remove this lead from the tracker, lead sheet, and assets"
         disabled={busy}
         onClick={remove}
@@ -78,7 +79,7 @@ export function EmailCell({ lead }) {
         <span className={`conf conf-${conf}`}>{conf[0].toUpperCase() + conf.slice(1)}</span>
       )}
       <button className="copy-chip" title="Copy email" onClick={copy}>
-        {copied ? "✓" : "Copy"}
+        {copied ? "Copied" : "Copy"}
       </button>
     </div>
   );
@@ -143,7 +144,7 @@ export default function LeadTable({ leads }) {
               </td>
               <td><EmailCell lead={l} /></td>
               <td><span className="tag">{l.domain_tag}</span></td>
-              <td>{l.assets_generated === "true" ? <span className="ok-mark">✓</span> : <span className="muted">-</span>}</td>
+              <td>{l.assets_generated === "true" ? <span className="ok-mark" aria-label="Assets generated"><Icon name="check" size={14} /></span> : <span className="muted">-</span>}</td>
               <td><StatusBadge status={l.status} /></td>
               <td><RowActions lead={l} /></td>
             </tr>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Icon from "../components/Icon.jsx";
 
 // "Know more about the project" — the PACOS story as a single scrollable page
 // (the interview deck, rendered as HTML). Static content; no API calls.
@@ -44,8 +45,8 @@ const SOCIAL = [
 function Section({ kicker, title, children }) {
   return (
     <section className="about-section">
-      {kicker && <p className="about-kicker">{kicker}</p>}
-      {title && <h2 className="about-h2">{title}</h2>}
+      {kicker && <h2 className="about-h2">{kicker}</h2>}
+      {title && <p className="about-sub">{title}</p>}
       {children}
     </section>
   );
@@ -58,7 +59,7 @@ export default function About() {
   return (
     <div className="about">
       {/* ── hero ─────────────────────────────────────────── */}
-      <header className="about-hero panel">
+      <header className="about-hero">
         <img className="about-logo" src="/pacos-logo.png" alt="PACOS logo" />
         <h1 className="about-title">Personal AI Career Operating System</h1>
         <p className="about-lede">
@@ -78,7 +79,7 @@ export default function About() {
           A serious job search is a lot of small, repeated work. For each person
           worth reaching, you research them, write a tailored email, cut it to a
           LinkedIn DM, draft a cover letter, note how to adjust your CV, then
-          remember to follow up a week later. Doing that by hand, it's easy to
+          remember to follow up a week later. Doing that by hand, it’s easy to
           lose the thread of who you contacted and where things stand.
         </p>
         <p className="about-quote">
@@ -110,7 +111,7 @@ export default function About() {
         <p>
           Discovery builds targeted Boolean searches for the humans behind a
           job (hiring managers, engineering leads, recruiters) as LinkedIn and
-          Google X-Ray links. It's deterministic: a template, not a model call.
+          Google X-Ray links. It’s deterministic: a template, not a model call.
         </p>
         <p>
           A newer <em>Find People</em> step collects the LinkedIn profiles from
@@ -121,7 +122,7 @@ export default function About() {
       </Section>
 
       {/* ── generation pipeline ──────────────────────────── */}
-      <Section kicker="The generation pipeline" title="Per lead it's a small graph, not one call">
+      <Section kicker="The generation pipeline" title="Per lead it’s a small graph, not one call">
         <p>
           A supervisor runs one <strong>Personalization agent</strong> that
           produces a single shared hook, the sharpest sentence tying the
@@ -130,7 +131,7 @@ export default function About() {
         </p>
         <div className="about-pipeline">
           <span className="about-pill about-pill-dark">Personalization</span>
-          <span className="about-arrow">→</span>
+          <span className="about-arrow"><Icon name="arrow" size={16} /></span>
           <span className="about-pill">cold_email</span>
           <span className="about-pill">cold_dm</span>
           <span className="about-pill">cover_letter</span>
@@ -153,7 +154,7 @@ export default function About() {
           </div>
           <div className="panel about-card about-card-accent">
             <h3>What I shipped instead</h3>
-            <p>A LangGraph graph (~5× the calls per lead and one real dependency) for coherent drafts from the shared hook, a real per-agent status board, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
+            <p>A LangGraph graph (about 5× the calls per lead and one real dependency) for coherent drafts from the shared hook, a real per-agent status board, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
           </div>
         </div>
       </Section>
@@ -175,10 +176,10 @@ export default function About() {
         <div className="about-flow">
           {STATUS_FLOW.map((s, i) => (
             <span key={s} className="about-flow-step">
-              {s}{i < STATUS_FLOW.length - 1 && <span className="about-arrow">→</span>}
+              {s}{i < STATUS_FLOW.length - 1 && <span className="about-arrow"><Icon name="arrow" size={14} /></span>}
             </span>
           ))}
-          <span className="about-flow-branch">↳ any stage can branch to <em>rejected</em></span>
+          <span className="about-flow-branch">Any stage can branch to <em>rejected</em>.</span>
         </div>
         <p className="muted">
           SQLite holds the real state: every lead, every status change.
@@ -213,7 +214,7 @@ export default function About() {
           </div>
           <div className="about-author-body">
             <h3>Prasanna Kulkarni</h3>
-            <p className="muted">AI Engineer · builder of PACOS</p>
+            <p className="muted">AI Engineer, builder of PACOS</p>
             <ul className="about-social">
               {SOCIAL.map((s) => (
                 <li key={s.label}>
@@ -239,7 +240,7 @@ export default function About() {
       </Section>
 
       <p className="about-foot muted">
-        PACOS · Personal AI Career Operating System · human-in-the-loop, always.
+        PACOS, the Personal AI Career Operating System. Human-in-the-loop, always.
       </p>
     </div>
   );

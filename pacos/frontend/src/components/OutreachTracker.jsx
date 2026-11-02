@@ -194,7 +194,7 @@ export default function OutreachTracker({ leads }) {
       {view === "list" && pageCount > 1 && (
         <div className="pagination">
           <span className="muted">
-            Showing {start + 1}–{start + rows.length} of {filtered.length}
+            Showing {start + 1} to {start + rows.length} of {filtered.length}
           </span>
           <button
             className="btn btn-ghost btn-sm"

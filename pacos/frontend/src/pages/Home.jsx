@@ -7,7 +7,7 @@ export default function Home() {
   return (
     <div>
       <h1 className="page-title">Dashboard</h1>
-      <p className="page-sub">Supervisor overview · generate assets · agent status</p>
+      <p className="page-sub">Generate outreach for your leads and watch the agents run.</p>
       {error && <div className="banner">Backend error: {error}</div>}
       <CvEditor />
       <Dashboard />

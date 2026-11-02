@@ -13,6 +13,7 @@ import Chat from "./pages/Chat.jsx";
 import Discovery from "./pages/Discovery.jsx";
 import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
+import Icon from "./components/Icon.jsx";
 import IntroVideo from "./components/IntroVideo.jsx";
 import { authToken } from "./services/api";
 
@@ -53,7 +54,7 @@ function Toast() {
         aria-label="Dismiss"
         onClick={() => (error ? clearError() : clearToast())}
       >
-        ✕
+        <Icon name="close" size={14} />
       </button>
     </div>
   );
@@ -63,7 +64,7 @@ function NotFound() {
   return (
     <div className="empty-state">
       <h1 className="page-title">Page not found</h1>
-      <p className="page-sub">That address isn't part of PACOS.</p>
+      <p className="page-sub">That address isn’t part of PACOS.</p>
       <Link className="btn btn-accent" to="/dashboard">Back to the dashboard</Link>
     </div>
   );
@@ -114,7 +115,7 @@ export default function App() {
       <a className="skip-link" href="#main">Skip to content</a>
       {!navOpen && (
         <button className="nav-toggle" aria-label="Open menu" onClick={() => setNavOpen(true)}>
-          ☰
+          <Icon name="menu" size={18} />
           {counts.ready + counts.due > 0 && <span className="nav-toggle-dot" />}
         </button>
       )}
@@ -128,7 +129,7 @@ export default function App() {
             <div className="brand-sub">Personal AI Career OS</div>
           </div>
           <button className="nav-close" aria-label="Close menu" onClick={() => setNavOpen(false)}>
-            ✕
+            <Icon name="close" size={16} />
           </button>
         </div>
         <nav aria-label="Main">
@@ -167,7 +168,7 @@ export default function App() {
             onClick={onNavigate}
             className={({ isActive }) => `nav-about ${isActive ? "active" : ""}`}
           >
-            Know more about the project →
+            About the project
           </NavLink>
           {authToken.get() && (
             <button
@@ -177,7 +178,7 @@ export default function App() {
               Log out
             </button>
           )}
-          <span className="sidebar-tag">Nemotron-powered · never auto-sends</span>
+          <span className="sidebar-tag">Nemotron-powered. Never auto-sends.</span>
         </div>
       </aside>
       <main className="content" id="main">

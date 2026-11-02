@@ -27,7 +27,7 @@ function CopyEmailsButton({ leads }) {
       title="Copy the emails of every lead matching the current filters"
       onClick={copy}
     >
-      {copied ? "Copied ✓" : `Copy ${emails.length} email${emails.length === 1 ? "" : "s"}`}
+      {copied ? "Copied" : `Copy ${emails.length} email${emails.length === 1 ? "" : "s"}`}
     </button>
   );
 }
@@ -52,7 +52,7 @@ function LeadCard({ lead }) {
           {lead.status && <StatusBadge status={lead.status} />}
         </div>
         <div className="kb-card-sub">
-          {[lead.job_title, lead.company_name].filter(Boolean).join(" · ")}
+          {[lead.job_title, lead.company_name].filter(Boolean).join(", ")}
         </div>
         <div className="kb-card-meta">
           {lead.domain_tag && <span className="tag">{lead.domain_tag}</span>}
@@ -166,7 +166,7 @@ export default function LeadBrowser({ leads }) {
           {pageCount > 1 && (
             <div className="pagination">
               <span className="muted">
-                Showing {start + 1}–{start + pageLeads.length} of {filtered.length}
+                Showing {start + 1} to {start + pageLeads.length} of {filtered.length}
               </span>
               <button
                 className="btn btn-ghost btn-sm"

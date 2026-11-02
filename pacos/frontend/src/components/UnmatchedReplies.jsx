@@ -23,7 +23,7 @@ export default function UnmatchedReplies() {
     <div className="panel">
       <h3>Unmatched replies ({unmatched.length})</h3>
       <p className="muted" style={{ marginTop: 0 }}>
-        The monitor classified an intent but couldn't match the sender to a lead.
+        The monitor classified an intent but couldn’t match the sender to a lead.
         Pick the right lead to record the reply.
       </p>
       <table className="table">
@@ -48,7 +48,7 @@ export default function UnmatchedReplies() {
                     <option value="">(pick lead)</option>
                     {leads.map((l) => (
                       <option key={l.lead_id} value={l.lead_id}>
-                        {l.full_name} · {l.company_name}
+                        {l.full_name}, {l.company_name}
                       </option>
                     ))}
                   </select>

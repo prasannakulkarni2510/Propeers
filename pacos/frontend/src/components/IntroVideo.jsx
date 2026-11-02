@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Icon from "./Icon.jsx";
 
 // Intro shown in a centred window once the visitor is past the login (every
 // page load, not every route change: App mounts once). Closes on Skip, Escape,
@@ -51,10 +52,11 @@ export default function IntroVideo() {
       />
       <div className="intro-controls">
         <button className="intro-btn" onClick={toggleMute}>
-          {muted ? "🔇 Unmute" : "🔊 Mute"}
+          <Icon name={muted ? "sound-off" : "sound-on"} size={16} />
+          {muted ? "Unmute" : "Mute"}
         </button>
         <button ref={skipRef} className="intro-btn intro-skip" onClick={() => setOpen(false)}>
-          Skip intro →
+          Skip intro
         </button>
       </div>
       </div>

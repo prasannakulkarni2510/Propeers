@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useStore } from "../store";
 import { pipelineCounts } from "../lib/pipeline";
 import AgentStatus from "./AgentStatus.jsx";
+import Icon from "./Icon.jsx";
 
 // The operator's loop, in order. Each step is "done" from live data, and the
 // first unfinished one is highlighted as the thing to do next.
@@ -48,7 +49,7 @@ function NextSteps({ leads, counts, cvIsSample }) {
       <ol className="steps">
         {steps.map((s, i) => (
           <li key={s.label} className={`step ${s.done ? "done" : ""} ${i === next ? "next" : ""}`}>
-            <span className="step-num">{s.done ? "✓" : i + 1}</span>
+            <span className="step-num">{s.done ? <Icon name="check" size={13} /> : i + 1}</span>
             <div className="step-body">
               <div className="step-label">
                 {s.to && !s.done ? <Link to={s.to}>{s.label}</Link> : s.label}
@@ -104,10 +105,10 @@ export default function Dashboard() {
 
       <div className="panel">
         <h3>Generate outreach (Layer 1)</h3>
-        <p className="muted" style={{ marginTop: 0 }}>
+        <p className="muted">
           Builds assets only for leads that don't have them yet
           {counts.needAssets > 0 && <> (<b>{counts.needAssets}</b> right now)</>}.
-          One Nemotron call per lead → four files each. To rebuild an existing
+          One Nemotron run per lead writes four files. To rebuild an existing
           lead, use Regenerate on the Assets page. Dry-run produces templates
           without an API key. Nothing is ever sent.
         </p>
@@ -118,7 +119,7 @@ export default function Dashboard() {
           <button className="btn btn-ghost" disabled={busy} onClick={() => run(true)}>
             Dry-run (templates)
           </button>
-          <label className="muted" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label className="check-label">
             <input
               type="checkbox"
               checked={reviewHooks}
@@ -127,8 +128,8 @@ export default function Dashboard() {
             Review hooks
           </label>
         </div>
-        <p className="muted" style={{ fontSize: 12, marginBottom: 0 }}>
-          Pipeline: personalization agent → 4 asset agents (cold email skipped when
+        <p className="muted fine">
+          Pipeline: a personalization agent, then 4 asset agents (cold email skipped when
           a lead has no email). Watch the agent board below light up as it runs.
         </p>
       </div>

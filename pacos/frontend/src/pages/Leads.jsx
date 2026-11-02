@@ -17,7 +17,7 @@ export default function Leads() {
     <div>
       <h1 className="page-title">Leads</h1>
       <p className="page-sub">
-        {leads.length} lead(s) from data/leads.csv · click a row for its assets
+        {leads.length} lead(s) from data/leads.csv. Click a row for its assets.
       </p>
       <div className="jd-add">
         <AddLeadFromJD />
@@ -39,7 +39,7 @@ export default function Leads() {
       </div>
       {tab === "job" && (
         <p className="muted">
-          Job postings with no contact person yet. Use "Find people" on a row to
+          Job postings with no contact person yet. Use “Find people” on a row to
           hunt the hiring manager or recruiter, then add them as a person lead.
         </p>
       )}

@@ -37,7 +37,7 @@ export default function Tracker() {
   return (
     <div>
       <h1 className="page-title">Tracker</h1>
-      <p className="page-sub">All pipeline state (tracker.csv) · today's digest</p>
+      <p className="page-sub">Every lead’s pipeline state (tracker.csv) and today’s digest.</p>
       <div className="btn-row" style={{ marginBottom: 16 }}>
         <button className="btn" disabled={scanning} onClick={scan}>
           {scanning ? "Scanning inbox…" : "Scan inbox"}

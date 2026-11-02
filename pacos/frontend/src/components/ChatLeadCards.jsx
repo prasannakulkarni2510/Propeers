@@ -1,3 +1,4 @@
+import Icon from "./Icon.jsx";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useStore } from "../store";
@@ -50,7 +51,7 @@ export function DeleteLeadButton({ leadId, label = "Delete lead", onDeleted, acc
   };
   return (
     <button
-      className={`btn btn-sm ${confirming || accent ? "btn-accent" : "btn-ghost"}`}
+      className={`btn btn-sm ${confirming || accent ? "btn-accent" : "btn-danger-quiet"}`}
       title="Remove this lead from the tracker, lead sheet, and assets"
       disabled={busy}
       onClick={click}
@@ -63,8 +64,8 @@ export function DeleteLeadButton({ leadId, label = "Delete lead", onDeleted, acc
 function Facts({ rec }) {
   return (
     <dl className="record-facts">
-      {rec.outreach_sent_date && (<><dt>Sent</dt><dd>{rec.outreach_sent_date}{rec.channel && ` · ${rec.channel}`}</dd></>)}
-      {rec.last_reply_date && (<><dt>Reply</dt><dd>{rec.last_reply_date}{rec.reply_intent && ` · ${rec.reply_intent}`}</dd></>)}
+      {rec.outreach_sent_date && (<><dt>Sent</dt><dd>{rec.outreach_sent_date}{rec.channel && `, ${rec.channel}`}</dd></>)}
+      {rec.last_reply_date && (<><dt>Reply</dt><dd>{rec.last_reply_date}{rec.reply_intent && `, ${rec.reply_intent}`}</dd></>)}
       {rec.follow_up_due && (<><dt>Follow up</dt><dd>{rec.follow_up_due}</dd></>)}
       {rec.email && (
         <>
@@ -98,7 +99,7 @@ function Links({ rec }) {
 // A lead the assistant's answer is about, with its live pipeline state, so
 // the facts in the reply can be checked at a glance and acted on.
 export function RecordCard({ rec, removed, onRemoved }) {
-  const role = [rec.job_title, rec.company_name].filter(Boolean).join(" · ");
+  const role = [rec.job_title, rec.company_name].filter(Boolean).join(", ");
   if (removed) {
     return (
       <div className="record-card record-removed">
@@ -155,7 +156,7 @@ function MiniCard({ rec, status, ghost }) {
         {status && <StatusBadge status={status} />}
       </div>
       <div className="kb-card-sub">
-        {[rec.job_title, rec.company_name].filter(Boolean).join(" · ")}
+        {[rec.job_title, rec.company_name].filter(Boolean).join(", ")}
       </div>
     </div>
   );
@@ -190,7 +191,7 @@ function MoveBoard({ rec, ch, after }) {
       <MiniColumn stage={rec.stage} label="now">
         <MiniCard rec={rec} status={rec.status} ghost />
       </MiniColumn>
-      <div className="cc-arrow" aria-hidden="true">→</div>
+      <div className="cc-arrow" aria-hidden="true"><Icon name="arrow" size={20} /></div>
       <MiniColumn stage={after.stage} label="after">
         {after.stage === "deleted" ? (
           <div className="kb-empty">Removed from leads, tracker and assets</div>
@@ -231,7 +232,7 @@ export function ChangeCard({ change, state, result, onDone }) {
   if (state === "applied" && result) {
     return (
       <div className="change-card change-done">
-        <div className="proposal-title">Saved ✓</div>
+        <div className="proposal-title">Saved</div>
         <div className="cc-board cc-board-single">
           <MiniColumn stage={result.stage} label="now">
             <MiniCard rec={result} status={result.status} />
@@ -338,7 +339,7 @@ export function ChangeCard({ change, state, result, onDone }) {
       {ch.action === "delete" && (
         <p className="change-warn">
           Deleting removes {rec.full_name || "this lead"} from the tracker, the lead sheet and
-          its generated assets. This can't be undone.
+          its generated assets. This can’t be undone.
         </p>
       )}
       <div className="btn-row">

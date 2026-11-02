@@ -157,7 +157,7 @@ function VariantCard({ v }) {
           Google X-Ray
         </a>
         <button className="btn btn-ghost btn-sm" onClick={copy}>
-          {copied ? "Copied ✓" : "Copy query"}
+          {copied ? "Copied" : "Copy query"}
         </button>
       </div>
     </div>
@@ -226,7 +226,7 @@ export default function Discovery() {
         <>
           <p className="muted">
             {result.variants.length} search variants for {result.company_name}
-            {result.city && ` · ${result.city}`}. LinkedIn keyword search
+            {result.city && `, ${result.city}`}. LinkedIn keyword search
             understands AND/OR/quotes; X-Ray finds public profiles via Google.
           </p>
           <FindPeople company={company} role={role} city={city} keywords={keywords} />
