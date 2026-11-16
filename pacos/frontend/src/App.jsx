@@ -1,37 +1,25 @@
-import { Link, Navigate, NavLink, Route, Routes, useLocation } from "react-router-dom";
+import { Link, Navigate, NavLink, Route, Routes, useLocation, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "./store";
-import { useAgentPolling } from "./hooks/useAgentStatus";
 import { useLeads } from "./hooks/useLeads";
 import { pipelineCounts } from "./lib/pipeline";
-import Home from "./pages/Home.jsx";
-import Leads from "./pages/Leads.jsx";
-import Assets from "./pages/Assets.jsx";
-import Approvals from "./pages/Approvals.jsx";
-import Tracker from "./pages/Tracker.jsx";
 import Chat from "./pages/Chat.jsx";
-import Discovery from "./pages/Discovery.jsx";
+import Pipeline from "./pages/Pipeline.jsx";
+import FindPeople from "./pages/FindPeople.jsx";
 import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
 import Icon from "./components/Icon.jsx";
-import IntroVideo from "./components/IntroVideo.jsx";
+import LeadPanel from "./components/LeadModal.jsx";
 import { authToken } from "./services/api";
 
-// `badge` picks a count from pipelineCounts; `badgeTone` colours it.
+// Three places. `badge` picks a count from pipelineCounts.
 const NAV = [
   { to: "/", label: "Chat", end: true },
-  { to: "/dashboard", label: "Dashboard" },
-  { to: "/leads", label: "Leads" },
-  { to: "/assets", label: "Assets" },
-  { to: "/approvals", label: "Approvals", badge: "ready", hint: "ready to send" },
-  { to: "/tracker", label: "Tracker", badge: "due", badgeTone: "warn", hint: "follow-ups due" },
-  { to: "/discovery", label: "Discovery" },
+  { to: "/pipeline", label: "Pipeline", badge: true },
+  { to: "/find", label: "Find people" },
 ];
 
-const TITLES = {
-  "/": "Chat", "/dashboard": "Dashboard", "/leads": "Leads", "/assets": "Assets", "/approvals": "Approvals",
-  "/tracker": "Tracker", "/discovery": "Discovery", "/about": "About",
-};
+const TITLES = { "/": "Chat", "/pipeline": "Pipeline", "/find": "Find people", "/about": "About" };
 
 function Toast() {
   const { toast, error, clearToast, clearError } = useStore();
@@ -44,20 +32,24 @@ function Toast() {
   if (!toast && !error) return null;
   // Errors stay until dismissed (they matter); plain toasts fade on their own.
   return (
-    <div
-      className={`toast ${error ? "toast-error" : ""}`}
-      role={error ? "alert" : "status"}
-    >
+    <div className={`toast ${error ? "toast-error" : ""}`} role={error ? "alert" : "status"}>
       <span>{error || toast}</span>
-      <button
-        className="toast-close"
-        aria-label="Dismiss"
-        onClick={() => (error ? clearError() : clearToast())}
-      >
+      <button className="toast-close" aria-label="Dismiss" onClick={() => (error ? clearError() : clearToast())}>
         <Icon name="close" size={14} />
       </button>
     </div>
   );
+}
+
+// Pages that were folded into the Pipeline keep working as addresses; an open
+// lead (?lead=) or a search (?company=) carries over.
+function Moved({ to }) {
+  const { search } = useLocation();
+  return <Navigate to={`${to}${search}`} replace />;
+}
+function AssetsRedirect() {
+  const { leadId } = useParams();
+  return <Navigate to={`/pipeline?lead=${encodeURIComponent(leadId)}`} replace />;
 }
 
 function NotFound() {
@@ -65,7 +57,7 @@ function NotFound() {
     <div className="empty-state">
       <h1 className="page-title">Page not found</h1>
       <p className="page-sub">That address isn’t part of PACOS.</p>
-      <Link className="btn btn-accent" to="/dashboard">Back to the dashboard</Link>
+      <Link className="btn btn-accent" to="/">Back to chat</Link>
     </div>
   );
 }
@@ -73,25 +65,19 @@ function NotFound() {
 const MOBILE_QUERY = "(max-width: 900px)";
 
 export default function App() {
-  // Poll agent status app-wide so generation progress keeps updating even when
-  // the user navigates away from the Dashboard.
-  useAgentPolling();
-  // Leads are loaded at the shell level so the nav badges are live everywhere.
+  // Leads are loaded at the shell level so the nav badge is live everywhere.
   const { leads } = useLeads();
   const counts = useMemo(() => pipelineCounts(leads), [leads]);
   const generating = useStore((s) => s.generating);
   const { pathname } = useLocation();
 
-  // Chatbot-style nav: open by default on desktop, hidden on mobile until the
-  // operator asks for it. Picking a page on mobile closes it again.
-  const [navOpen, setNavOpen] = useState(
-    () => !window.matchMedia(MOBILE_QUERY).matches,
-  );
+  // Open by default on desktop, hidden on mobile until asked for. Picking a
+  // page on mobile closes it again.
+  const [navOpen, setNavOpen] = useState(() => !window.matchMedia(MOBILE_QUERY).matches);
   const onNavigate = () => {
     if (window.matchMedia(MOBILE_QUERY).matches) setNavOpen(false);
   };
 
-  // Escape closes the overlay nav on mobile.
   useEffect(() => {
     if (!navOpen) return;
     const onKey = (e) => {
@@ -103,39 +89,37 @@ export default function App() {
 
   // Tab title follows the page so several PACOS tabs stay distinguishable.
   useEffect(() => {
-    const key = "/" + (pathname.split("/")[1] || "");
-    const page = TITLES[key];
-    document.title = page ? `${page} · PACOS` : "PACOS — Personal AI Career OS";
+    const page = TITLES["/" + (pathname.split("/")[1] || "")];
+    document.title = page ? `${page} · PACOS` : "PACOS";
   }, [pathname]);
+
+  // What needs the operator today: overdue follow-ups first, else drafts to send.
+  const badge = counts.due > 0
+    ? { n: counts.due, tone: "warn", hint: `${counts.due} follow-up${counts.due === 1 ? "" : "s"} due` }
+    : counts.ready > 0
+      ? { n: counts.ready, tone: "", hint: `${counts.ready} ready to send` }
+      : null;
 
   return (
     <AuthGate>
-    <IntroVideo />
-    <div className={`app ${navOpen ? "" : "nav-closed"}`}>
-      <a className="skip-link" href="#main">Skip to content</a>
-      {!navOpen && (
-        <button className="nav-toggle" aria-label="Open menu" onClick={() => setNavOpen(true)}>
-          <Icon name="menu" size={18} />
-          {counts.ready + counts.due > 0 && <span className="nav-toggle-dot" />}
-        </button>
-      )}
-      {navOpen && <div className="backdrop" onClick={() => setNavOpen(false)} />}
-      <aside className={`sidebar ${navOpen ? "open" : ""}`}>
-        <div className="sidebar-head">
-          <div>
-            <div className="brand">
-              PAC<span className="brand-accent">OS</span>
-            </div>
-            <div className="brand-sub">Personal AI Career OS</div>
-          </div>
-          <button className="nav-close" aria-label="Close menu" onClick={() => setNavOpen(false)}>
-            <Icon name="close" size={16} />
+      <div className={`app ${navOpen ? "" : "nav-closed"}`}>
+        <a className="skip-link" href="#main">Skip to content</a>
+        {!navOpen && (
+          <button className="icon-btn nav-toggle" aria-label="Open menu" onClick={() => setNavOpen(true)}>
+            <Icon name="menu" size={18} />
+            {badge && <span className="nav-toggle-dot" />}
           </button>
-        </div>
-        <nav aria-label="Main">
-          {NAV.map((n) => {
-            const count = n.badge ? counts[n.badge] : 0;
-            return (
+        )}
+        {navOpen && <div className="backdrop" onClick={() => setNavOpen(false)} />}
+        <aside className={`sidebar ${navOpen ? "open" : ""}`}>
+          <div className="sidebar-head">
+            <div className="brand">PAC<span className="brand-accent">OS</span></div>
+            <button className="icon-btn" aria-label="Close menu" onClick={() => setNavOpen(false)}>
+              <Icon name="close" size={16} />
+            </button>
+          </div>
+          <nav aria-label="Main">
+            {NAV.map((n) => (
               <NavLink
                 key={n.to}
                 to={n.to}
@@ -144,61 +128,51 @@ export default function App() {
                 className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
               >
                 <span>{n.label}</span>
-                {count > 0 && (
-                  <span
-                    className={`nav-badge ${n.badgeTone ? `nav-badge-${n.badgeTone}` : ""}`}
-                    title={`${count} ${n.hint}`}
-                    aria-label={`${count} ${n.hint}`}
-                  >
-                    {count > 99 ? "99+" : count}
+                {n.badge && badge && (
+                  <span className={`nav-badge ${badge.tone ? `nav-badge-${badge.tone}` : ""}`} title={badge.hint} aria-label={badge.hint}>
+                    {badge.n > 99 ? "99+" : badge.n}
                   </span>
                 )}
               </NavLink>
-            );
-          })}
-        </nav>
-        <div className="sidebar-foot">
-          {generating && (
-            <NavLink to="/dashboard" onClick={onNavigate} className="sidebar-live">
-              <span className="dot running" /> Generating assets…
+            ))}
+          </nav>
+          <div className="sidebar-foot">
+            {generating && (
+              <div className="sidebar-live" role="status">
+                <span className="dot running" /> Writing drafts…
+              </div>
+            )}
+            <NavLink to="/about" onClick={onNavigate} className={({ isActive }) => `nav-quiet ${isActive ? "active" : ""}`}>
+              About
             </NavLink>
-          )}
-          <NavLink
-            to="/about"
-            onClick={onNavigate}
-            className={({ isActive }) => `nav-about ${isActive ? "active" : ""}`}
-          >
-            About the project
-          </NavLink>
-          {authToken.get() && (
-            <button
-              className="nav-logout"
-              onClick={() => { authToken.set(""); window.location.reload(); }}
-            >
-              Log out
-            </button>
-          )}
-          <span className="sidebar-tag">Nemotron-powered. Never auto-sends.</span>
-        </div>
-      </aside>
-      <main className="content" id="main">
-        <Routes>
-          <Route path="/" element={<Chat />} />
-          <Route path="/dashboard" element={<Home />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/assets" element={<Assets />} />
-          <Route path="/assets/:leadId" element={<Assets />} />
-          <Route path="/approvals" element={<Approvals />} />
-          <Route path="/tracker" element={<Tracker />} />
-          {/* Old bookmarks: chat used to live here before it became the home page. */}
-          <Route path="/chat" element={<Navigate to="/" replace />} />
-          <Route path="/discovery" element={<Discovery />} />
-          <Route path="/about" element={<About />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </main>
-      <Toast />
-    </div>
+            {authToken.get() && (
+              <button className="nav-quiet" onClick={() => { authToken.set(""); window.location.reload(); }}>
+                Log out
+              </button>
+            )}
+          </div>
+        </aside>
+        <main className="content" id="main">
+          <Routes>
+            <Route path="/" element={<Chat />} />
+            <Route path="/pipeline" element={<Pipeline />} />
+            <Route path="/find" element={<FindPeople />} />
+            <Route path="/about" element={<About />} />
+            {/* Old addresses. */}
+            <Route path="/chat" element={<Navigate to="/" replace />} />
+            <Route path="/dashboard" element={<Moved to="/pipeline" />} />
+            <Route path="/leads" element={<Moved to="/pipeline" />} />
+            <Route path="/approvals" element={<Moved to="/pipeline" />} />
+            <Route path="/tracker" element={<Moved to="/pipeline" />} />
+            <Route path="/assets" element={<Moved to="/pipeline" />} />
+            <Route path="/assets/:leadId" element={<AssetsRedirect />} />
+            <Route path="/discovery" element={<Moved to="/find" />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </main>
+        <LeadPanel />
+        <Toast />
+      </div>
     </AuthGate>
   );
 }

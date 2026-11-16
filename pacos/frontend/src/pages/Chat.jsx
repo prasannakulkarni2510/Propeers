@@ -60,7 +60,7 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
       )}
       {added ? (
         <p className="muted">
-          {fields.full_name} @ {fields.company_name} is in leads.csv.
+          {fields.full_name}, {fields.company_name}, is in your pipeline.
         </p>
       ) : (
         <>
@@ -76,12 +76,12 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
               disabled={busy || !canSubmitLead(fields, persona)}
               onClick={confirm}
             >
-              {busy ? "Adding…" : "Add to leads.csv"}
+              {busy ? "Adding…" : "Add lead"}
             </button>
             {fields.company_name.trim() && (
               <Link
                 className="btn btn-ghost btn-sm"
-                to={`/discovery?${new URLSearchParams({
+                to={`/find?${new URLSearchParams({
                   company: fields.company_name,
                   role: fields.job_title,
                   city: fields.city,
@@ -104,7 +104,7 @@ const DRAFT_LABEL = { cold_email: "Cold email", cold_dm: "LinkedIn DM", cover_le
 // rules, playbook and CV as pipeline assets; copy it out, nothing is sent.
 function DraftCard({ draft }) {
   const setToast = useStore((s) => s.setToast);
-  const words = draft.text.trim().split(/s+/).length;
+  const words = draft.text.trim().split(/\s+/).length;
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(draft.text);
@@ -122,7 +122,7 @@ function DraftCard({ draft }) {
         <button className="btn btn-ghost btn-sm" onClick={copy}>Copy</button>
       </div>
       <pre className="draft-text">{draft.text}</pre>
-      <p className="muted draft-note">Review and edit before sending. PACOS never sends anything.</p>
+      <p className="muted draft-note">Read it before you send it. PACOS never sends anything.</p>
     </div>
   );
 }
@@ -143,12 +143,10 @@ const useChat = create((set) => ({
 }));
 
 const EXAMPLES = [
-  "Where am I with Abhishek Gupta?",
-  "Abhishek Gupta from ABB rejected me for the AI Engineer role",
-  "Add this person: Priya Shah, engineering manager at Razorpay, Bengaluru, priya@razorpay.com",
   "Who should I follow up with this week?",
-  "Write an email to the data team at Razorpay asking for a data science internship",
+  "Priya from Razorpay replied, she’s interested",
   "Draft a short LinkedIn DM to an ML engineering manager at Swiggy",
+  "Add Priya Shah, engineering manager at Razorpay, Bengaluru",
 ];
 
 export default function Chat() {
@@ -235,33 +233,28 @@ export default function Chat() {
         attach(e.dataTransfer.files);
       }}
     >
-      <div className="page-head">
-        <h1 className="page-title">Chat</h1>
-        <div className="btn-row">
-          {messages.length > 0 && (
-            <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setMessages([])}>
-              New chat
-            </button>
-          )}
-          <Link className="btn btn-ghost btn-sm" to="/dashboard">Dashboard</Link>
-        </div>
+      <div className="chat-top">
+        {messages.length > 0 && (
+          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setMessages([])}>
+            New chat
+          </button>
+        )}
       </div>
-      <p className="page-sub">
-        Ask where you stand with anyone in your leads, tracker, assets or
-        replies, tell me what happened ("Priya replied, interested") and I'll
-        propose the update, ask me to write an email, LinkedIn DM, or cover
-        letter, or describe a person/JD and I'll propose a lead you can approve
-        into leads.csv.
-      </p>
       <div className="chat-scroll">
         {messages.length === 0 && (
-          <div className="chat-examples">
-            <span className="muted">Try one, or paste a whole JD:</span>
-            {EXAMPLES.map((ex) => (
-              <button key={ex} className="chat-example" onClick={() => setInput(ex)}>
-                {ex}
-              </button>
-            ))}
+          <div className="chat-hero">
+            <h1>Who are we writing to today?</h1>
+            <p>
+              Tell me what happened, ask where a lead stands, or paste a job description.
+              I draft and keep track. You send.
+            </p>
+            <div className="chat-examples">
+              {EXAMPLES.map((ex) => (
+                <button key={ex} className="chat-example" onClick={() => setInput(ex)}>
+                  {ex}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.map((m, i) => (
@@ -337,7 +330,7 @@ export default function Chat() {
               </button>
             </div>
           ))}
-          <span className="muted">Read once to fill in your message, never stored.</span>
+          <span className="muted">Read once, never stored.</span>
         </div>
       )}
       <div className="chat-input-row">
@@ -353,8 +346,8 @@ export default function Chat() {
           }}
         />
         <button
-          className="btn btn-ghost chat-attach"
-          title="Attach a screenshot (or paste / drop one)"
+          className="icon-btn"
+          title="Attach a screenshot (or paste or drop one)"
           aria-label="Attach image"
           disabled={busy || attachments.length >= MAX_IMAGES}
           onClick={() => fileRef.current?.click()}
@@ -363,7 +356,8 @@ export default function Chat() {
         </button>
         <textarea
           className="textarea chat-input"
-          rows={2}
+          rows={1}
+          aria-label="Message"
           placeholder="Message PACOS, or paste a screenshot"
           value={input}
           onChange={(e) => setInput(e.target.value)}

@@ -4,10 +4,10 @@ import { useStore } from "../store";
 import { isReadyToSend } from "../lib/pipeline";
 
 const LABELS = {
-  "cold_email.txt": "Cold Email",
-  "cold_dm.txt": "Cold DM",
-  "cover_letter.txt": "Cover Letter",
-  "cv_notes.txt": "CV Notes",
+  "cold_email.txt": "Email",
+  "cold_dm.txt": "LinkedIn DM",
+  "cover_letter.txt": "Cover letter",
+  "cv_notes.txt": "CV notes",
 };
 
 // LinkedIn caps connection-request notes at 300 characters (200 on free
@@ -23,14 +23,13 @@ function Counter({ name, content }) {
   const over = name === "cold_dm.txt" && chars > DM_LIMIT;
   return (
     <span className={`asset-count ${over ? "over" : ""}`}>
-      {words} words, {chars}
-      {name === "cold_dm.txt" ? ` / ${DM_LIMIT}` : ""} chars
+      {name === "cold_dm.txt" ? `${chars} of ${DM_LIMIT} characters` : `${words} words`}
       {over && ", too long for a LinkedIn connection note"}
     </span>
   );
 }
 
-// Assets per lead (docx: AssetViewer.jsx). Read the four files; copy to clipboard.
+// A lead's four drafts: read, copy, rewrite, and say when one was sent.
 export default function AssetViewer({ leadId, lead }) {
   const [data, setData] = useState(null);
   const [active, setActive] = useState("cold_email.txt");
@@ -61,35 +60,31 @@ export default function AssetViewer({ leadId, lead }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [leadId]);
 
-  if (!leadId) return <p className="muted">Pick a lead above to see its outreach drafts.</p>;
   if (error) return <div className="banner">{error}</div>;
-  if (!data) return <p className="muted">Loading assets…</p>;
+  if (!data) return <p className="muted">Loading drafts…</p>;
 
   if (!data.generated) {
     const isJob = lead?.lead_type === "job";
-    const buildOne = async (dry_run) => {
+    const buildOne = async () => {
       try {
-        await generate({ lead_id: leadId, dry_run });
+        await generate({ lead_id: leadId });
         await load();
       } catch (_) {}
     };
     return (
-      <div className="empty-state">
-        <p>No assets for this lead yet.</p>
+      <div className="next-step">
+        <h3>{isJob ? "No contact person yet" : "No drafts yet"}</h3>
         {isJob ? (
-          <p className="muted">
-            This is a job posting with no contact person. Find the hiring manager
-            or recruiter from Discovery, add them as a person, then generate.
+          <p style={{ marginBottom: 0 }}>
+            This is a job posting. Find the hiring manager or recruiter below, add them as a lead, and write to them.
           </p>
         ) : (
-          <div className="btn-row" style={{ justifyContent: "center" }}>
-            <button className="btn btn-accent" disabled={generating} onClick={() => buildOne(false)}>
-              {generating ? "Generating…" : "Generate for this lead"}
+          <>
+            <p>PACOS writes an email, a LinkedIn DM, a cover letter and CV notes from your CV. Nothing is sent.</p>
+            <button className="btn btn-accent btn-sm" disabled={generating} onClick={buildOne}>
+              {generating ? "Writing…" : "Write drafts"}
             </button>
-            <button className="btn btn-ghost" disabled={generating} onClick={() => buildOne(true)}>
-              Dry-run
-            </button>
-          </div>
+          </>
         )}
       </div>
     );
@@ -99,9 +94,9 @@ export default function AssetViewer({ leadId, lead }) {
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(current.content);
-      setToast(`Copied ${LABELS[current.name]} to clipboard`);
+      setToast(`${LABELS[current.name]} copied.`);
     } catch (_) {
-      setToast("Copy failed. Select and copy manually");
+      setToast("Couldn’t copy. Select the text and copy it.");
     }
   };
 
@@ -110,9 +105,9 @@ export default function AssetViewer({ leadId, lead }) {
     try {
       const fresh = await api.regenerateAsset(leadId, current.name);
       setData(fresh);
-      setToast(`Regenerated ${LABELS[current.name]}`);
+      setToast(`${LABELS[current.name]} rewritten.`);
     } catch (e) {
-      setToast(`Regenerate failed: ${e.message}`);
+      setToast(`Couldn’t rewrite it: ${e.message}`);
     } finally {
       setRegenerating(false);
     }
@@ -122,58 +117,49 @@ export default function AssetViewer({ leadId, lead }) {
   const canMark = lead && isReadyToSend(lead);
 
   return (
-    <div className="asset-layout">
-      <div className="asset-list" role="tablist" aria-label="Assets">
+    <div>
+      {canMark && (
+        <div className="next-step">
+          <h3>Ready to send</h3>
+          <p>Copy a draft, send it yourself, then say how you sent it. That starts the follow-up clock.</p>
+          <div className="btn-row">
+            {lead.has_email && (
+              <button className="btn btn-sm" onClick={() => markSent(leadId, "email")}>Sent by email</button>
+            )}
+            <button className="btn btn-sm" onClick={() => markSent(leadId, "dm")}>Sent by DM</button>
+            {lead.has_email && (
+              <button className="btn btn-sm" onClick={() => markSent(leadId, "both")}>Sent both</button>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="asset-list" role="tablist" aria-label="Drafts">
         {data.files.map((f) => (
           <button
             key={f.name}
             role="tab"
             aria-selected={f.name === active}
-            className={`asset-item ${f.name === active ? "active" : ""} ${isSkipped(f.content) ? "skipped" : ""}`}
+            className={`asset-item ${f.name === active ? "active" : ""}`}
             onClick={() => setActive(f.name)}
           >
             {LABELS[f.name] || f.name}
-            {isSkipped(f.content) && <span className="asset-item-note">skipped</span>}
+            {isSkipped(f.content) && <span className="asset-item-note">none</span>}
           </button>
         ))}
       </div>
-      <div>
-        <div className="copy-bar">
-          <div>
-            <b>{LABELS[current.name]}</b>
-            {!skipped && !regenerating && <Counter name={current.name} content={current.content} />}
-          </div>
-          <div className="copy-bar-actions">
-            <button
-              className="btn btn-sm btn-ghost"
-              onClick={regenerate}
-              disabled={regenerating || skipped}
-              title="Rewrite this asset: reuses the same hook, different copy"
-            >
-              {regenerating ? "Regenerating…" : "Regenerate"}
-            </button>
-            <button className="btn btn-sm btn-accent" onClick={copy} disabled={skipped}>
-              Copy
-            </button>
-          </div>
+      <div className={`asset-body ${skipped ? "muted" : ""}`}>
+        {regenerating ? "Rewriting…" : current.content || "(empty)"}
+      </div>
+      <div className="copy-bar">
+        {!skipped && !regenerating ? <Counter name={current.name} content={current.content} /> : <span />}
+        <div className="copy-bar-actions">
+          <button className="btn btn-sm btn-ghost" onClick={regenerate} disabled={regenerating || skipped}>
+            {regenerating ? "Rewriting…" : "Rewrite"}
+          </button>
+          <button className="btn btn-sm btn-accent" onClick={copy} disabled={skipped}>
+            Copy
+          </button>
         </div>
-        <div className={`asset-body ${skipped ? "muted" : ""}`}>
-          {regenerating ? "Regenerating…" : current.content || "(empty)"}
-        </div>
-        {canMark && (
-          <div className="mark-bar">
-            <span className="muted">Sent it? Mark it so the follow-up clock starts:</span>
-            <div className="btn-row">
-              {lead.has_email && (
-                <button className="btn btn-sm" onClick={() => markSent(leadId, "email")}>Email</button>
-              )}
-              <button className="btn btn-sm" onClick={() => markSent(leadId, "dm")}>DM</button>
-              {lead.has_email && (
-                <button className="btn btn-sm btn-accent" onClick={() => markSent(leadId, "both")}>Both</button>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );

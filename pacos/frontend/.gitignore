@@ -5,3 +5,6 @@ dist/
 
 # Personal photo — never push online (local About page only)
 public/prasanna-photo.png
+
+.impeccable/
+.hallmark/

@@ -17,7 +17,7 @@ const STEPS = [
   "Saving leads…",
 ];
 
-function FindPeople({ company, role, city, keywords }) {
+function ImportPeople({ company, role, city, keywords }) {
   const refresh = useStore((s) => s.refresh);
   const setToast = useStore((s) => s.setToast);
   const [busy, setBusy] = useState(false);
@@ -69,17 +69,16 @@ function FindPeople({ company, role, city, keywords }) {
   return (
     <div className="panel disc-enrich">
       <div className="disc-head">
-        <span className="disc-group">Auto-import people</span>
-        <span className="tag">predicted email</span>
+        <span className="disc-group">Import them as leads</span>
       </div>
-      <p className="muted" style={{ marginTop: 0 }}>
-        Collect the LinkedIn profiles from the Google X-Ray results, predict a
-        likely work email, and create leads. Predicted emails are never marked
-        verified. Review before sending.
+      <p className="muted">
+        Collects the LinkedIn profiles a Google search finds and adds each as a
+        lead with a likely work email. Likely means guessed from the company’s
+        pattern, not verified.
       </p>
       <div className="btn-row">
         <button className="btn btn-accent" disabled={busy || !company.trim()} onClick={() => run()}>
-          {busy ? "Working…" : "Find People"}
+          {busy ? "Working…" : "Find and import"}
         </button>
         {!showPaste && (
           <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setShowPaste(true)}>
@@ -101,20 +100,21 @@ function FindPeople({ company, role, city, keywords }) {
       {showPaste && (
         <div className="disc-paste">
           <p className="muted">
-            Open the <strong>Google X-Ray</strong> link above, copy the whole
-            results page (Ctrl+A, Ctrl+C), paste it here, and import. Keeps the
-            search 100% Google, no third-party API.
+            Google sometimes blocks the automatic search. Open
+            a <strong>Google search</strong> link below, copy the whole results
+            page (Ctrl+A, Ctrl+C) and paste it here.
           </p>
           <textarea
             className="input"
             rows={4}
-            placeholder="Paste the Google X-Ray results page HTML/text…"
+            aria-label="Pasted search results"
+            placeholder="Paste the Google results page here"
             value={pasted}
             onChange={(e) => setPasted(e.target.value)}
           />
           <div className="btn-row">
             <button className="btn btn-accent btn-sm" disabled={busy || !pasted.trim()} onClick={() => run(pasted)}>
-              Import from pasted results
+              Import from this
             </button>
           </div>
         </div>
@@ -124,7 +124,7 @@ function FindPeople({ company, role, city, keywords }) {
       {result && (
         <p className={result.leads_imported > 0 ? "disc-imported" : "muted"}>
           {result.leads_imported > 0
-            ? `${result.leads_imported} lead(s) imported${result.profiles_found > result.leads_imported ? ` from ${result.profiles_found} profiles` : ""}. See the Leads page.`
+            ? `${result.leads_imported} lead(s) imported${result.profiles_found > result.leads_imported ? ` from ${result.profiles_found} profiles` : ""}. They are in your pipeline.`
             : (result.warnings[0] || "No profiles found in the search results.")}
         </p>
       )}
@@ -151,10 +151,10 @@ function VariantCard({ v }) {
       <code className="disc-query">{v.query}</code>
       <div className="btn-row">
         <a className="btn btn-accent btn-sm" href={v.linkedin_url} target="_blank" rel="noopener noreferrer">
-          LinkedIn search
+          LinkedIn
         </a>
         <a className="btn btn-ghost btn-sm" href={v.xray_url} target="_blank" rel="noopener noreferrer">
-          Google X-Ray
+          Google
         </a>
         <button className="btn btn-ghost btn-sm" onClick={copy}>
           {copied ? "Copied" : "Copy query"}
@@ -164,7 +164,7 @@ function VariantCard({ v }) {
   );
 }
 
-export default function Discovery() {
+export default function FindPeople() {
   const [params] = useSearchParams();
   const [company, setCompany] = useState(params.get("company") || "");
   const [role, setRole] = useState(params.get("role") || "");
@@ -202,20 +202,19 @@ export default function Discovery() {
 
   return (
     <div>
-      <h1 className="page-title">Recruiter Discovery</h1>
+      <h1 className="page-title">Find people</h1>
       <p className="page-sub">
-        Boolean searches for the people behind a job: hiring managers, leads,
-        directors, recruiters, TA, HRBPs. Open a search, pick a person, add
-        them as a lead.
+        Name a company and PACOS builds the searches that surface its hiring
+        managers and recruiters.
       </p>
-      <div className="panel disc-form">
-        <SuggestInput field="company_name" placeholder="Company (required)" value={company}
+      <div className="disc-form" style={{ marginBottom: 24 }}>
+        <SuggestInput field="company_name" placeholder="Company" value={company}
                       onChange={(e) => setCompany(e.target.value)} />
-        <SuggestInput field="job_title" placeholder="Role / job title (optional)" value={role}
+        <SuggestInput field="job_title" placeholder="Role (optional)" value={role}
                       onChange={(e) => setRole(e.target.value)} />
         <SuggestInput field="city" placeholder="Location (optional)" value={city}
                       onChange={(e) => setCity(e.target.value)} />
-        <input className="input" placeholder="Tech stack, comma-separated (optional)" value={keywords}
+        <input className="input" aria-label="Tech stack" placeholder="Tech stack, comma-separated" value={keywords}
                onChange={(e) => setKeywords(e.target.value)} />
         <button className="btn btn-accent" disabled={busy || !company.trim()} onClick={() => run()}>
           {busy ? "Building…" : "Build searches"}
@@ -224,12 +223,11 @@ export default function Discovery() {
       {error && <p className="jd-error">{error}</p>}
       {result && (
         <>
-          <p className="muted">
-            {result.variants.length} search variants for {result.company_name}
-            {result.city && `, ${result.city}`}. LinkedIn keyword search
-            understands AND/OR/quotes; X-Ray finds public profiles via Google.
+          <p className="muted" style={{ marginBottom: 16 }}>
+            {result.variants.length} searches for {result.company_name}
+            {result.city && `, ${result.city}`}. Open one, pick a person, add them as a lead.
           </p>
-          <FindPeople company={company} role={role} city={city} keywords={keywords} />
+          <ImportPeople company={company} role={role} city={city} keywords={keywords} />
           <div className="disc-grid">
             {result.variants.map((v, i) => (
               <VariantCard key={i} v={v} />

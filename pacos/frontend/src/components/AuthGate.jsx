@@ -60,10 +60,11 @@ export default function AuthGate({ children }) {
         <div className="brand">
           PAC<span className="brand-accent">OS</span>
         </div>
-        <p className="muted">Log in to continue.</p>
+        <h1>Log in</h1>
         <input
           className="input"
           type="email"
+          aria-label="Email"
           placeholder="Email"
           autoComplete="username"
           value={email}
@@ -73,6 +74,7 @@ export default function AuthGate({ children }) {
         <input
           className="input"
           type="password"
+          aria-label="Password"
           placeholder="Password"
           autoComplete="current-password"
           value={password}
@@ -88,7 +90,7 @@ export default function AuthGate({ children }) {
         </button>
         {trial && (
           <div className="authgate-trial">
-            <p>For trial use, you may use these credentials:</p>
+            <p>Just looking? Use the trial login:</p>
             <dl>
               <dt>Email</dt><dd>{trial.email}</dd>
               <dt>Password</dt><dd>{trial.password}</dd>

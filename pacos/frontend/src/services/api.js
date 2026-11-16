@@ -55,25 +55,17 @@ async function req(path, options = {}, contentType = "application/json") {
 }
 
 export const api = {
-  health: () => req("/api/health"),
   login: (email, password) =>
     req("/api/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   loginTrial: () => req("/api/login/trial"),
   stats: () => req("/api/stats"),
   leads: () => req("/api/leads"),
-  lead: (id) => req(`/api/leads/${id}`),
   assets: (id) => req(`/api/assets/${id}`),
   regenerateAsset: (id, asset) =>
     req(`/api/assets/${id}/regenerate`, {
       method: "POST",
       body: JSON.stringify(withSessionCv({ asset })),
     }),
-  tracker: () => req("/api/tracker"),
-  digest: () => req("/api/tracker/digest"),
-  agents: () => req("/api/agents/status"),
-  unmatched: () => req("/api/tracker/unmatched"),
-  associate: (body) =>
-    req("/api/tracker/associate", { method: "POST", body: JSON.stringify(body) }),
 
   addLead: (body) =>
     req("/api/leads", { method: "POST", body: JSON.stringify(body) }),
@@ -91,10 +83,8 @@ export const api = {
     req("/api/discovery", { method: "POST", body: JSON.stringify(body) }),
   enrich: (body) =>
     req("/api/discovery/enrich", { method: "POST", body: JSON.stringify(body) }),
-  discoveryForLead: (id) => req(`/api/discovery/${id}`),
   scanInbox: (days = 1) =>
     req(`/api/inbox/scan?days=${days}`, { method: "POST" }),
-  jobs: () => req("/api/jobs"),
   generate: (body) =>
     req("/api/agents/generate", { method: "POST", body: JSON.stringify(withSessionCv(body)) }),
   markSent: (body) =>

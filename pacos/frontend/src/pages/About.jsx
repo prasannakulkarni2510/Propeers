@@ -71,6 +71,7 @@ export default function About() {
             <span key={t} className="tag">{t}</span>
           ))}
         </div>
+        <video className="about-video" src="/pacos-intro.mp4" controls preload="metadata" playsInline aria-label="PACOS intro video" />
       </header>
 
       {/* ── the problem ──────────────────────────────────── */}
@@ -140,7 +141,7 @@ export default function About() {
         <ul className="about-list">
           <li><strong>Shared hook</strong> keeps all four drafts coherent instead of four separate takes.</li>
           <li><strong>Conditional edge</strong> skips the email agent when a lead has no address.</li>
-          <li><strong>Streaming status</strong> drives a real per-agent board in the UI.</li>
+          <li><strong>Streaming status</strong> reports each agent’s progress as it runs.</li>
           <li><strong>Checkpoint / resume</strong>: a big batch that fails partway resumes without re-spending tokens.</li>
         </ul>
       </Section>
@@ -154,7 +155,7 @@ export default function About() {
           </div>
           <div className="panel about-card about-card-accent">
             <h3>What I shipped instead</h3>
-            <p>A LangGraph graph (about 5× the calls per lead and one real dependency) for coherent drafts from the shared hook, a real per-agent status board, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
+            <p>A LangGraph graph (about 5× the calls per lead and one real dependency) for coherent drafts from the shared hook, per-agent status, checkpoint/resume, and first-class human-in-the-loop interrupts. The reversal is written down as an ADR.</p>
           </div>
         </div>
       </Section>

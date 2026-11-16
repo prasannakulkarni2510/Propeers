@@ -1,3 +1,4 @@
+import { leadSearch } from "./LeadModal.jsx";
 import Icon from "./Icon.jsx";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
@@ -85,9 +86,8 @@ function Facts({ rec }) {
 function Links({ rec }) {
   return (
     <>
-      <Link className="btn btn-ghost btn-sm" to={`/assets/${rec.lead_id}`}>Open assets</Link>
-      <Link className="btn btn-ghost btn-sm" to="/tracker">Tracker</Link>
-      {rec.linkedin_url && (
+      <Link className="btn btn-ghost btn-sm" to={{ search: leadSearch(rec.lead_id) }}>Open drafts</Link>
+            {rec.linkedin_url && (
         <a className="btn btn-ghost btn-sm" href={rec.linkedin_url} target="_blank" rel="noopener noreferrer">
           LinkedIn ↗
         </a>

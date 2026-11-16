@@ -16,10 +16,9 @@ const ACCEPT = ".pdf,.docx,.txt,.md";
 // "This session only" mode keeps a visitor's own CV in this tab (sessionStorage)
 // instead of saving it to the server: generation uses it, and the browser
 // deletes it when the tab closes.
-export default function CvEditor() {
+export default function CvEditor({ open, setOpen }) {
   const setToast = useStore((s) => s.setToast);
   const setCvIsSample = useStore((s) => s.setCvIsSample);
-  const [open, setOpen] = useState(false);
   const [content, setContent] = useState("");
   const [saved, setSaved] = useState(""); // last saved text, so Cancel can revert
   const [isSample, setIsSample] = useState(false);
@@ -100,7 +99,7 @@ export default function CvEditor() {
       setCvIsSample(res.is_sample);
       setSaved(res.content);
       setFromFile("");
-      setToast("CV saved. New assets will be grounded in it.");
+      setToast("CV saved. New drafts will use it.");
       setOpen(false);
     } catch (e) {
       setError(e.message);
@@ -129,7 +128,7 @@ export default function CvEditor() {
   };
 
   const needsCv = loaded && (isSample || !saved.trim()) && !tempCv.trim();
-  const tempWords = tempCv.trim() ? tempCv.trim().split(/s+/).length : 0;
+  const tempWords = tempCv.trim() ? tempCv.trim().split(/\s+/).length : 0;
   const temp = mode === "temp";
   const words = content.trim() ? content.trim().split(/\s+/).length : 0;
 
@@ -146,48 +145,31 @@ export default function CvEditor() {
   return (
     <>
       {fileInput}
-      {needsCv && (
-        <div className="banner">
-          Your CV is still the sample placeholder. Generated assets have no real
-          facts to use, so they will invent experience and numbers. Upload or
-          paste your real CV before generating.
+      {needsCv && !open && (
+        <div className="banner cv-strip">
+          <span style={{ flex: "1 1 320px" }}>
+            PACOS is still using a sample CV, so drafts would invent your experience. Add yours first.
+          </span>
+          <button className="btn btn-accent btn-sm" onClick={() => fileRef.current?.click()}>Upload my CV</button>
+          <button className="btn btn-sm" onClick={() => setOpen(true)}>Paste it</button>
         </div>
       )}
       {tempCv && !open && (
         <div className="cv-temp">
           <span>
-            <b>Using your temporary CV</b> ({tempWords} words) for this tab. It is
-            not saved anywhere and is deleted when you close the tab.
+            <b>Using a temporary CV</b> ({tempWords} words) in this tab only. It is never saved.
           </span>
-          <button className="btn btn-ghost" onClick={openTemp}>Edit</button>
-          <button className="btn btn-ghost" onClick={removeTemp}>Remove</button>
+          <button className="btn btn-ghost btn-sm" onClick={openTemp}>Edit</button>
+          <button className="btn btn-ghost btn-sm" onClick={removeTemp}>Remove</button>
         </div>
       )}
-      {!open ? (
-        <div className={`cv-strip ${dragging ? "dragging" : ""}`} {...dropProps}>
-          <button
-            className={`btn ${needsCv ? "btn-accent" : ""}`}
-            onClick={() => fileRef.current?.click()}
-          >
-            {needsCv ? "Upload my CV" : "Replace CV file"}
-          </button>
-          <button className="btn btn-ghost" onClick={() => setOpen(true)}>
-            {needsCv ? "Paste text instead" : "Edit CV text"}
-          </button>
-          {!tempCv && (
-            <button className="btn btn-ghost" onClick={openTemp}>
-              Use my own CV for this session
-            </button>
-          )}
-          <span className="muted">PDF, DOCX, or TXT. Or drop the file here.</span>
-        </div>
-      ) : (
+      {open && (
         <div className={`panel ${dragging ? "dragging" : ""}`} {...dropProps}>
-          <h3>{temp ? "Temporary CV (this tab only)" : "My CV (grounding for generated assets)"}</h3>
+          <h3>{temp ? "CV for this tab only" : "My CV"}</h3>
           <p className="muted">
             {temp
-              ? "Assets you generate in this tab will be grounded in this CV. It is never saved on the server and is deleted when you close the tab."
-              : "Everything the model may claim about you must be in here: skills, projects, real numbers. A few hundred words is plenty."}
+              ? "Drafts written in this tab use this CV. It is never saved and disappears when you close the tab."
+              : "Drafts can only claim what is written here: skills, projects, real numbers. A few hundred words is plenty."}
           </p>
           {fromFile && (
             <p className="cv-note">
@@ -209,14 +191,14 @@ export default function CvEditor() {
               disabled={busy || reading || !content.trim()}
               onClick={save}
             >
-              {temp ? "Use for this session" : busy ? "Saving…" : "Save CV"}
+              {temp ? "Use for this tab" : busy ? "Saving…" : "Save CV"}
             </button>
             <button
               className="btn"
               disabled={busy || reading}
               onClick={() => fileRef.current?.click()}
             >
-              {reading ? "Reading…" : "Upload PDF / DOCX"}
+              {reading ? "Reading…" : "Upload PDF or DOCX"}
             </button>
             <button className="btn btn-ghost" disabled={busy} onClick={cancel}>
               Cancel
@@ -225,6 +207,13 @@ export default function CvEditor() {
               {words} word{words === 1 ? "" : "s"}
             </span>
           </div>
+          {!temp && !tempCv && (
+            <p className="muted" style={{ marginTop: 12, marginBottom: 0 }}>
+              Trying PACOS with someone else’s login?{" "}
+              <button className="authgate-trial-fill" onClick={openTemp}>Use your CV for this tab only</button>
+              , it is never saved.
+            </p>
+          )}
         </div>
       )}
       {error && <p className="jd-error">{error}</p>}
