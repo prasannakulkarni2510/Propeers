@@ -131,7 +131,7 @@ function Shell() {
         {navOpen && <div className="backdrop" onClick={() => setNavOpen(false)} />}
         <aside className={`sidebar ${navOpen ? "open" : ""}`}>
           <div className="sidebar-head">
-            <div className="brand">PAC<span className="brand-accent">OS</span></div>
+            <Link to="/" className="brand" aria-label="PACOS home" onClick={onNavigate}>PAC<span className="brand-accent">OS</span></Link>
             <button className="icon-btn" aria-label="Close menu" onClick={() => setNavOpen(false)}>
               <Icon name="close" size={16} />
             </button>

@@ -1,5 +1,11 @@
 import { useEffect, useState } from "react";
 import { api, authToken } from "../services/api";
+import LoaderMark from "./LoaderMark.jsx";
+
+// The loading screen stays up for at least this long so it reads as a
+// deliberate splash rather than a flicker, then fades out.
+const SPLASH_MIN_MS = 1000;
+const SPLASH_FADE_MS = 280;
 
 // Gate for cloud deployments: when the backend has PACOS_LOGIN_EMAIL and
 // PACOS_LOGIN_PASSWORD set, every /api call needs a session token. We probe
@@ -13,6 +19,7 @@ export default function AuthGate({ children }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [trial, setTrial] = useState(null); // { email, password } when public
+  const [splash, setSplash] = useState("on"); // on | leaving | off
 
   useEffect(() => {
     if (state !== "locked") return;
@@ -22,13 +29,19 @@ export default function AuthGate({ children }) {
   }, [state]);
 
   const probe = async () => {
+    const started = performance.now();
+    let next = "ok";
     try {
       await api.stats();
-      setState("ok");
     } catch (e) {
       if (e.status === 401) authToken.set(""); // stale session: drop it
-      setState(e.status === 401 ? "locked" : "ok");
+      if (e.status === 401) next = "locked";
     }
+    const wait = SPLASH_MIN_MS - (performance.now() - started);
+    if (wait > 0) await new Promise((done) => setTimeout(done, wait));
+    setState(next);
+    setSplash("leaving");
+    setTimeout(() => setSplash("off"), SPLASH_FADE_MS);
   };
 
   useEffect(() => {
@@ -52,9 +65,18 @@ export default function AuthGate({ children }) {
     }
   };
 
-  if (state === "checking") return <div className="authgate"><p className="muted">Connecting…</p></div>;
-  if (state === "ok") return children;
+  const splashScreen = splash !== "off" && (
+    <div className={`splash ${splash === "leaving" ? "is-leaving" : ""}`} role="status" aria-live="polite">
+      <LoaderMark />
+      <p className="muted splash-note">Connecting…</p>
+    </div>
+  );
+
+  if (state === "checking") return splashScreen;
+  if (state === "ok") return <>{children}{splashScreen}</>;
   return (
+    <>
+    {splashScreen}
     <div className="authgate">
       <form className="panel authgate-card" onSubmit={login}>
         <div className="brand">
@@ -106,5 +128,6 @@ export default function AuthGate({ children }) {
         )}
       </form>
     </div>
+    </>
   );
 }

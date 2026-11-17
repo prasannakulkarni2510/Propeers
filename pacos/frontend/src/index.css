@@ -45,7 +45,9 @@ button, input, select, textarea { font: inherit; color: inherit; }
 }
 .sidebar:not(.open) { display: none; }
 .sidebar-head { display: flex; justify-content: space-between; align-items: center; padding: 0 var(--s-2); margin-bottom: var(--s-6); }
-.brand { font-family: var(--font-ui); font-size: var(--t-lg); font-weight: 700; letter-spacing: 0.01em; line-height: 1; }
+.brand { font-family: var(--font-ui); font-size: var(--t-lg); font-weight: 700; letter-spacing: 0.01em; line-height: 1; color: var(--text); text-decoration: none; border-radius: var(--r-sm); }
+.brand:hover { color: var(--text); }
+.brand:focus-visible { outline: 2px solid var(--accent-edge); outline-offset: 3px; }
 .brand-accent { color: var(--brand); }
 
 .icon-btn {
@@ -572,3 +574,17 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 .authgate-trial dl { display: grid; grid-template-columns: auto 1fr; gap: var(--s-1) var(--s-3); margin: 0 0 var(--s-2); }
 .authgate-trial dd { margin: 0; color: var(--text); font-family: var(--font-mono); font-size: var(--t-xs); overflow-wrap: anywhere; }
 .authgate-trial-fill { font-size: var(--t-sm); font-weight: 500; color: var(--accent-text); cursor: pointer; background: none; border: 0; padding: 0; text-decoration: underline; }
+
+/* ── loading screen ── */
+.splash { position: fixed; inset: 0; z-index: 1000; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s-4); background: var(--ground); opacity: 1; transition: opacity 280ms ease; animation: splash-in 240ms ease both; }
+.splash.is-leaving { opacity: 0; pointer-events: none; }
+.splash-note { letter-spacing: 0.02em; }
+@keyframes splash-in { from { opacity: 0; } }
+.loader-mark { display: inline-flex; align-items: baseline; font-family: var(--font-ui); font-size: var(--t-3xl); font-weight: 700; letter-spacing: 0.01em; line-height: 1; color: var(--text); }
+.loader-o { width: 0.76em; height: 0.76em; margin: 0 0.035em; align-self: baseline; transform: translateY(0.02em); overflow: visible; }
+.loader-o-track { fill: none; stroke: var(--brand); opacity: 0.16; }
+.loader-o-arc { fill: none; stroke: var(--brand); stroke-linecap: round; }
+@media (prefers-reduced-motion: reduce) {
+  .loader-o-track { opacity: 1; }
+  .loader-o-arc { display: none; }
+}
