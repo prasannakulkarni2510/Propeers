@@ -3,6 +3,7 @@ import Icon from "../components/Icon.jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store";
 import { useChat } from "../store/chat";
+import { api, sessionCv } from "../services/api";
 import LeadFieldsEditor, { EMPTY_LEAD, canSubmitLead } from "../components/LeadFieldsEditor.jsx";
 import { ChangeCard, RecordCard } from "../components/ChatLeadCards.jsx";
 import { MAX_IMAGES, imageFiles, prepareImage } from "../lib/images";
@@ -105,6 +106,57 @@ function DraftCard({ draft }) {
       </div>
       <pre className="draft-text">{draft.text}</pre>
       <p className="muted draft-note">Read it before you send it. PACOS never sends anything.</p>
+    </div>
+  );
+}
+
+// The CV every draft is written from, answered from the store (never the
+// model). Looks like a card on My CV; Download saves its text.
+function CvInUseCard({ cv }) {
+  const setToast = useStore((s) => s.setToast);
+  if (cv.source === "none") {
+    return (
+      <div className="proposal-card cv-chat-empty">
+        <Link className="btn btn-accent btn-sm" to="/cv">Add my CV</Link>
+      </div>
+    );
+  }
+  const download = async () => {
+    try {
+      let text = "";
+      if (cv.source === "tab") text = sessionCv.get();
+      else text = ((await api.cvs()).find((c) => c.cv_id === cv.cv_id) || {}).content || "";
+      if (!text.trim()) throw new Error("That CV is empty or was removed.");
+      const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${cv.name.replace(/[^\w ()-]+/g, "").trim() || "CV"}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      setToast(`Couldn't download the CV: ${e.message}`);
+    }
+  };
+  const when = cv.updated_at ? new Date(cv.updated_at).toLocaleDateString(undefined, { day: "numeric", month: "short" }) : "";
+  return (
+    <div className="cv-chat" data-color={cv.source === "saved" ? cv.color || "coral" : "slate"}>
+      <div className="cv-card-strip">
+        <span className="cv-card-badge">CV</span>
+        <span className="cv-card-name">{cv.name}</span>
+        <span className="cv-card-used">In use</span>
+      </div>
+      <p className="cv-chat-meta">
+        {cv.words} words{when && `, updated ${when}`}
+        {cv.source === "tab" && ", this tab only, never saved"}
+      </p>
+      <div className="btn-row cv-chat-actions">
+        <button className="btn btn-sm" onClick={download}>
+          <Icon name="download" size={15} /> Download
+        </button>
+        <Link className="btn btn-ghost btn-sm" to="/cv">
+          {cv.total > 1 ? "Switch CV" : "Open My CV"}
+        </Link>
+      </div>
     </div>
   );
 }
@@ -251,6 +303,7 @@ export default function Chat() {
               </div>
             )}
             {m.draft && <DraftCard draft={m.draft} />}
+            {m.cv && <CvInUseCard cv={m.cv} />}
             {m.proposal && (
               <ProposalCard
                 proposal={m.proposal}

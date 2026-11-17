@@ -262,6 +262,13 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .cv-pop-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: end; margin-bottom: var(--s-3); }
 @media (max-width: 640px) { .cv-pop-meta { grid-template-columns: minmax(0, 1fr); } }
 .cv-swatches { display: flex; gap: var(--s-2); align-items: center; min-height: var(--h); }
+/* the CV in use, as a card in the chat */
+.cv-chat { --tint: oklch(90% 0.06 30); --tint-ink: oklch(36% 0.1 30);
+  width: min(340px, 100%); margin-top: var(--s-3); overflow: hidden; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--line-2); box-shadow: 0 1px 2px oklch(20% 0.01 35 / 0.06); }
+.cv-chat-meta { margin: var(--s-3) var(--s-3) 0; font-size: var(--t-xs); color: var(--muted); }
+.cv-chat-actions { padding: var(--s-3); }
+.cv-chat-empty { margin-top: var(--s-3); }
 [data-color="coral"] { --tint: oklch(90% 0.06 30); --tint-ink: oklch(36% 0.1 30); }
 [data-color="amber"] { --tint: oklch(91% 0.07 80); --tint-ink: oklch(38% 0.08 70); }
 [data-color="sage"] { --tint: oklch(91% 0.045 150); --tint-ink: oklch(36% 0.07 150); }

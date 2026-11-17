@@ -15,7 +15,7 @@ router = APIRouter(prefix="/api", tags=["chat"])
 
 @router.post("/chat", response_model=ChatResult)
 def chat(req: ChatRequest, svc: Service = Depends(get_service)):
-    reply, proposal, warnings, llm_used, draft, records, change, image_text = svc.chat(
+    reply, proposal, warnings, llm_used, draft, records, change, image_text, cv = svc.chat(
         [m.model_dump() for m in req.messages], cv_text=req.cv_text, today=req.today)
     return ChatResult(
         reply=reply,
@@ -24,6 +24,7 @@ def chat(req: ChatRequest, svc: Service = Depends(get_service)):
         records=records,
         change=change,
         image_text=image_text,
+        cv=cv,
         warnings=warnings,
         llm_used=llm_used,
         model=svc.cfg.nemotron_model if llm_used else "offline",

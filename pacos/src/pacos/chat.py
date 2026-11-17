@@ -436,6 +436,26 @@ def _is_sum(question: str) -> bool:
     return asked or bool(re.search(r"\d\s+[-/]\s+\d", body))
 
 
+_CV_WORD = re.compile(r"\b(cvs?|resumes?|résumés?)\b", re.I)
+_CV_ASK = re.compile(r"\b(which|what|whose|show|see|view|current(ly)?|using|use[ds]?|active|default|"
+                     r"selected|download|get)\b", re.I)
+# A task that mentions the CV ("draft an email using my CV", "update my CV")
+# or a question about what is in it is the model's job, not this answer's.
+_CV_NOT_ASK = re.compile(r"\b(draft|write|rewrite|email|dm|message|letter|note|tailor|tweak|add|"
+                         r"update|change|edit|upload|paste|switch|replace|delete|remove|"
+                         r"say|says|mention|about|skills?|experience|improve|feedback|review|"
+                         r"better|weak|strong)\b", re.I)
+
+
+def asks_which_cv(question: str) -> bool:
+    """"Which CV are we using?", "show me my CV", "can I download my resume?".
+    Answered from the store, never by the model: it once claimed no CV was set."""
+    q = question.strip()
+    if not q or len(q) > 160 or not _CV_WORD.search(q) or _CV_NOT_ASK.search(q):
+        return False
+    return bool(_CV_ASK.search(q))
+
+
 _NOT_FOUND = re.compile(
     r"couldn'?t find|could not find|can'?t find"
     r"|(isn'?t|is not|not|aren'?t) (yet )?(in|found in) (your )?(pacos|records|leads|tracker)"

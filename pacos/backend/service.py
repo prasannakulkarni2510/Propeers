@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dataclasses import asdict
 
-from pacos.chat import SCREENSHOT_MARK, chat_turn
+from pacos.chat import SCREENSHOT_MARK, asks_which_cv, chat_turn
 from pacos.config import Config, load
 from pacos.discovery import build_searches
 from pacos.inbox_monitor import run_monitor
@@ -63,16 +63,44 @@ class Service:
         Images on the latest message are read first, and their text joins
         that message, so a screenshot of a rejection email is looked up and
         turned into a change card like the typed sentence would be. Returns
-        chat_turn's tuple plus the text read from the images."""
+        chat_turn's tuple plus the text read from the images and a CV card
+        (only when the question was which CV is in use)."""
+        last = messages[-1] if messages else {}
+        if last.get("role") == "user" and not last.get("images") and asks_which_cv(last.get("content") or ""):
+            reply, card = self.cv_in_use(cv_text)
+            return reply, None, [], False, None, [], None, "", card
         messages, image_text, error = self._read_images(messages)
         if error:
-            return error, None, [], False, None, [], None, ""
+            return error, None, [], False, None, [], None, "", None
         day = self._operator_today(today)
         with using_cv(cv_text):
             return (*chat_turn(self._llm(), self.stats(), messages,
                                drafter=self._draft,
                                retriever=lambda m: self._retrieve(m, day),
-                               today=day), image_text)
+                               today=day), image_text, None)
+
+    def cv_in_use(self, cv_text: str | None = None) -> tuple[str, dict]:
+        """The CV every draft is written from, as a reply and a card. A
+        temporary CV sent by this tab wins over the saved one, as it does when
+        drafting."""
+        if cv_text and cv_text.strip():
+            return ("This tab is using the temporary CV you added, so every draft here is "
+                    "written from it. It is never saved.",
+                    {"source": "tab", "name": "Temporary CV (this tab)",
+                     "words": len(cv_text.split())})
+        rows = self.list_cvs()
+        active = next((r for r in rows if r["is_active"]), None)
+        if not active:
+            return ("No CV of yours is saved yet, so PACOS is using a sample one and drafts "
+                    "would invent experience. Add yours on My CV.", {"source": "none"})
+        others = len(rows) - 1
+        more = (f" You have {others} other CV{'s' if others != 1 else ''} saved; switch on My CV."
+                if others else " You can download it or change it on My CV.")
+        return (f"Every email, LinkedIn DM and cover letter is written from “{active['name']}”, "
+                f"the CV in use.{more}",
+                {"source": "saved", "cv_id": active["cv_id"], "name": active["name"],
+                 "words": len(active["content"].split()), "color": active["color"],
+                 "updated_at": active["updated_at"], "total": len(rows)})
 
     @staticmethod
     def _operator_today(s: str | None):

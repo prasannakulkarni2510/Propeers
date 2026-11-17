@@ -1,0 +1,227 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&display=swap" rel="stylesheet">
+<style>
+  /* The stage for render: every layer is positioned by seek(t), nothing runs on its own clock. */
+  :root {
+    --bg: oklch(96.6% 0.008 60); --text: oklch(21% 0.012 38); --muted: oklch(47% 0.013 45);
+    --brand: oklch(61% 0.2 33); --line: oklch(87% 0.009 55); --chrome: oklch(93.5% 0.008 55);
+  }
+  * { margin: 0; box-sizing: border-box; }
+  html, body { width: 1920px; height: 1080px; overflow: hidden; background: var(--bg); }
+  body { font-family: Geist, sans-serif; color: var(--text); position: relative; }
+
+  /* ambient: two soft glows that drift slowly */
+  .glow { position: absolute; width: 1400px; height: 900px; border-radius: 50%; filter: blur(60px); opacity: .55; }
+  #glowA { background: radial-gradient(closest-side, oklch(86% 0.07 35), transparent); }
+  #glowB { background: radial-gradient(closest-side, oklch(90% 0.05 70), transparent); }
+
+  #view { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; will-change: transform; }
+
+  /* the app window */
+  #win { position: absolute; border-radius: 16px; overflow: hidden; background: #fff;
+         border: 1px solid var(--line); }
+  #shadow { position: absolute; border-radius: 16px; }
+  #bar { height: 30px; background: var(--chrome); border-bottom: 1px solid var(--line);
+         display: flex; align-items: center; gap: 7px; padding: 0 12px; }
+  #bar i { width: 10px; height: 10px; border-radius: 50%; background: oklch(82% 0.01 50); display: block; }
+  #url { margin: 0 auto; transform: translateX(-24px); font-size: 11px; color: var(--muted);
+         background: oklch(98% 0.004 60); border: 1px solid var(--line); border-radius: 6px; padding: 2px 40px; }
+  #screen { position: relative; }
+  #screen img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+
+  /* cursor + click ripple live in the world, so they zoom with the camera */
+  #cursor { position: absolute; left: 0; top: 0; width: 26px; height: 26px; transform-origin: 3px 2px;
+            filter: drop-shadow(0 2px 3px rgba(0,0,0,.28)); }
+  #ripple { position: absolute; border-radius: 50%; border: 2px solid var(--brand);
+            background: color-mix(in oklch, var(--brand) 18%, transparent); pointer-events: none; }
+
+  /* title / end cards */
+  .card { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 200px; }
+  .wm { font-weight: 700; font-size: 140px; letter-spacing: .01em; line-height: 1; }
+  .wm span { color: var(--brand); }
+  .sub { font-family: "Source Serif 4", serif; font-size: 64px; font-weight: 500; margin-top: 36px; max-width: 22ch; line-height: 1.15; }
+  .small { margin-top: 40px; font-size: 30px; color: var(--muted); }
+
+  /* caption pill, fixed to the frame */
+  #cap { position: absolute; left: 50%; bottom: 40px; transform: translateX(-50%);
+         display: flex; align-items: center; gap: 14px; padding: 12px 24px 12px 14px; border-radius: 999px;
+         background: oklch(22% 0.012 38 / .86); color: #fff; font-size: 26px; font-weight: 500;
+         box-shadow: 0 10px 30px -10px rgba(0,0,0,.35); white-space: nowrap; }
+  #capn { font-size: 15px; font-weight: 600; letter-spacing: .06em; color: #fff; background: var(--brand);
+          border-radius: 999px; padding: 4px 10px; }
+</style>
+</head>
+<body>
+  <div id="glowA" class="glow"></div>
+  <div id="glowB" class="glow"></div>
+
+  <div id="view">
+    <div id="world">
+      <div id="shadow"></div>
+      <div id="win">
+        <div id="bar"><i></i><i></i><i></i><span id="url">pacos.onrender.com</span></div>
+        <div id="screen"><img id="imgA" alt=""><img id="imgB" alt=""></div>
+      </div>
+      <div id="ripple"></div>
+      <svg id="cursor" viewBox="0 0 26 26">
+        <path d="M3 2 L3 21 L8 16.5 L11.4 24 L14.6 22.6 L11.3 15.3 L18 15.3 Z"
+              fill="#111" stroke="#fff" stroke-width="1.6" stroke-linejoin="round"/>
+      </svg>
+    </div>
+  </div>
+
+  <div id="title" class="card">
+    <div class="wm">PAC<span>OS</span></div>
+    <div class="sub">Personal AI Career Operating System</div>
+    <div class="small">Drafts your job-search outreach. Tracks every reply. Never sends.</div>
+  </div>
+  <div id="end" class="card">
+    <div class="wm">PAC<span>OS</span></div>
+    <div class="sub">It drafts. You decide. You send.</div>
+    <div class="small">Chat &nbsp;·&nbsp; My people &nbsp;·&nbsp; Find people &nbsp;·&nbsp; My CV</div>
+  </div>
+
+  <div id="cap"><span id="capn"></span><span id="capt"></span></div>
+
+<script>
+// ── easing ────────────────────────────────────────────────────────────────
+// One signature curve for 80% of motion: cubic-bezier(0.4, 0, 0.2, 1).
+function bezier(p1x, p1y, p2x, p2y) {
+  const cx = 3 * p1x, bx = 3 * (p2x - p1x) - cx, ax = 1 - cx - bx;
+  const cy = 3 * p1y, by = 3 * (p2y - p1y) - cy, ay = 1 - cy - by;
+  const sx = (t) => ((ax * t + bx) * t + cx) * t;
+  const sy = (t) => ((ay * t + by) * t + cy) * t;
+  const dx = (t) => (3 * ax * t + 2 * bx) * t + cx;
+  return (x) => {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    let t = x;
+    for (let i = 0; i < 8; i++) { const d = dx(t); if (Math.abs(d) < 1e-6) break; t -= (sx(t) - x) / d; }
+    return sy(Math.min(1, Math.max(0, t)));
+  };
+}
+const SIG = bezier(0.4, 0, 0.2, 1);       // camera, cursor travel
+const OUT = bezier(0.05, 0.7, 0.1, 1);    // entrances (decelerate)
+const IN = bezier(0.3, 0, 1, 1);          // exits (accelerate)
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const lerp = (a, b, p) => a + (b - a) * p;
+
+let TL = null;           // timeline from build_demo.py
+const imgA = document.getElementById("imgA"), imgB = document.getElementById("imgB");
+const $ = (id) => document.getElementById(id);
+
+function layout() {
+  const W = TL.win;      // {x, y, w, h, bar}
+  for (const id of ["win", "shadow"]) Object.assign($(id).style, { left: W.x + "px", top: W.y + "px", width: W.w + "px", height: (W.h + W.bar) + "px" });
+  Object.assign($("screen").style, { width: W.w + "px", height: W.h + "px" });
+  $("bar").style.height = W.bar + "px";
+}
+window.load = (tl) => { TL = tl; layout(); };
+
+// value of a list of {t0, t1, from, to} segments at time t (holds between them)
+function seg(list, t, init, mix, ease = SIG) {
+  let v = init;
+  for (const s of list) {
+    if (t < s.t0) break;
+    v = t >= s.t1 ? s.to : mix(s.from, s.to, ease((t - s.t0) / (s.t1 - s.t0)), s);
+  }
+  return v;
+}
+const mixCam = (a, b, p) => {
+  // zoom in log space so in/out feel even; centre follows the same curve
+  const z = Math.exp(lerp(Math.log(a.z), Math.log(b.z), p));
+  return { z, x: lerp(a.x, b.x, p), y: lerp(a.y, b.y, p) };
+};
+const mixPt = (a, b, p, s) => {
+  // quadratic arc: control point lifted perpendicular to the path
+  const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1;
+  const k = Math.min(60, len * 0.1) * (s.arc || 1);
+  const cx = mx + (dy / len) * k, cy = my - (dx / len) * k;
+  const q = 1 - p;
+  return [q * q * a[0] + 2 * q * p * cx + p * p * b[0], q * q * a[1] + 2 * q * p * cy + p * p * b[1]];
+};
+
+async function setImg(el, src) {
+  if (!src) { el.style.opacity = 0; return; }
+  if (el.dataset.src !== src) { el.dataset.src = src; el.src = src; await el.decode().catch(() => {}); }
+}
+
+window.seek = async (t) => {
+  // ambient
+  $("glowA").style.transform = `translate(${980 + Math.sin(t / 7) * 120}px, ${-420 + Math.cos(t / 9) * 60}px)`;
+  $("glowB").style.transform = `translate(${-520 + Math.cos(t / 8) * 100}px, ${520 + Math.sin(t / 11) * 50}px)`;
+
+  // screen state: the latest state at t, crossfading from the one before it
+  let cur = -1;
+  for (let i = 0; i < TL.states.length; i++) { if (TL.states[i].t <= t) cur = i; else break; }
+  const s = TL.states[cur], prev = TL.states[cur - 1];
+  const f = s && s.fade > 0 ? clamp01((t - s.t) / s.fade) : 1;
+  await Promise.all([setImg(imgB, s && s.img), setImg(imgA, f < 1 && prev ? prev.img : null)]);
+  imgA.style.opacity = f < 1 && prev ? 1 : 0;
+  imgB.style.opacity = s ? OUT(f) : 0;
+
+  // camera
+  const cam = seg(TL.camera, t, TL.camInit, mixCam);
+  $("world").style.transform = `translate(960px, 540px) scale(${cam.z}) translate(${-cam.x}px, ${-cam.y}px)`;
+  $("shadow").style.boxShadow = `0 ${30 + 12 * (cam.z - 1)}px ${80 + 30 * (cam.z - 1)}px -20px oklch(30% 0.03 40 / ${0.32 + 0.08 * (cam.z - 1)})`;
+
+  // window visibility (enter after the title, leave before the end)
+  const wv = TL.window;
+  const win = t < wv.in ? 0 : t < wv.in + wv.inDur ? OUT((t - wv.in) / wv.inDur)
+            : t < wv.out ? 1 : 1 - IN(clamp01((t - wv.out) / wv.outDur));
+  const ws = 0.94 + 0.06 * win;
+  for (const id of ["win", "shadow"]) {
+    $(id).style.opacity = win;
+    $(id).style.transform = `translateY(${(1 - win) * 40}px) scale(${ws})`;
+  }
+
+  // cursor: travel, press, ripple
+  const p = seg(TL.cursor, t, TL.cursorInit, mixPt);
+  let press = 1, rip = null;
+  for (const c of TL.clicks) {
+    const d = t - c.t;
+    if (d >= 0 && d < 0.08) press = 1 - 0.18 * OUT(d / 0.08);
+    else if (d >= 0.08 && d < 0.26) press = 0.82 + 0.18 * OUT((d - 0.08) / 0.18);
+    if (d >= 0 && d < 0.55) rip = { at: c.at, p: d / 0.55 };
+  }
+  const cv = TL.cursorVis;
+  const cOp = t < cv.in ? 0 : t < cv.in + 0.4 ? OUT((t - cv.in) / 0.4) : t < cv.out ? 1 : 1 - IN(clamp01((t - cv.out) / 0.3));
+  const cs = 1.15 / Math.sqrt(cam.z);   // grows with zoom, but less than the page does
+  $("cursor").style.transform = `translate(${p[0] - 3}px, ${p[1] - 2}px) scale(${cs * press})`;
+  $("cursor").style.opacity = cOp;
+  const r = $("ripple");
+  if (rip) {
+    const e = OUT(rip.p), R = 6 + 22 * e;
+    Object.assign(r.style, { display: "block", left: rip.at[0] - R + "px", top: rip.at[1] - R + "px",
+                             width: 2 * R + "px", height: 2 * R + "px", opacity: 0.6 * (1 - e) });
+  } else r.style.display = "none";
+
+  // cards
+  for (const c of TL.cards) {
+    const el = $(c.id);
+    const v = t < c.t0 ? 0 : t < c.t0 + c.inDur ? OUT((t - c.t0) / c.inDur)
+            : t < c.t1 - c.outDur ? 1 : 1 - IN(clamp01((t - (c.t1 - c.outDur)) / c.outDur));
+    el.style.opacity = v;
+    el.style.transform = `translateY(${(1 - v) * 24}px) scale(${0.98 + 0.02 * v})`;
+  }
+
+  // caption
+  let cap = null;
+  for (const c of TL.captions) if (t >= c.t0 && t < c.t1) cap = c;
+  const ce = $("cap");
+  if (cap) {
+    $("capn").textContent = cap.n; $("capt").textContent = cap.text;
+    const a = clamp01((t - cap.t0) / 0.45), b = clamp01((cap.t1 - t) / 0.25);
+    const v = Math.min(OUT(a), b < 1 ? IN(b) : 1);
+    ce.style.opacity = v;
+    ce.style.transform = `translateX(-50%) translateY(${(1 - OUT(a)) * 14}px)`;
+  } else ce.style.opacity = 0;
+  return true;
+};
+</script>
+</body>
+</html>

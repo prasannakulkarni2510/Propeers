@@ -154,6 +154,7 @@ export const useChat = create((set, get) => ({
           draft: res.draft,
           records: res.records || [],
           change: res.change,
+          cv: res.cv,
         },
       };
     } catch (e) {

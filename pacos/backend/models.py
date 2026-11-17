@@ -312,6 +312,18 @@ class ChatRequest(BaseModel):
     cv_text: Optional[str] = Field(default=None, max_length=60_000)
 
 
+class ChatCv(BaseModel):
+    """The CV drafts are written from. source: saved | tab (temporary, this
+    tab only) | none (only the sample exists)."""
+    source: str
+    cv_id: str = ""
+    name: str = ""
+    words: int = 0
+    color: str = ""
+    updated_at: str = ""
+    total: int = 0
+
+
 class ChatDraft(BaseModel):
     asset: str  # cold_email | cold_dm | cover_letter
     text: str
@@ -370,6 +382,8 @@ class ChatResult(BaseModel):
     # What the vision model read from the attached images, so the UI can show
     # it and later turns can refer back without resending the images.
     image_text: str = ""
+    # The CV in use, when the question was which one that is.
+    cv: Optional[ChatCv] = None
     warnings: list[str] = []
     llm_used: bool
     model: str
