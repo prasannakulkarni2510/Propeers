@@ -373,3 +373,17 @@ class ChatResult(BaseModel):
     warnings: list[str] = []
     llm_used: bool
     model: str
+
+
+class SavedChatIn(BaseModel):
+    """A saved chat, or the part of one being changed. Messages are stored as
+    the UI holds them (text and cards); images are never part of them."""
+    title: Optional[str] = Field(default=None, max_length=200)
+    starred: Optional[bool] = None
+    messages: Optional[list[dict]] = Field(default=None, max_length=400)
+
+
+class SavedCvIn(BaseModel):
+    name: Optional[str] = Field(default=None, max_length=80)
+    content: Optional[str] = Field(default=None, max_length=40000)
+    color: Optional[str] = Field(default=None, max_length=20)

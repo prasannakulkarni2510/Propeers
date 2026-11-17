@@ -69,11 +69,11 @@ function ImportPeople({ company, role, city, keywords }) {
   return (
     <div className="panel disc-enrich">
       <div className="disc-head">
-        <span className="disc-group">Import them as leads</span>
+        <span className="disc-group">Add them to My people</span>
       </div>
       <p className="muted">
-        Collects the LinkedIn profiles a Google search finds and adds each as a
-        lead with a likely work email. Likely means guessed from the company’s
+        Collects the LinkedIn profiles a Google search finds and adds each to
+        My people with a likely work email. Likely means guessed from the company’s
         pattern, not verified.
       </p>
       <div className="btn-row">

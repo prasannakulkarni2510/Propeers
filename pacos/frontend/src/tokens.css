@@ -1,7 +1,6 @@
-/* PACOS "Night" system. Scene: a job seeker at a laptop in the evening, after
-   the day's applications, so the ground is a deep night indigo, not white. */
+/* PACOS "Coral" system: warm paper ground, near-black ink, one coral accent. */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   /* space */
   --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 72px;
@@ -12,38 +11,45 @@
   --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", monospace;
   --t-xs: 0.75rem; --t-sm: 0.8125rem; --t-md: 0.9375rem; --t-lg: 1.125rem; --t-xl: 1.5rem; --t-2xl: 2.125rem; --t-3xl: 2.75rem;
 
-  /* night ground, lifted in three steps */
-  --night: oklch(18.5% 0.028 290);
-  --night-2: oklch(21.5% 0.032 290);
-  --raise: oklch(25% 0.038 290);
-  --raise-2: oklch(29.5% 0.045 290);
-  --line: oklch(31% 0.04 290);
-  --line-2: oklch(40% 0.05 290);
+  /* paper ground; surfaces sit on it, wells are the lightest (fields) */
+  --ground: oklch(97% 0.006 55);
+  --surface: oklch(98.8% 0.0045 80);
+  --raise: oklch(94.5% 0.007 55);
+  --raise-2: oklch(91.5% 0.009 55);
+  --well: oklch(99.4% 0.003 80);
+  --side: oklch(94.5% 0.007 55);
+  --line: oklch(87% 0.009 55);
+  --line-2: oklch(81% 0.011 55);
 
-  /* text, tinted from the ground's hue */
-  --text: oklch(96% 0.012 290);
-  --text-2: oklch(84% 0.022 290);
-  --muted: oklch(70% 0.03 290);
+  /* ink */
+  --text: oklch(21% 0.012 38);
+  --text-2: oklch(29% 0.013 40);
+  --muted: oklch(47% 0.013 45);
 
-  /* one accent: dusk violet. Used for the primary action, the current place, focus. */
-  --violet: oklch(50% 0.13 292);
-  --violet-hi: oklch(57% 0.14 292);
-  --violet-edge: oklch(68% 0.12 292);
-  --violet-text: oklch(80% 0.1 292);
-  --violet-wash: oklch(50% 0.13 292 / 0.18);
+  /* one accent: coral. Primary action, the current place, focus. */
+  --accent: oklch(74% 0.125 30);
+  --accent-hi: oklch(69% 0.14 30);
+  --accent-edge: oklch(54% 0.17 30);
+  --accent-text: oklch(48% 0.165 29);
+  --accent-wash: oklch(74% 0.125 30 / 0.16);
+  --accent-line: oklch(54% 0.17 30 / 0.4);
+  --on-accent: oklch(21% 0.012 38);
 
   /* states */
-  --brand: oklch(68% 0.19 28);
-  --due: oklch(82% 0.13 80);
-  --due-wash: oklch(82% 0.13 80 / 0.12);
-  --good: oklch(80% 0.13 160);
-  --bad: oklch(74% 0.15 22);
-  --bad-solid: oklch(52% 0.17 24);
+  --brand: oklch(61% 0.2 33);
+  --due: oklch(48% 0.12 65);
+  --due-wash: oklch(95.5% 0.035 80);
+  --due-line: oklch(52% 0.12 65 / 0.35);
+  --good: oklch(45% 0.12 150);
+  --good-wash: oklch(95.5% 0.03 150);
+  --bad: oklch(52% 0.19 27);
+  --bad-solid: oklch(52% 0.19 27);
+  --on-solid: oklch(98% 0.004 70);
 
-  --scrim: oklch(12% 0.03 290 / 0.6);
+  --scrim: oklch(21% 0.012 38 / 0.45);
 
   --r-sm: 6px; --r-md: 8px; --r-lg: 12px; --r-pill: 999px;
-  --shadow-pop: 0 18px 48px -12px oklch(8% 0.03 290 / 0.7), 0 2px 6px oklch(8% 0.03 290 / 0.4);
+  --shadow-pop: 0 18px 48px -16px oklch(20% 0.01 35 / 0.28), 0 2px 6px oklch(20% 0.01 35 / 0.08);
 
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
   --fast: 140ms; --med: 240ms;

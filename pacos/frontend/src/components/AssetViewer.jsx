@@ -73,7 +73,7 @@ export default function AssetViewer({ leadId, lead }) {
     };
     return (
       <div className="next-step">
-        <h3>{isJob ? "No contact person yet" : "No drafts yet"}</h3>
+        <h3>{isJob ? "No contact person yet" : "No messages yet"}</h3>
         {isJob ? (
           <p style={{ marginBottom: 0 }}>
             This is a job posting. Find the hiring manager or recruiter below, add them as a lead, and write to them.
@@ -82,7 +82,7 @@ export default function AssetViewer({ leadId, lead }) {
           <>
             <p>PACOS writes an email, a LinkedIn DM, a cover letter and CV notes from your CV. Nothing is sent.</p>
             <button className="btn btn-accent btn-sm" disabled={generating} onClick={buildOne}>
-              {generating ? "Writing…" : "Write drafts"}
+              {generating ? "Writing…" : "Write messages"}
             </button>
           </>
         )}
@@ -121,7 +121,7 @@ export default function AssetViewer({ leadId, lead }) {
       {canMark && (
         <div className="next-step">
           <h3>Ready to send</h3>
-          <p>Copy a draft, send it yourself, then say how you sent it. That starts the follow-up clock.</p>
+          <p>Copy a message, send it yourself, then say how you sent it. That starts the follow-up clock.</p>
           <div className="btn-row">
             {lead.has_email && (
               <button className="btn btn-sm" onClick={() => markSent(leadId, "email")}>Sent by email</button>

@@ -29,11 +29,11 @@ export function pipelineCounts(leads) {
 // Where a lead sits in the loop. Every lead lands in exactly one stage;
 // outreach status wins over draft state once something has been sent.
 export const LEAD_STAGES = [
-  { id: "needs_assets", title: "Needs drafts", empty: "Every lead has drafts." },
+  { id: "needs_assets", title: "To write", empty: "Everyone has messages written." },
   { id: "ready", title: "Ready to send", empty: "Nothing waiting to be sent." },
-  { id: "awaiting", title: "Waiting", empty: "No one owes you a reply." },
-  { id: "engaged", title: "In conversation", empty: "No replies yet." },
-  { id: "closed", title: "Closed", empty: "Nothing closed." },
+  { id: "awaiting", title: "Waiting for a reply", empty: "No one owes you a reply." },
+  { id: "engaged", title: "Replied", empty: "No replies yet." },
+  { id: "closed", title: "Finished", empty: "Nothing finished yet." },
 ];
 
 const ENGAGED = new Set(["replied", "interested", "interview", "offer"]);

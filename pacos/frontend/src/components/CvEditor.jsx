@@ -99,7 +99,7 @@ export default function CvEditor({ open, setOpen }) {
       setCvIsSample(res.is_sample);
       setSaved(res.content);
       setFromFile("");
-      setToast("CV saved. New drafts will use it.");
+      setToast("CV saved. New messages will use it.");
       setOpen(false);
     } catch (e) {
       setError(e.message);
@@ -148,7 +148,7 @@ export default function CvEditor({ open, setOpen }) {
       {needsCv && !open && (
         <div className="banner cv-strip">
           <span style={{ flex: "1 1 320px" }}>
-            PACOS is still using a sample CV, so drafts would invent your experience. Add yours first.
+            PACOS is still using a sample CV, so messages would invent your experience. Add yours first.
           </span>
           <button className="btn btn-accent btn-sm" onClick={() => fileRef.current?.click()}>Upload my CV</button>
           <button className="btn btn-sm" onClick={() => setOpen(true)}>Paste it</button>
@@ -168,8 +168,8 @@ export default function CvEditor({ open, setOpen }) {
           <h3>{temp ? "CV for this tab only" : "My CV"}</h3>
           <p className="muted">
             {temp
-              ? "Drafts written in this tab use this CV. It is never saved and disappears when you close the tab."
-              : "Drafts can only claim what is written here: skills, projects, real numbers. A few hundred words is plenty."}
+              ? "Messages written in this tab use this CV. It is never saved and disappears when you close the tab."
+              : "Messages can only claim what is written here: skills, projects, real numbers. A few hundred words is plenty."}
           </p>
           {fromFile && (
             <p className="cv-note">

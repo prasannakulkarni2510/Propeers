@@ -6,20 +6,24 @@ import { pipelineCounts } from "./lib/pipeline";
 import Chat from "./pages/Chat.jsx";
 import Pipeline from "./pages/Pipeline.jsx";
 import FindPeople from "./pages/FindPeople.jsx";
+import MyCv from "./pages/MyCv.jsx";
 import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
 import Icon from "./components/Icon.jsx";
+import ChatList from "./components/ChatList.jsx";
 import LeadPanel from "./components/LeadModal.jsx";
 import { authToken } from "./services/api";
+import { useChat } from "./store/chat";
 
-// Three places. `badge` picks a count from pipelineCounts.
+// Four places. `badge` picks a count from pipelineCounts.
 const NAV = [
-  { to: "/", label: "Chat", end: true },
-  { to: "/pipeline", label: "Pipeline", badge: true },
+  { to: "/", label: "Chat", chat: true },
+  { to: "/pipeline", label: "My people", badge: true },
   { to: "/find", label: "Find people" },
+  { to: "/cv", label: "My CV" },
 ];
 
-const TITLES = { "/": "Chat", "/pipeline": "Pipeline", "/find": "Find people", "/about": "About" };
+const TITLES = { "/": "Chat", "/c": "Chat", "/pipeline": "My people", "/find": "Find people", "/cv": "My CV", "/about": "About" };
 
 function Toast() {
   const { toast, error, clearToast, clearError } = useStore();
@@ -70,6 +74,10 @@ export default function App() {
   const counts = useMemo(() => pipelineCounts(leads), [leads]);
   const generating = useStore((s) => s.generating);
   const { pathname } = useLocation();
+  // "Chat" leads back to the conversation that was open, not to a blank one.
+  const chatId = useChat((s) => s.chatId);
+  const chatTitle = useChat((s) => s.chats.find((c) => c.chat_id === s.chatId)?.title);
+  const inChat = pathname === "/" || pathname.startsWith("/c/");
 
   // Open by default on desktop, hidden on mobile until asked for. Picking a
   // page on mobile closes it again.
@@ -89,9 +97,9 @@ export default function App() {
 
   // Tab title follows the page so several PACOS tabs stay distinguishable.
   useEffect(() => {
-    const page = TITLES["/" + (pathname.split("/")[1] || "")];
+    const page = (inChat && pathname !== "/" && chatTitle) || TITLES["/" + (pathname.split("/")[1] || "")];
     document.title = page ? `${page} · PACOS` : "PACOS";
-  }, [pathname]);
+  }, [pathname, inChat, chatTitle]);
 
   // What needs the operator today: overdue follow-ups first, else drafts to send.
   const badge = counts.due > 0
@@ -122,10 +130,9 @@ export default function App() {
             {NAV.map((n) => (
               <NavLink
                 key={n.to}
-                to={n.to}
-                end={n.end}
+                to={n.chat && chatId ? `/c/${chatId}` : n.to}
                 onClick={onNavigate}
-                className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}
+                className={({ isActive }) => `nav-link ${(n.chat ? inChat : isActive) ? "active" : ""}`}
               >
                 <span>{n.label}</span>
                 {n.badge && badge && (
@@ -136,10 +143,11 @@ export default function App() {
               </NavLink>
             ))}
           </nav>
+          <ChatList onNavigate={onNavigate} />
           <div className="sidebar-foot">
             {generating && (
               <div className="sidebar-live" role="status">
-                <span className="dot running" /> Writing drafts…
+                <span className="dot running" /> Writing messages…
               </div>
             )}
             <NavLink to="/about" onClick={onNavigate} className={({ isActive }) => `nav-quiet ${isActive ? "active" : ""}`}>
@@ -155,8 +163,10 @@ export default function App() {
         <main className="content" id="main">
           <Routes>
             <Route path="/" element={<Chat />} />
+            <Route path="/c/:chatId" element={<Chat />} />
             <Route path="/pipeline" element={<Pipeline />} />
             <Route path="/find" element={<FindPeople />} />
+            <Route path="/cv" element={<MyCv />} />
             <Route path="/about" element={<About />} />
             {/* Old addresses. */}
             <Route path="/chat" element={<Navigate to="/" replace />} />

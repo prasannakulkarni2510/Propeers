@@ -17,12 +17,12 @@ const ACTIONS = {
   reply: "Record a reply",
   status: "Set status",
   note: "Add a note",
-  delete: "Delete lead",
+  delete: "Delete person",
 };
 
 // Two-click delete (no native dialogs), same as Remove on the Leads page.
 // Removes the lead from the tracker, the lead sheet and its assets.
-export function DeleteLeadButton({ leadId, label = "Delete lead", onDeleted, accent = false }) {
+export function DeleteLeadButton({ leadId, label = "Delete", onDeleted, accent = false }) {
   const deleteLead = useStore((s) => s.deleteLead);
   const [confirming, setConfirming] = useState(0); // when it was armed, or 0
   const [busy, setBusy] = useState(false);
@@ -53,7 +53,7 @@ export function DeleteLeadButton({ leadId, label = "Delete lead", onDeleted, acc
   return (
     <button
       className={`btn btn-sm ${confirming || accent ? "btn-accent" : "btn-danger-quiet"}`}
-      title="Remove this lead from the tracker, lead sheet, and assets"
+      title="Remove this person and their messages for good"
       disabled={busy}
       onClick={click}
     >
@@ -86,7 +86,7 @@ function Facts({ rec }) {
 function Links({ rec }) {
   return (
     <>
-      <Link className="btn btn-ghost btn-sm" to={{ search: leadSearch(rec.lead_id) }}>Open drafts</Link>
+      <Link className="btn btn-ghost btn-sm" to={{ search: leadSearch(rec.lead_id) }}>Open messages</Link>
             {rec.linkedin_url && (
         <a className="btn btn-ghost btn-sm" href={rec.linkedin_url} target="_blank" rel="noopener noreferrer">
           LinkedIn ↗
@@ -194,7 +194,7 @@ function MoveBoard({ rec, ch, after }) {
       <div className="cc-arrow" aria-hidden="true"><Icon name="arrow" size={20} /></div>
       <MiniColumn stage={after.stage} label="after">
         {after.stage === "deleted" ? (
-          <div className="kb-empty">Removed from leads, tracker and assets</div>
+          <div className="kb-empty">Removed, with their messages</div>
         ) : (
           <MiniCard rec={rec} status={after.status} />
         )}
@@ -338,8 +338,8 @@ export function ChangeCard({ change, state, result, onDone }) {
       </div>
       {ch.action === "delete" && (
         <p className="change-warn">
-          Deleting removes {rec.full_name || "this lead"} from the tracker, the lead sheet and
-          its generated assets. This can’t be undone.
+          Deleting removes {rec.full_name || "this person"} and the messages written
+          for them. This can’t be undone.
         </p>
       )}
       <div className="btn-row">

@@ -47,7 +47,7 @@ export default function AddLead({ onClose }) {
   return (
     <div className="panel add-lead">
       <div className="add-lead-head">
-        <h3>Add a lead</h3>
+        <h3>Add a person</h3>
         <div className="seg" role="group" aria-label="How to add">
           <button aria-pressed={mode === "jd"} onClick={() => setMode("jd")}>Paste a job description</button>
           <button aria-pressed={mode === "manual"} onClick={() => setMode("manual")}>Type it in</button>
@@ -80,7 +80,7 @@ export default function AddLead({ onClose }) {
           <LeadFieldsEditor fields={fields} setFields={setFields} persona={persona} setPersona={setPersona} />
           <div className="btn-row">
             <button className="btn btn-accent" disabled={busy || !canSubmitLead(fields, persona)} onClick={add}>
-              {busy ? "Adding…" : "Add lead"}
+              {busy ? "Adding…" : "Add person"}
             </button>
             <button className="btn btn-ghost" disabled={busy} onClick={onClose}>Cancel</button>
             <span className="muted">Name, job title, company and persona are required.</span>

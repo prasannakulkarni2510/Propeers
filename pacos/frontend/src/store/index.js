@@ -32,9 +32,9 @@ export const useStore = create((set, get) => ({
     try {
       const res = await api.generate({ dry_run: false, limit, lead_id, review_hooks: false, only_missing: true });
       if (res.requested === 0) {
-        set({ toast: "Every lead already has drafts." });
+        set({ toast: "Everyone already has messages written." });
       } else {
-        set({ toast: `Wrote drafts for ${res.generated} of ${res.requested} lead${res.requested === 1 ? "" : "s"}.` });
+        set({ toast: `Wrote messages for ${res.generated} of ${res.requested} ${res.requested === 1 ? "person" : "people"}.` });
       }
       await get().refresh();
       return res;

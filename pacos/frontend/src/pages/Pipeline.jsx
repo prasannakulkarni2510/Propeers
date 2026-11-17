@@ -14,7 +14,7 @@ const BATCH = 10;
 
 // The one line under a lead's name: what is true of it right now.
 function stateLine(lead, stage) {
-  if (stage === "needs_assets") return isPerson(lead) ? "" : "Job posting, no contact yet";
+  if (stage === "needs_assets") return isPerson(lead) ? "" : "Job posting, no person yet";
   if (stage === "ready") return lead.has_email ? "Email and DM ready" : "DM ready";
   if (stage === "awaiting") {
     if (isFollowUpDue(lead)) return "Follow-up due";
@@ -104,7 +104,7 @@ export default function Pipeline() {
     setScanning(true);
     try {
       const r = await api.scanInbox();
-      setToast(`Inbox checked: ${r.matched} repl${r.matched === 1 ? "y" : "ies"} matched to leads.`);
+      setToast(`Inbox checked: ${r.matched} repl${r.matched === 1 ? "y" : "ies"} found from people you wrote to.`);
       await refresh();
     } catch (e) {
       setToast(`Couldn't check the inbox: ${e.message}`);
@@ -116,24 +116,21 @@ export default function Pipeline() {
   return (
     <div className="wide">
       <div className="page-head">
-        <h1 className="page-title">Pipeline</h1>
+        <h1 className="page-title">My people</h1>
         <div className="pipe-tools">
           <input
             className="input"
             type="search"
-            aria-label="Search leads"
-            placeholder="Search leads"
+            aria-label="Search people"
+            placeholder="Search by name or company"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
           <button className="btn btn-ghost" disabled={scanning} onClick={scan}>
             {scanning ? "Checking…" : "Check inbox"}
           </button>
-          <button className="btn btn-ghost" aria-expanded={cvOpen} onClick={() => setCvOpen(!cvOpen)}>
-            My CV
-          </button>
           <button className="btn btn-accent" aria-expanded={adding} onClick={() => setAdding(!adding)}>
-            Add lead
+            Add a person
           </button>
         </div>
       </div>
@@ -146,11 +143,11 @@ export default function Pipeline() {
         <p className="muted">Loading leads…</p>
       ) : leads.length === 0 ? (
         <div className="empty-state">
-          <h2 className="page-title">No leads yet</h2>
+          <h2 className="page-title">No one here yet</h2>
           <p className="page-sub">
-            A lead is one person you want to write to. Add one here, or paste a job description into the chat.
+            Everyone you want to write to about a job lives here. Add someone, or paste a job description into the chat.
           </p>
-          <button className="btn btn-accent" onClick={() => setAdding(true)}>Add your first lead</button>
+          <button className="btn btn-accent" onClick={() => setAdding(true)}>Add your first person</button>
         </div>
       ) : (
         <div className="kb-board pipe-board">
@@ -165,10 +162,10 @@ export default function Pipeline() {
                   <button
                     className="btn btn-accent btn-sm kb-more"
                     disabled={generating}
-                    title={`Write drafts for ${batch === toWrite ? "these" : `the next ${batch} of these`} leads`}
+                    title={`Write messages for ${batch === toWrite ? "these" : `the next ${batch} of these`} people`}
                     onClick={() => generate({ limit: batch }).catch(() => {})}
                   >
-                    {generating ? "Writing drafts…" : batch === toWrite ? `Write drafts for all ${batch}` : `Write drafts for the next ${batch}`}
+                    {generating ? "Writing messages…" : batch === toWrite ? `Write messages for all ${batch}` : `Write messages for the next ${batch}`}
                   </button>
                 ) : null
               }

@@ -94,6 +94,20 @@ export const api = {
   markStatus: (body) =>
     req("/api/approvals/status", { method: "POST", body: JSON.stringify(body) }),
 
+  // Saved chats. The list carries no messages; one chat does.
+  chats: () => req("/api/chats"),
+  getChat: (id) => req(`/api/chats/${id}`),
+  createChat: (body) => req("/api/chats", { method: "POST", body: JSON.stringify(body) }),
+  updateChat: (id, body) => req(`/api/chats/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  deleteChat: (id) => req(`/api/chats/${id}`, { method: "DELETE" }),
+
+  // Several saved CVs, one in use.
+  cvs: () => req("/api/cvs"),
+  createCv: (body) => req("/api/cvs", { method: "POST", body: JSON.stringify(body) }),
+  updateCv: (id, body) => req(`/api/cvs/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
+  useCv: (id) => req(`/api/cvs/${id}/use`, { method: "POST" }),
+  deleteCv: (id) => req(`/api/cvs/${id}`, { method: "DELETE" }),
+
   getCv: () => req("/api/settings/cv"),
   saveCv: (content) =>
     req("/api/settings/cv", { method: "PUT", body: JSON.stringify({ content }) }),

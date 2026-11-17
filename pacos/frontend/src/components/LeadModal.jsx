@@ -144,14 +144,14 @@ export default function LeadPanel() {
                 Find people at {lead.company_name || "this company"}
               </Link>
               <span className="spacer">
-                <DeleteLeadButton leadId={lead.lead_id} label="Delete lead" onDeleted={close} />
+                <DeleteLeadButton leadId={lead.lead_id} label="Delete" onDeleted={close} />
               </span>
             </footer>
           </>
         ) : (
           <div className="empty-state">
             <h2 className="lead-head-name" id={titleId}>
-              {loading || leads.length === 0 ? "Loading…" : "Lead not found"}
+              {loading || leads.length === 0 ? "Loading…" : "Person not found"}
             </h2>
             {!loading && leads.length > 0 && <p className="muted">It may have been deleted.</p>}
           </div>

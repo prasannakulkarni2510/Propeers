@@ -30,8 +30,8 @@ for _k, _v in dotenv_values(REPO_ROOT / ".env").items():
     if _k in _AUTH_KEYS and _v is not None:
         os.environ.setdefault(_k, _v)
 
-from .routes import (agents, approvals, assets, chat, discovery, inbox, leads,
-                     settings, tracker)
+from .routes import (agents, approvals, assets, chat, chats, cvs, discovery,
+                     inbox, leads, settings, tracker)
 
 app = FastAPI(
     title="PACOS API",
@@ -127,6 +127,8 @@ app.include_router(chat.router)
 app.include_router(inbox.router)
 app.include_router(discovery.router)
 app.include_router(settings.router)
+app.include_router(chats.router)
+app.include_router(cvs.router)
 
 
 @app.get("/api/health")

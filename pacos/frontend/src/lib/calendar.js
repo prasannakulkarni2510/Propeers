@@ -64,7 +64,7 @@ export function downloadIcs(ev) {
 }
 
 const who = (lead) =>
-  [lead.full_name, lead.company_name].filter(Boolean).join(" at ") || "a lead";
+  [lead.full_name, lead.company_name].filter(Boolean).join(" at ") || "someone";
 
 export function interviewEvent(lead, date, time, note) {
   return {

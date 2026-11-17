@@ -15,7 +15,9 @@ in both so behaviour is identical.
 """
 from __future__ import annotations
 
+import json
 import sqlite3
+import uuid
 from contextlib import contextmanager
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -87,6 +89,23 @@ _TABLES = [
     content TEXT DEFAULT '',
     generated_at TEXT DEFAULT '',
     PRIMARY KEY (lead_id, name)
+)""",
+    """CREATE TABLE IF NOT EXISTS chats (
+    chat_id TEXT PRIMARY KEY,
+    title TEXT DEFAULT '',
+    starred INTEGER DEFAULT 0,
+    messages TEXT DEFAULT '[]',
+    created_at TEXT DEFAULT '',
+    updated_at TEXT DEFAULT ''
+)""",
+    """CREATE TABLE IF NOT EXISTS cvs (
+    cv_id TEXT PRIMARY KEY,
+    name TEXT DEFAULT '',
+    content TEXT DEFAULT '',
+    color TEXT DEFAULT '',
+    is_active INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT '',
+    updated_at TEXT DEFAULT ''
 )""",
 ]
 
@@ -483,6 +502,124 @@ class PacosStore:
             )
         self.mark_reply(lead_id, intent=row["intent"])
         return True
+
+    # ── saved chats ──────────────────────────────────────────────────────
+    @staticmethod
+    def _now() -> str:
+        return datetime.now().isoformat(timespec="seconds")
+
+    @staticmethod
+    def _chat_row(row: Mapping[str, Any], with_messages: bool) -> dict:
+        out = {"chat_id": row["chat_id"], "title": row["title"] or "",
+               "starred": bool(row["starred"]),
+               "created_at": row["created_at"] or "",
+               "updated_at": row["updated_at"] or ""}
+        if with_messages:
+            try:
+                out["messages"] = json.loads(row["messages"] or "[]")
+            except ValueError:
+                out["messages"] = []
+        return out
+
+    def list_chats(self) -> list[dict]:
+        """Every saved chat, newest first, without its messages."""
+        with self._conn() as c:
+            rows = c.execute(
+                "SELECT chat_id, title, starred, created_at, updated_at "
+                "FROM chats ORDER BY updated_at DESC, chat_id").fetchall()
+        return [self._chat_row(r, False) for r in rows]
+
+    def get_chat(self, chat_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM chats WHERE chat_id=?", (chat_id,)).fetchone()
+        return self._chat_row(row, True) if row else None
+
+    def create_chat(self, title: str, messages: list) -> dict:
+        chat_id, now = uuid.uuid4().hex[:16], self._now()
+        with self._conn() as c:
+            c.execute(
+                "INSERT INTO chats(chat_id, title, starred, messages, created_at, updated_at) "
+                "VALUES (?,?,0,?,?,?)",
+                (chat_id, title, json.dumps(messages), now, now))
+        return self.get_chat(chat_id)
+
+    def update_chat(self, chat_id: str, *, title: str | None = None,
+                    starred: bool | None = None,
+                    messages: list | None = None) -> dict | None:
+        """Change only what is given. New messages move the chat to the top;
+        renaming or starring leaves its place alone."""
+        sets, params = [], []
+        if title is not None:
+            sets.append("title=?"); params.append(title)
+        if starred is not None:
+            sets.append("starred=?"); params.append(1 if starred else 0)
+        if messages is not None:
+            sets += ["messages=?", "updated_at=?"]
+            params += [json.dumps(messages), self._now()]
+        if sets:
+            with self._conn() as c:
+                c.execute(f"UPDATE chats SET {', '.join(sets)} WHERE chat_id=?",
+                          (*params, chat_id))
+        return self.get_chat(chat_id)
+
+    def delete_chat(self, chat_id: str) -> bool:
+        with self._conn() as c:
+            return c.execute("DELETE FROM chats WHERE chat_id=?", (chat_id,)).rowcount > 0
+
+    # ── CVs (several kept, one in use) ───────────────────────────────────
+    @staticmethod
+    def _cv_row(row: Mapping[str, Any]) -> dict:
+        return {"cv_id": row["cv_id"], "name": row["name"] or "",
+                "content": row["content"] or "", "color": row["color"] or "",
+                "is_active": bool(row["is_active"]),
+                "created_at": row["created_at"] or "",
+                "updated_at": row["updated_at"] or ""}
+
+    def list_cvs(self) -> list[dict]:
+        with self._conn() as c:
+            rows = c.execute("SELECT * FROM cvs ORDER BY created_at, cv_id").fetchall()
+        return [self._cv_row(r) for r in rows]
+
+    def get_cv(self, cv_id: str) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM cvs WHERE cv_id=?", (cv_id,)).fetchone()
+        return self._cv_row(row) if row else None
+
+    def active_cv(self) -> dict | None:
+        with self._conn() as c:
+            row = c.execute("SELECT * FROM cvs WHERE is_active=1").fetchone()
+        return self._cv_row(row) if row else None
+
+    def create_cv(self, name: str, content: str, color: str = "") -> dict:
+        cv_id, now = uuid.uuid4().hex[:16], self._now()
+        with self._conn() as c:
+            c.execute(
+                "INSERT INTO cvs(cv_id, name, content, color, is_active, created_at, updated_at) "
+                "VALUES (?,?,?,?,0,?,?)", (cv_id, name, content, color, now, now))
+        return self.get_cv(cv_id)
+
+    def update_cv(self, cv_id: str, *, name: str | None = None,
+                  content: str | None = None, color: str | None = None) -> dict | None:
+        sets, params = ["updated_at=?"], [self._now()]
+        for col, val in (("name", name), ("content", content), ("color", color)):
+            if val is not None:
+                sets.append(f"{col}=?"); params.append(val)
+        with self._conn() as c:
+            c.execute(f"UPDATE cvs SET {', '.join(sets)} WHERE cv_id=?", (*params, cv_id))
+        return self.get_cv(cv_id)
+
+    def set_active_cv(self, cv_id: str) -> bool:
+        """Exactly one CV is in use at a time."""
+        with self._conn() as c:
+            if not c.execute("SELECT 1 FROM cvs WHERE cv_id=?", (cv_id,)).fetchone():
+                return False
+            c.execute("UPDATE cvs SET is_active=0 WHERE is_active=1")
+            c.execute("UPDATE cvs SET is_active=1 WHERE cv_id=?", (cv_id,))
+        return True
+
+    def delete_cv(self, cv_id: str) -> bool:
+        with self._conn() as c:
+            return c.execute("DELETE FROM cvs WHERE cv_id=?", (cv_id,)).rowcount > 0
 
     # ── export ───────────────────────────────────────────────────────────
     def export_csv(self, path: str | Path) -> Path:

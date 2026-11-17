@@ -1,29 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon.jsx";
-import { Link } from "react-router-dom";
-import { create } from "zustand";
-import { api } from "../services/api";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store";
+import { useChat } from "../store/chat";
 import LeadFieldsEditor, { EMPTY_LEAD, canSubmitLead } from "../components/LeadFieldsEditor.jsx";
 import { ChangeCard, RecordCard } from "../components/ChatLeadCards.jsx";
 import { MAX_IMAGES, imageFiles, prepareImage } from "../lib/images";
-
-const READ_LABEL = "[Attached screenshot, as read by the vision model]";
-
-// What a past message says to the server. Images are sent once, with the
-// message they're attached to; afterwards their text stands in for them.
-// Server limit per message (backend/models.py ChatMessage.content). A long
-// paste plus the text read from its screenshot can exceed it, which would
-// make every later turn fail; the image text is kept, the typed text trimmed.
-const MAX_CONTENT = 20000;
-
-const forServer = (m) => {
-  if (!m.imageText) return { role: m.role, content: m.content.slice(0, MAX_CONTENT) };
-  const read = `${READ_LABEL}\n${m.imageText}`.slice(0, MAX_CONTENT);
-  const room = MAX_CONTENT - read.length - 2;
-  const typed = room > 0 ? m.content.slice(0, room) : "";
-  return { role: m.role, content: [typed, read].filter(Boolean).join("\n\n") };
-};
 
 // A lead the assistant proposed mid-chat. Editable; nothing is written until
 // the operator clicks Add (which uses the same POST /api/leads as the forms).
@@ -50,7 +32,7 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
 
   return (
     <div className="proposal-card">
-      <div className="proposal-title">Proposed lead{added && ", added"}</div>
+      <div className="proposal-title">New person{added && ", added"}</div>
       {!added && warnings.length > 0 && (
         <ul className="jd-warnings">
           {warnings.map((w, i) => (
@@ -76,7 +58,7 @@ function ProposalCard({ proposal, warnings, added, onAdded }) {
               disabled={busy || !canSubmitLead(fields, persona)}
               onClick={confirm}
             >
-              {busy ? "Adding…" : "Add lead"}
+              {busy ? "Adding…" : "Add person"}
             </button>
             {fields.company_name.trim() && (
               <Link
@@ -127,21 +109,6 @@ function DraftCard({ draft }) {
   );
 }
 
-// Module-level so the conversation (and an in-flight reply) survives leaving
-// the page and coming back. Cleared only by "New chat" or a reload.
-const useChat = create((set) => ({
-  // {role, content, images?, imageText?, proposal?, warnings?, draft?,
-  //  records?, change?, changeState?, changeResult?, removed?: lead_id[]}
-  messages: [],
-  input: "",
-  attachments: [], // data: URLs waiting to be sent with the next message
-  busy: false,
-  setMessages: (messages) => set({ messages }),
-  setInput: (input) => set({ input }),
-  setAttachments: (attachments) => set({ attachments }),
-  setBusy: (busy) => set({ busy }),
-}));
-
 const EXAMPLES = [
   "Who should I follow up with this week?",
   "Priya from Razorpay replied, she’s interested",
@@ -150,15 +117,33 @@ const EXAMPLES = [
 ];
 
 export default function Chat() {
-  const { messages, input, attachments, busy, setMessages, setInput, setAttachments, setBusy } = useChat();
+  const { messages, input, attachments, chatId, loading, pending, setInput, setAttachments, patch } = useChat();
+  const busy = !!pending[chatId || "new"];
   const setToast = useStore((s) => s.setToast);
   const fileRef = useRef(null);
   const [dragging, setDragging] = useState(false);
   const endRef = useRef(null);
-  // Card actions write into the stored message so the outcome survives
-  // leaving the page, like "added ✓" on lead proposals.
-  const patch = (i, fn) =>
-    setMessages(useChat.getState().messages.map((x, j) => (j === i ? { ...x, ...fn(x) } : x)));
+  const navigate = useNavigate();
+  const { chatId: routeId } = useParams();
+
+  // The address picks the chat: /c/<id> is a saved one, / is a new one. An
+  // unsaved conversation at / is left alone when the page is revisited.
+  useEffect(() => {
+    const chat = useChat.getState();
+    if (routeId) {
+      chat.open(routeId).then((found) => {
+        if (!found) navigate("/", { replace: true });
+      });
+    } else if (chat.chatId) {
+      chat.startNew();
+    }
+  }, [routeId, navigate]);
+
+  const send = () => useChat.getState().send((id) => navigate(`/c/${id}`, { replace: true }));
+  const newChat = () => {
+    useChat.getState().startNew();
+    navigate("/");
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -181,40 +166,6 @@ export default function Chat() {
     }
   };
 
-  const send = async () => {
-    const content = input.trim();
-    if ((!content && !attachments.length) || busy) return;
-    const mine = { role: "user", content, images: attachments };
-    const history = [...messages, mine];
-    setMessages(history);
-    setInput("");
-    setAttachments([]);
-    setBusy(true);
-    try {
-      const body = history
-        .map((m, i) => (i === history.length - 1 ? { role: m.role, content, images: m.images } : forServer(m)))
-        .filter((m) => m.content || m.images?.length);
-      const res = await api.chat(body);
-      setMessages([
-        ...history.slice(0, -1),
-        { ...mine, imageText: res.image_text || "" },
-        {
-          role: "assistant",
-          content: res.reply,
-          proposal: res.lead_proposal,
-          warnings: res.warnings || [],
-          draft: res.draft,
-          records: res.records || [],
-          change: res.change,
-        },
-      ]);
-    } catch (e) {
-      setMessages([...history, { role: "assistant", content: `Error: ${e.message}` }]);
-    } finally {
-      setBusy(false);
-    }
-  };
-
   return (
     <div
       className={`chat-page ${dragging ? "chat-dragging" : ""}`}
@@ -234,18 +185,19 @@ export default function Chat() {
       }}
     >
       <div className="chat-top">
-        {messages.length > 0 && (
-          <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => setMessages([])}>
-            New chat
+        {(messages.length > 0 || chatId) && (
+          <button className="btn btn-ghost btn-sm" onClick={newChat}>
+            <Icon name="plus" size={14} /> New chat
           </button>
         )}
       </div>
       <div className="chat-scroll">
-        {messages.length === 0 && (
+        {loading && <p className="muted chat-loading">Opening chat…</p>}
+        {messages.length === 0 && !loading && (
           <div className="chat-hero">
             <h1>Who are we writing to today?</h1>
             <p>
-              Tell me what happened, ask where a lead stands, or paste a job description.
+              Tell me what happened, ask where things stand with someone, or paste a job description.
               I draft and keep track. You send.
             </p>
             <div className="chat-examples">
@@ -259,13 +211,18 @@ export default function Chat() {
         )}
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}`}>
-            {(m.content || !m.images?.length) && <div className="chat-bubble">{m.content}</div>}
+            {(m.content || !(m.images?.length || m.imageCount)) && <div className="chat-bubble">{m.content}</div>}
             {m.images?.length > 0 && (
               <div className="chat-images">
                 {m.images.map((src, k) => (
                   <img key={k} src={src} alt={`Attached image ${k + 1}`} />
                 ))}
               </div>
+            )}
+            {!m.images?.length && m.imageCount > 0 && (
+              <p className="muted chat-image-note">
+                {m.imageCount === 1 ? "1 screenshot" : `${m.imageCount} screenshots`}, read once and not kept.
+              </p>
             )}
             {m.imageText && (
               <details className="chat-read">
@@ -299,11 +256,7 @@ export default function Chat() {
                 proposal={m.proposal}
                 warnings={m.warnings || []}
                 added={!!m.added}
-                onAdded={() =>
-                  setMessages(
-                    useChat.getState().messages.map((x, j) => (j === i ? { ...x, added: true } : x)),
-                  )
-                }
+                onAdded={() => patch(i, () => ({ added: true }))}
               />
             )}
           </div>

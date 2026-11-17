@@ -34,6 +34,7 @@ class Service:
         self._client: NemotronClient | None = None
         self._lock = threading.Lock()
         self._index = None  # chat record index, opened on first use
+        self._restore_cv()
         # Build the chat's record index in the background so the first
         # question doesn't wait on it (embedding is the slow part).
         threading.Thread(target=self._sync_index, daemon=True).start()
@@ -515,10 +516,80 @@ class Service:
         return text, is_sample
 
     def save_cv(self, content: str) -> None:
-        """Overwrite the base CV file. Operator-initiated, like every write."""
+        """Save the CV in use. Operator-initiated, like every write. The text
+        also goes to the database so it survives a host that wipes its disk."""
+        self._write_cv_file(content)
+        if not content.strip() or content.lstrip().startswith(self._SAMPLE_CV_MARKER):
+            return
+        active = self.store.active_cv()
+        if active:
+            self.store.update_cv(active["cv_id"], content=content)
+        else:
+            row = self.store.create_cv("My CV", content)
+            self.store.set_active_cv(row["cv_id"])
+
+    def _write_cv_file(self, content: str) -> None:
+        """The file is what generation reads; it always mirrors the CV in use."""
         with self._lock:
             self.cfg.base_cv.parent.mkdir(parents=True, exist_ok=True)
             self.cfg.base_cv.write_text(content, encoding="utf-8")
+
+    def _restore_cv(self) -> None:
+        """Cloud hosts wipe the disk on every deploy; put the CV in use back."""
+        try:
+            active = self.store.active_cv()
+            if active and active["content"].strip():
+                path = self.cfg.base_cv
+                if not path.exists() or path.read_text(encoding="utf-8") != active["content"]:
+                    self._write_cv_file(active["content"])
+        except Exception:  # never block startup on this
+            log.exception("could not restore the saved CV")
+
+    def list_cvs(self) -> list[dict]:
+        """Every saved CV. A CV saved before several were possible becomes
+        the first one, already in use."""
+        rows = self.store.list_cvs()
+        if not rows:
+            text, is_sample = self.get_cv()
+            if text.strip() and not is_sample:
+                row = self.store.create_cv("My CV", text)
+                self.store.set_active_cv(row["cv_id"])
+                rows = self.store.list_cvs()
+        return rows
+
+    def create_cv(self, name: str, content: str, color: str = "") -> dict:
+        self.list_cvs()  # adopt a pre-existing CV first, so it stays in use
+        row = self.store.create_cv(name, content, color)
+        if not self.store.active_cv():
+            self.use_cv(row["cv_id"])
+        return self.store.get_cv(row["cv_id"])
+
+    def update_cv(self, cv_id: str, *, name=None, content=None, color=None) -> dict:
+        if not self.store.get_cv(cv_id):
+            raise LookupError("CV not found")
+        row = self.store.update_cv(cv_id, name=name, content=content, color=color)
+        if row["is_active"] and content is not None:
+            self._write_cv_file(row["content"])
+        return row
+
+    def use_cv(self, cv_id: str) -> dict:
+        if not self.store.set_active_cv(cv_id):
+            raise LookupError("CV not found")
+        row = self.store.get_cv(cv_id)
+        self._write_cv_file(row["content"])
+        return row
+
+    def delete_cv(self, cv_id: str) -> None:
+        row = self.store.get_cv(cv_id)
+        if not row:
+            raise LookupError("CV not found")
+        self.store.delete_cv(cv_id)
+        if row["is_active"]:
+            rest = self.store.list_cvs()
+            if rest:
+                self.use_cv(rest[-1]["cv_id"])
+            else:
+                self._write_cv_file("")
 
     # ── dashboard ────────────────────────────────────────────────────────
     def stats(self) -> dict:
