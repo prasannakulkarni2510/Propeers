@@ -68,7 +68,17 @@ function NotFound() {
 
 const MOBILE_QUERY = "(max-width: 900px)";
 
+// The gate comes first: nothing below it may call the API before login, or
+// the refused calls leave an "unauthorized" error on screen after logging in.
 export default function App() {
+  return (
+    <AuthGate>
+      <Shell />
+    </AuthGate>
+  );
+}
+
+function Shell() {
   // Leads are loaded at the shell level so the nav badge is live everywhere.
   const { leads } = useLeads();
   const counts = useMemo(() => pipelineCounts(leads), [leads]);
@@ -109,7 +119,6 @@ export default function App() {
       : null;
 
   return (
-    <AuthGate>
       <div className={`app ${navOpen ? "" : "nav-closed"}`}>
         <a className="skip-link" href="#main">Skip to content</a>
         {!navOpen && (
@@ -183,6 +192,5 @@ export default function App() {
         <LeadPanel />
         <Toast />
       </div>
-    </AuthGate>
   );
 }
