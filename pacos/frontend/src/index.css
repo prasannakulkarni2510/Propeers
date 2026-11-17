@@ -489,24 +489,23 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 /* ── about ──────────────────────────────────────────────────────────────── */
 .about { max-width: 860px; }
 .about-hero { display: grid; justify-items: start; gap: var(--s-4); padding: var(--s-6) 0 var(--s-5); }
-.about-logo { width: min(220px, 60%); border-radius: var(--r-md); }
+.about-wordmark { font-family: var(--font-ui); font-weight: 700; font-size: var(--t-xl); letter-spacing: 0.01em; line-height: 1; }
 .about-title { font-size: clamp(2rem, 4.6vw, var(--t-3xl)); max-width: 18ch; }
 .about-lede { max-width: 54ch; color: var(--text-2); font-size: var(--t-lg); line-height: 1.55; }
 .about-chips { display: flex; gap: var(--s-2); flex-wrap: wrap; }
-.about-video { width: 100%; border-radius: var(--r-lg); border: 1px solid var(--line); background: #000; margin-top: var(--s-2); }
+.about-video { width: 100%; aspect-ratio: 16 / 9; border-radius: var(--r-lg); border: 1px solid var(--line); background: var(--well); margin-top: var(--s-2); }
 .about-section { padding-top: var(--s-7); }
 .about-h2 { font-size: var(--t-xl); }
 .about-sub { color: var(--muted); margin: var(--s-1) 0 var(--s-4); }
 .about-section > p { line-height: 1.7; max-width: 66ch; color: var(--text-2); }
 .about-section > p + p { margin-top: var(--s-3); }
 .about-quote { margin-top: var(--s-5) !important; padding-left: var(--s-4); font-family: var(--font-display); font-size: var(--t-lg); line-height: 1.5; color: var(--text) !important; border-left: 1px solid var(--accent-edge); }
-.about-grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: var(--s-3); margin-bottom: var(--s-4); }
 .about-grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: var(--s-3); }
+.about-grid-2 + p { margin-top: var(--s-4); }
 .about-card { margin: 0; padding: var(--s-4) var(--s-5); }
 .about-card h3 { margin-bottom: var(--s-2); }
 .about-card p { margin: 0; font-size: var(--t-sm); line-height: 1.6; color: var(--text-2); }
 .about-card-accent { background: var(--accent-wash); border-color: var(--accent-line); }
-.about-num { display: none; }
 .about-pipeline, .about-flow { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2); margin: var(--s-4) 0; }
 .about-pill { font-family: var(--font-mono); font-size: var(--t-xs); line-height: 26px; padding: 0 var(--s-3); border-radius: var(--r-pill); background: var(--raise); border: 1px solid var(--line); }
 .about-pill-dark { background: var(--accent); border-color: var(--accent-hi); color: var(--on-accent); }

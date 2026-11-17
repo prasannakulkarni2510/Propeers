@@ -8,21 +8,22 @@ import Icon from "../components/Icon.jsx";
 
 const TECH = ["React", "FastAPI", "LangGraph", "SQLite", "Nemotron"];
 
-const LAYERS = [
+const PAGES = [
   {
-    n: "01",
-    title: "Asset Generator",
-    body: "One lead in, four outreach drafts out: a cold email, a short LinkedIn DM, a cover letter, and notes on how to tweak a CV for that role.",
+    title: "Chat",
+    body: "The home page. Ask who to follow up with, say what happened (“Priya replied, she wants an interview”), ask for a draft, or paste a job description or a screenshot. Every change comes back as a card you apply or dismiss.",
   },
   {
-    n: "02",
-    title: "Inbox Monitor",
-    body: "Reads Gmail for LinkedIn and Naukri job alerts and recruiter replies and folds them into the tracker. Read-only, always: only the gmail.readonly scope.",
+    title: "My people",
+    body: "Every lead on one board: to write, ready to send, waiting for a reply, replied, finished. Open a person to read and copy their cold email, LinkedIn DM, cover letter and CV notes.",
   },
   {
-    n: "03",
-    title: "Tracker",
-    body: "One source of truth for where every lead stands: follow-up logic, a status flow, and a daily digest that says who to chase today.",
+    title: "Find people",
+    body: "Name a company and PACOS builds the LinkedIn and Google searches that surface its hiring managers and recruiters, then adds the people you pick with a likely work email.",
+  },
+  {
+    title: "My CV",
+    body: "Keep a CV for each kind of role. Every draft is written from the one in use, so messages only claim experience you actually have.",
   },
 ];
 
@@ -33,7 +34,7 @@ const GUARDRAILS = [
   ["Discovery is deterministic", "Boolean people-searches with LinkedIn and Google X-Ray links, built from what PACOS already knows. No scraping, no model call."],
 ];
 
-const STATUS_FLOW = ["pending", "sent", "replied", "interested", "interview", "offer"];
+const STAGES = ["To write", "Ready to send", "Waiting for a reply", "Replied", "Finished"];
 
 // Social + contact (from the interview deck).
 const SOCIAL = [
@@ -60,18 +61,18 @@ export default function About() {
     <div className="about">
       {/* ── hero ─────────────────────────────────────────── */}
       <header className="about-hero">
-        <img className="about-logo" src="/pacos-logo.png" alt="PACOS logo" />
+        <div className="about-wordmark" aria-label="PACOS">PAC<span className="brand-accent">OS</span></div>
         <h1 className="about-title">Personal AI Career Operating System</h1>
         <p className="about-lede">
-          A local-first pipeline that drafts job-search outreach and tracks it.
-          The model writes; a human approves every send.
+          A job-search assistant that drafts outreach from your CV and keeps
+          track of every person you write to. It drafts; you send.
         </p>
         <div className="about-chips">
           {TECH.map((t) => (
             <span key={t} className="tag">{t}</span>
           ))}
         </div>
-        <video className="about-video" src="/pacos-intro.mp4" controls preload="metadata" playsInline aria-label="PACOS intro video" />
+        <video className="about-video" src="/pacos-intro.mp4" poster="/pacos-intro-poster.jpg" controls preload="none" playsInline aria-label="PACOS intro video, with narration" />
       </header>
 
       {/* ── the problem ──────────────────────────────────── */}
@@ -91,19 +92,19 @@ export default function About() {
       </Section>
 
       {/* ── what it does ─────────────────────────────────── */}
-      <Section kicker="What it does" title="Three light layers, plain files underneath">
-        <div className="about-grid-3">
-          {LAYERS.map((l) => (
-            <div key={l.n} className="panel about-card">
-              <span className="about-num">{l.n}</span>
+      <Section kicker="What it does" title="Four pages, one obvious next step per person">
+        <div className="about-grid-2">
+          {PAGES.map((l) => (
+            <div key={l.title} className="panel about-card">
               <h3>{l.title}</h3>
               <p>{l.body}</p>
             </div>
           ))}
         </div>
         <p className="muted">
-          No orchestration for storage, no separate CRM. State lives in SQLite;
-          the CSVs you can open in Excel are exports of it.
+          Check inbox reads recruiter replies from Gmail (read-only) and moves
+          people along the board. No separate CRM: state lives in one database,
+          and the CSVs you can open in Excel are exports of it.
         </p>
       </Section>
 
@@ -115,9 +116,9 @@ export default function About() {
           Google X-Ray links. It’s deterministic: a template, not a model call.
         </p>
         <p>
-          A newer <em>Find People</em> step collects the LinkedIn profiles from
-          those X-Ray results, predicts a likely work email, and creates leads,
-          so there is no manual copy-paste. Predicted emails are tagged by
+          <em>Find and import</em> then collects the LinkedIn profiles from
+          those X-Ray results, predicts a likely work email, and adds each
+          person to My people, so there is no manual copy-paste. Predicted emails are tagged by
           confidence and never marked verified.
         </p>
       </Section>
@@ -173,19 +174,19 @@ export default function About() {
       </Section>
 
       {/* ── workflow ─────────────────────────────────────── */}
-      <Section kicker="Workflow" title="One tracker, a status flow, a daily digest">
+      <Section kicker="Workflow" title="Every person moves across one board">
         <div className="about-flow">
-          {STATUS_FLOW.map((s, i) => (
+          {STAGES.map((s, i) => (
             <span key={s} className="about-flow-step">
-              {s}{i < STATUS_FLOW.length - 1 && <span className="about-arrow"><Icon name="arrow" size={14} /></span>}
+              {s}{i < STAGES.length - 1 && <span className="about-arrow"><Icon name="arrow" size={14} /></span>}
             </span>
           ))}
-          <span className="about-flow-branch">Any stage can branch to <em>rejected</em>.</span>
         </div>
         <p className="muted">
-          SQLite holds the real state: every lead, every status change.
-          tracker.csv is an export, never authoritative. A daily digest lists
-          who replied and who is due for a follow-up.
+          Marking a message sent starts a follow-up clock (five days by
+          default); when it runs out the person is flagged “Follow-up due” and
+          the chat lists them when you ask who to chase. Replied covers
+          interested, interview and offer; Finished holds the people who said no.
         </p>
       </Section>
 
