@@ -6,7 +6,7 @@ import { useStore } from "../store";
 import StatusBadge from "./StatusBadge.jsx";
 import { LEAD_STAGES, leadStage } from "../lib/pipeline";
 import { localToday } from "../lib/dates";
-import { followUpEvent, interviewEvent } from "../lib/calendar";
+import { downloadIcs, followUpEvent, googleCalendarUrl, interviewEvent } from "../lib/calendar";
 import CalendarButtons from "./CalendarButtons.jsx";
 
 const STAGE = Object.fromEntries(LEAD_STAGES.map((s) => [s.id, s]));
@@ -22,7 +22,7 @@ const ACTIONS = {
 
 // Two-click delete (no native dialogs), same as Remove on the Leads page.
 // Removes the lead from the tracker, the lead sheet and its assets.
-export function DeleteLeadButton({ leadId, label = "Delete", onDeleted, accent = false }) {
+export function DeleteLeadButton({ leadId, label = "Delete", onDeleted, accent = false, outlined = false }) {
   const deleteLead = useStore((s) => s.deleteLead);
   const [confirming, setConfirming] = useState(0); // when it was armed, or 0
   const [busy, setBusy] = useState(false);
@@ -52,34 +52,14 @@ export function DeleteLeadButton({ leadId, label = "Delete", onDeleted, accent =
   };
   return (
     <button
-      className={`btn btn-sm ${confirming || accent ? "btn-accent" : "btn-danger-quiet"}`}
+      className={`btn btn-sm ${confirming || accent ? "btn-accent" : outlined ? "btn-danger" : "btn-danger-quiet"}`}
       title="Remove this person and their messages for good"
       disabled={busy}
       onClick={click}
     >
+      {outlined && !confirming && !busy && <Icon name="trash" size={14} />}
       {busy ? "Deleting…" : confirming ? "Click again to delete" : label}
     </button>
-  );
-}
-
-function Facts({ rec }) {
-  return (
-    <dl className="record-facts">
-      {rec.outreach_sent_date && (<><dt>Sent</dt><dd>{rec.outreach_sent_date}{rec.channel && `, ${rec.channel}`}</dd></>)}
-      {rec.last_reply_date && (<><dt>Reply</dt><dd>{rec.last_reply_date}{rec.reply_intent && `, ${rec.reply_intent}`}</dd></>)}
-      {rec.follow_up_due && (<><dt>Follow up</dt><dd>{rec.follow_up_due}</dd></>)}
-      {rec.email && (
-        <>
-          <dt>Email</dt>
-          <dd className="email-addr">
-            {rec.email_status === "predicted" && <span className="muted">Likely: </span>}
-            {rec.email}
-          </dd>
-        </>
-      )}
-      <dt>Assets</dt>
-      <dd>{rec.assets.length ? rec.assets.join(", ") : <span className="muted">none yet</span>}</dd>
-    </dl>
   );
 }
 
@@ -96,6 +76,58 @@ function Links({ rec }) {
   );
 }
 
+const CHANNEL = { email: "Email", dm: "DM", both: "Email and DM" };
+const STAGE_ICON = { needs_assets: "pencil", ready: "arrow", awaiting: "clock", engaged: "message", closed: "check" };
+
+const initials = (rec) => {
+  const words = (rec.full_name || rec.company_name || "?").trim().split(/\s+/);
+  return ((words[0]?.[0] || "") + (words.length > 1 ? words[words.length - 1][0] : "")).toUpperCase();
+};
+
+// "10 days ago", "today", "in 3 days" for an ISO date, from the operator's day.
+function fromToday(iso) {
+  const days = Math.round((new Date(`${localToday()}T00:00:00`) - new Date(`${iso}T00:00:00`)) / 86400000);
+  if (Number.isNaN(days)) return "";
+  if (days === 0) return "today";
+  const n = Math.abs(days);
+  return days > 0 ? `${n} day${n === 1 ? "" : "s"} ago` : `in ${n} day${n === 1 ? "" : "s"}`;
+}
+
+// What the operator should do next with this person, from where they stand.
+function nextStep(rec) {
+  if (rec.stage === "needs_assets") return "Write messages";
+  if (rec.stage === "ready") return "Send it";
+  if (rec.stage === "awaiting") return rec.follow_up_overdue ? "Chase now" : "Wait for a reply";
+  if (rec.stage === "engaged") {
+    if (rec.status === "interview") return "Prepare for the interview";
+    if (rec.status === "offer") return "Answer the offer";
+    return "Reply to them";
+  }
+  return "";
+}
+
+// The path so far. Only what has happened (or has come due) is ticked.
+function timeline(rec) {
+  if (!rec.outreach_sent_date) {
+    return [
+      {
+        label: "Messages", done: rec.assets.length > 0,
+        detail: rec.assets.length ? `${rec.assets.length} written` : "Not written yet",
+      },
+      { label: "Sent", done: false, detail: "Not yet" },
+    ];
+  }
+  const steps = [{ label: "Sent", done: true, detail: rec.outreach_sent_date, note: CHANNEL[rec.channel] }];
+  if (rec.last_reply_date) {
+    steps.push({ label: "Reply", done: true, detail: rec.last_reply_date, note: rec.reply_intent });
+  } else if (rec.follow_up_due) {
+    steps.push({
+      label: "Follow up", done: rec.follow_up_overdue, detail: rec.follow_up_due, note: fromToday(rec.follow_up_due),
+    });
+  }
+  return steps;
+}
+
 // A lead the assistant's answer is about, with its live pipeline state, so
 // the facts in the reply can be checked at a glance and acted on.
 export function RecordCard({ rec, removed, onRemoved }) {
@@ -107,27 +139,100 @@ export function RecordCard({ rec, removed, onRemoved }) {
       </div>
     );
   }
+  const steps = timeline(rec);
+  const next = nextStep(rec);
+  const reminder = followUpEvent(rec);
+  const open = { search: leadSearch(rec.lead_id) };
   return (
     <div className={`record-card stage-${rec.stage}`}>
       <div className="record-head">
-        <div>
-          <div className="record-name">
-            {rec.full_name || <span className="muted">(no contact yet)</span>}
-            {rec.status && <StatusBadge status={rec.status} />}
-          </div>
-          {role && <div className="muted record-role">{role}</div>}
+        <span className="record-avatar" aria-hidden="true">{initials(rec)}</span>
+        <div className="record-who">
+          <div className="record-name">{rec.full_name || rec.company_name || "(no contact yet)"}</div>
+          {role && <div className="record-role">{role}</div>}
         </div>
-        <span className="record-stage">{STAGE[rec.stage]?.title || rec.stage}</span>
+        <span className={`record-stage ${rec.follow_up_overdue ? "is-due" : ""}`}>
+          <Icon name={STAGE_ICON[rec.stage] || "clock"} size={15} />
+          {STAGE[rec.stage]?.title || rec.stage}
+        </span>
       </div>
-      <p className="record-summary">
-        {rec.summary}
-        {rec.follow_up_overdue && <span className="due-chip">due</span>}
-      </p>
-      <Facts rec={rec} />
-      <div className="btn-row">
-        <Links rec={rec} />
-        <CalendarButtons event={followUpEvent(rec)} label="Remind me" />
-        <DeleteLeadButton leadId={rec.lead_id} label="Delete" onDeleted={onRemoved} />
+
+      <div className="record-note">
+        <span className="record-ico"><Icon name="message" size={18} /></span>
+        <p>
+          {rec.summary}
+          {rec.follow_up_overdue && <span className="due-chip">Due</span>}
+        </p>
+      </div>
+
+      <ol className="record-steps">
+        {steps.map((st) => (
+          <li key={st.label} className={st.done ? "is-done" : ""}>
+            <span className="record-step-dot">{st.done && <Icon name="check" size={13} />}</span>
+            <span className="record-step-label">{st.label}</span>
+            <span className="record-step-detail">{st.detail}</span>
+            {st.note && <span className="record-step-detail">({st.note})</span>}
+          </li>
+        ))}
+        <li className="is-next">
+          <span className="record-step-dot" />
+          <span className="record-step-label">Next</span>
+          {next ? (
+            <Link className="record-next" to={open}>{next}</Link>
+          ) : (
+            <span className="record-step-detail">Nothing more to do</span>
+          )}
+        </li>
+      </ol>
+
+      <div className="record-info">
+        <div>
+          <span className="record-ico"><Icon name="mail" size={16} /></span>
+          <div>
+            <b>Email</b>
+            {rec.email ? (
+              <div>
+                {rec.email_status === "predicted" && "Likely: "}
+                <span className="email-addr">{rec.email}</span>
+              </div>
+            ) : (
+              <div className="muted">Not known yet</div>
+            )}
+          </div>
+        </div>
+        <div>
+          <span className="record-ico"><Icon name="layers" size={16} /></span>
+          <div>
+            <b>Assets</b>
+            <div>{rec.assets.length ? rec.assets.join(", ") : <span className="muted">None yet</span>}</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="record-actions">
+        <Link className="btn btn-accent btn-sm" to={open}>
+          <Icon name="message" size={15} /> Open messages
+        </Link>
+        {rec.linkedin_url && (
+          <a className="btn btn-ghost btn-sm" href={rec.linkedin_url} target="_blank" rel="noopener noreferrer">
+            <Icon name="linkedin" size={15} /> LinkedIn <Icon name="external" size={13} />
+          </a>
+        )}
+        {reminder?.date && (
+          <>
+            <a className="btn btn-ghost btn-sm" href={googleCalendarUrl(reminder)} target="_blank" rel="noopener noreferrer">
+              <Icon name="calendar" size={15} /> Remind me
+            </a>
+            <button
+              className="btn btn-ghost btn-sm"
+              title="Download the reminder for Outlook or Apple Calendar"
+              onClick={() => downloadIcs(reminder)}
+            >
+              <Icon name="download" size={15} /> .ics
+            </button>
+          </>
+        )}
+        <DeleteLeadButton leadId={rec.lead_id} label="Delete" onDeleted={onRemoved} outlined />
       </div>
     </div>
   );
