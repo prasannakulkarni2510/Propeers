@@ -426,20 +426,20 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 .change-fields .change-note { flex: 1 1 240px; }
 .change-danger { margin-left: auto; }
 @media (max-width: 640px) { .cc-board { grid-template-columns: minmax(0, 1fr); } .cc-arrow { transform: rotate(90deg); justify-self: center; } }
-.record-list { margin-top: var(--s-2); width: 100%; max-width: 720px; display: grid; gap: var(--s-3); }
-.record-card { display: flex; flex-direction: column; gap: var(--s-4); min-width: 0; margin-top: 0; padding: var(--s-5); font-size: var(--t-sm); box-shadow: 0 1px 2px oklch(20% 0.01 35 / 0.05); }
+.record-list { margin-top: var(--s-2); width: 100%; max-width: 580px; display: grid; gap: var(--s-2); }
+.record-card { display: flex; flex-direction: column; gap: var(--s-3); min-width: 0; margin-top: 0; padding: var(--s-4); font-size: var(--t-sm); box-shadow: 0 1px 2px oklch(20% 0.01 35 / 0.05); }
 .record-card.record-removed { padding: var(--s-3) var(--s-4); }
-.record-head { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding-bottom: var(--s-4); border-bottom: 1px solid var(--line); }
-.record-avatar { flex: none; display: grid; place-items: center; width: 48px; height: 48px; border-radius: var(--r-pill); background: var(--accent-wash); color: var(--accent-text); font-weight: 700; font-size: var(--t-md); letter-spacing: 0.02em; }
+.record-head { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding-bottom: var(--s-3); border-bottom: 1px solid var(--line); }
+.record-avatar { flex: none; display: grid; place-items: center; width: 38px; height: 38px; border-radius: var(--r-pill); background: var(--accent-wash); color: var(--accent-text); font-weight: 700; font-size: var(--t-sm); letter-spacing: 0.02em; }
 .record-who { flex: 1 1 200px; min-width: 0; }
-.record-name { font-size: var(--t-lg); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
+.record-name { font-size: var(--t-md); font-weight: 700; line-height: 1.25; overflow-wrap: anywhere; }
 .record-role { color: var(--muted); overflow-wrap: anywhere; }
-.record-stage { flex: none; display: inline-flex; align-items: center; gap: var(--s-2); min-height: var(--h-sm); padding: 0 var(--s-3); border-radius: var(--r-pill); font-weight: 500; white-space: nowrap; background: var(--raise); color: var(--text-2); }
+.record-stage { flex: none; display: inline-flex; align-items: center; gap: var(--s-1); min-height: 26px; font-size: var(--t-xs); padding: 0 var(--s-3); border-radius: var(--r-pill); font-weight: 500; white-space: nowrap; background: var(--raise); color: var(--text-2); }
 .record-stage.is-due, .stage-awaiting .record-stage { background: var(--due-wash); color: var(--due); }
 .stage-engaged .record-stage { background: var(--good-wash); color: var(--good); }
-.record-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-md); background: var(--raise); color: var(--text-2); }
+.record-ico { flex: none; display: grid; place-items: center; width: 28px; height: 28px; border-radius: var(--r-md); background: var(--raise); color: var(--text-2); }
 .record-note { display: flex; gap: var(--s-3); align-items: flex-start; }
-.record-note p { flex: 1; min-width: 0; padding: var(--s-3) var(--s-4); border-radius: var(--r-md); background: var(--raise); color: var(--text); line-height: 1.5; }
+.record-note p { flex: 1; min-width: 0; padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--raise); color: var(--text); line-height: 1.5; }
 .record-summary { line-height: 1.5; color: var(--text-2); }
 .record-steps { list-style: none; margin: 0; padding: 0 var(--s-2); display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .record-steps li { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; min-width: 0; }
@@ -451,10 +451,12 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 .record-step-detail { color: var(--muted); font-size: var(--t-xs); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .record-next { margin-top: 2px; padding: 2px var(--s-3); border-radius: var(--r-pill); background: var(--accent-wash); color: var(--accent-text); font-weight: 500; text-decoration: none; }
 .record-next:hover { background: var(--accent); color: var(--on-accent); }
-.record-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-3) var(--s-5); padding: var(--s-4) 0; border-block: 1px solid var(--line); }
+.record-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); gap: var(--s-2) var(--s-4); padding: var(--s-3) 0; border-block: 1px solid var(--line); }
 .record-info > div { display: flex; gap: var(--s-3); align-items: flex-start; min-width: 0; }
 .record-info > div > div { min-width: 0; overflow-wrap: anywhere; }
 .record-info b { display: block; }
+.record-link { color: var(--accent-text); text-decoration: underline; text-decoration-color: var(--accent-line); }
+.record-link:hover { text-decoration-color: var(--accent-text); }
 .record-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
 .record-actions .btn-danger { margin-left: auto; }
 @media (max-width: 640px) { .record-actions .btn-danger { margin-left: 0; } }

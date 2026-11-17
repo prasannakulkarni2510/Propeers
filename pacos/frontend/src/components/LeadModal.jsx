@@ -12,7 +12,9 @@ import Icon from "./Icon.jsx";
 // A lead opens in a panel beside whatever page you are on. The open lead
 // lives in the URL (?lead=<id>), so Back closes it and a link to it can be
 // bookmarked.
-export const leadSearch = (leadId) => `?lead=${encodeURIComponent(leadId)}`;
+// `asset` ("cold_email", "cold_dm", "cover_letter", "cv_notes") picks the message shown first.
+export const leadSearch = (leadId, asset = "") =>
+  `?lead=${encodeURIComponent(leadId)}${asset ? `&asset=${asset}` : ""}`;
 
 const STATUSES = ["pending", "sent", "replied", "interested", "interview", "offer", "rejected"];
 
@@ -73,6 +75,7 @@ export default function LeadPanel() {
   const close = () => {
     const next = new URLSearchParams(params);
     next.delete("lead");
+    next.delete("asset");
     setParams(next);
   };
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../services/api";
 import { useStore } from "../store";
 import { isReadyToSend } from "../lib/pipeline";
@@ -32,7 +33,10 @@ function Counter({ name, content }) {
 // A lead's four drafts: read, copy, rewrite, and say when one was sent.
 export default function AssetViewer({ leadId, lead }) {
   const [data, setData] = useState(null);
-  const [active, setActive] = useState("cold_email.txt");
+  // A link can ask for one message (?asset=cold_dm); otherwise the email.
+  const wanted = `${useSearchParams()[0].get("asset") || "cold_email"}.txt`;
+  const [active, setActive] = useState(wanted);
+  useEffect(() => setActive(wanted), [wanted]);
   const [error, setError] = useState("");
   const [regenerating, setRegenerating] = useState(false);
   const setToast = useStore((s) => s.setToast);
@@ -49,7 +53,10 @@ export default function AssetViewer({ leadId, lead }) {
         setData(d);
         // Open on the first asset that actually has content (DM-only leads
         // have a placeholder cold email).
-        const first = d.files.find((f) => !isSkipped(f.content));
+        // A message asked for by the link wins when it was written.
+        const asked = `${new URLSearchParams(window.location.search).get("asset")}.txt`;
+        const usable = d.files.filter((f) => !isSkipped(f.content));
+        const first = usable.find((f) => f.name === asked) || usable[0];
         if (first) setActive(first.name);
       })
       .catch((e) => setError(e.message));

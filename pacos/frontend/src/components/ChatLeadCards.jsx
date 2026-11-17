@@ -77,6 +77,8 @@ function Links({ rec }) {
 }
 
 const CHANNEL = { email: "Email", dm: "DM", both: "Email and DM" };
+// The names the server gives a person's written messages, and which one each opens.
+const ASSET_KEY = { "cold email": "cold_email", "LinkedIn DM": "cold_dm", "cover letter": "cover_letter", "CV notes": "cv_notes" };
 const STAGE_ICON = { needs_assets: "pencil", ready: "arrow", awaiting: "clock", engaged: "message", closed: "check" };
 
 const initials = (rec) => {
@@ -152,13 +154,13 @@ export function RecordCard({ rec, removed, onRemoved }) {
           {role && <div className="record-role">{role}</div>}
         </div>
         <span className={`record-stage ${rec.follow_up_overdue ? "is-due" : ""}`}>
-          <Icon name={STAGE_ICON[rec.stage] || "clock"} size={15} />
+          <Icon name={STAGE_ICON[rec.stage] || "clock"} size={13} />
           {STAGE[rec.stage]?.title || rec.stage}
         </span>
       </div>
 
       <div className="record-note">
-        <span className="record-ico"><Icon name="message" size={18} /></span>
+        <span className="record-ico"><Icon name="message" size={15} /></span>
         <p>
           {rec.summary}
           {rec.follow_up_overdue && <span className="due-chip">Due</span>}
@@ -187,13 +189,15 @@ export function RecordCard({ rec, removed, onRemoved }) {
 
       <div className="record-info">
         <div>
-          <span className="record-ico"><Icon name="mail" size={16} /></span>
+          <span className="record-ico"><Icon name="mail" size={14} /></span>
           <div>
             <b>Email</b>
             {rec.email ? (
               <div>
                 {rec.email_status === "predicted" && "Likely: "}
-                <span className="email-addr">{rec.email}</span>
+                <a className="email-addr record-link" href={`mailto:${rec.email}`} title="Write to them in your mail app">
+                  {rec.email}
+                </a>
               </div>
             ) : (
               <div className="muted">Not known yet</div>
@@ -201,18 +205,26 @@ export function RecordCard({ rec, removed, onRemoved }) {
           </div>
         </div>
         <div>
-          <span className="record-ico"><Icon name="layers" size={16} /></span>
+          <span className="record-ico"><Icon name="layers" size={14} /></span>
           <div>
             <b>Assets</b>
-            <div>{rec.assets.length ? rec.assets.join(", ") : <span className="muted">None yet</span>}</div>
+            <div>
+              {rec.assets.length ? (
+                rec.assets.map((name, i) => (
+                  <span key={name}>
+                    {i > 0 && ", "}
+                    <Link className="record-link" to={{ search: leadSearch(rec.lead_id, ASSET_KEY[name]) }}>{name}</Link>
+                  </span>
+                ))
+              ) : (
+                <Link className="record-link" to={open}>None yet, write them</Link>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       <div className="record-actions">
-        <Link className="btn btn-accent btn-sm" to={open}>
-          <Icon name="message" size={15} /> Open messages
-        </Link>
         {rec.linkedin_url && (
           <a className="btn btn-ghost btn-sm" href={rec.linkedin_url} target="_blank" rel="noopener noreferrer">
             <Icon name="linkedin" size={15} /> LinkedIn <Icon name="external" size={13} />
