@@ -103,13 +103,16 @@ class Pipeline:
         if dry:
             text = prompts.tmpl_asset(asset_key, lead_d, _candidate(self.cfg), hook)
         else:
-            text = self.client.complete_text(
-                system=prompts.SYSTEM_ASSET,
-                user=prompts.build_asset_user(
+            text = prompts.write_asset(
+                self.client, asset_key,
+                prompts.build_asset_user(
                     asset_key, lead_d, _candidate(self.cfg), _base_cv(self.cfg),
                     hook, domain_read),
-                temperature=0.6,  # more spread than the 0.3 first pass, but
-                max_tokens=1600,  # low enough to stay grounded in the CV
+                recipient_first=lead_d.get("first_name", ""),
+                candidate=_candidate(self.cfg), company=lead_d.get("company_name", ""),
+                # more spread than the 0.3 first pass, but low enough to stay
+                # grounded in the CV
+                temperature=0.6,
             )
         text = prompts.strip_dashes(text)
         self.store.set_agent_status(asset_key, "done", "regenerated")

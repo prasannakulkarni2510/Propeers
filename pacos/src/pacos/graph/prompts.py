@@ -158,6 +158,83 @@ SYSTEM_ASSET = (
 )
 
 
+# ── who is writing to whom ──────────────────────────────────────────────────
+# With no contact name on a lead the model has greeted the reader with the
+# SENDER's name ("Hi Prasanna, I noticed your work on PACOS"), invented one,
+# or left "[First Name]". The prompt says who is who; the greeting is then
+# checked in code, because the prompt alone does not hold.
+_GREETING = re.compile(
+    r"^(?P<hi>(?i:hi|hello|hey|dear))[ \t]+"
+    r"(?P<name>\[[^\]\n]*\]|[A-Z][\w'’.-]*(?:[ \t]+[A-Z][\w'’.-]*){0,2})"
+    r"(?=[,.:!\s]|$)", re.M)
+_PLACEHOLDER = re.compile(r"\[[A-Za-z][^\]\n]{0,40}\]")
+_GREETABLE = {"there", "team", "all", "everyone", "folks", "hiring", "recruiting", "talent"}
+
+
+def _first(name: str) -> str:
+    parts = (name or "").split()
+    return parts[0] if parts else ""
+
+
+def who_is_who(recipient_first: str, company: str, candidate: dict, letter: bool = False) -> str:
+    """The lines that tell the writer who it is, who reads it, and how to greet."""
+    me = _first(candidate.get("name", ""))
+    mine = (f"I am {me}, the sender. " if me else "I am the sender. ") + (
+        "The reader is someone else: never greet them with my name, and never "
+        "credit them with my work. Everything in the CV context (my projects, such "
+        "as PACOS, my skills, my results) is mine, so it is 'my' and 'I built', "
+        "never 'your' or 'you built'. ")
+    if recipient_first:
+        return mine + f"Greet the reader as {recipient_first}."
+    plain = "'Dear Hiring Team,'" if letter else (
+        f"'Hi,' or 'Hi {company} team,'" if company else "'Hi,'")
+    return mine + (f"I do not know the reader's name: greet with a plain {plain} "
+                   "and nothing else. Never make up a name and never leave a "
+                   "[bracketed] placeholder. Say nothing about the reader's own "
+                   "work, since I know nothing about it.")
+
+
+def fix_greeting(text: str, asset_key: str, recipient_first: str, sender_first: str,
+                 company: str = "") -> tuple[str, bool]:
+    """(text with a truthful greeting, whether the draft should be rewritten).
+    A known reader is greeted by their first name; an unknown one by no name
+    at all. Rewrite when the sender was greeted (the body then usually treats
+    them as the reader too) or a [placeholder] is left anywhere."""
+    if asset_key == "cv_notes":
+        return text, False
+    confused = False
+    head, tail = text[:240], text[240:]
+    m = _GREETING.search(head)
+    if m:
+        name = m.group("name")
+        word = _first(name).strip(".,").lower()
+        to_sender = bool(sender_first) and word == sender_first.lower() \
+            and word != recipient_first.lower()
+        bracket = name.startswith("[")
+        company_words = {w.lower() for w in company.split()}
+        new = None
+        if recipient_first:
+            if to_sender or bracket:
+                new = f"{m.group('hi')} {recipient_first}"
+        elif to_sender or bracket or not (
+                word in _GREETABLE or word in company_words
+                or head[m.end():].lower().startswith(" team")):
+            new = m.group("hi")
+            if not head[m.end():m.end() + 1] == ",":
+                new += ","
+        confused = to_sender
+        if new is not None:
+            head = head[:m.start()] + new + head[m.end():]
+    text = head + tail
+    return text, confused or bool(_PLACEHOLDER.search(text))
+
+
+REWRITE_NOTE = (
+    "\n\nYour last attempt addressed the wrong person or left a placeholder. I am "
+    "the sender and the reader is someone else; everything in the CV context is "
+    "my own work. Write it again from scratch, following the greeting rule above.")
+
+
 def tone_for(domain_tag: str) -> str:
     return DOMAIN_TONE.get(domain_tag, DOMAIN_TONE["scaleup"])
 
@@ -186,6 +263,10 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
     facts = {k: lead.get(k, "") for k in (
         "first_name", "full_name", "job_title", "company_name", "city",
         "persona_tag", "domain_tag", "industry", "company_website")}
+    # An empty name is left out, not shown as "": the model fills blanks.
+    facts = {k: v for k, v in facts.items() if v or k not in ("first_name", "full_name")}
+    who = who_is_who(_first(lead.get("first_name") or lead.get("full_name") or ""),
+                     lead.get("company_name", ""), candidate, letter=asset_key == "cover_letter")
     playbook = playbook_for(asset_key)
     playbook_block = (
         "WRITING PLAYBOOK (how a hiring manager reads this; follow its structure, "
@@ -207,11 +288,13 @@ def build_asset_user(asset_key: str, lead: dict, candidate: dict, base_cv: str,
         f"Write the {asset_key} asset.\n\n{playbook_block}SPEC: {spec}\n\n"
         f"TONE: {tone_for(lead.get('domain_tag',''))}\n"
         f"DOMAIN READ: {domain_read}\n"
-        f"SHARED HOOK (open on this, keep all assets consistent): {hook}\n\n"
+        f"SHARED HOOK (the angle to open on, kept consistent across assets. It may "
+        f"describe me in the third person: say it as 'I' and 'my'): {hook}\n\n"
         f"LEAD:\n{json.dumps(facts, indent=2)}\n\n"
         f"CANDIDATE (sender):\n{json.dumps(candidate, indent=2)}\n\n"
         f"CANDIDATE CV CONTEXT:\n{base_cv or '(none)'}\n\n"
-        "Write it now, in first person, as me. Address the person by their first name. "
+        f"WHO IS WHO: {who}\n\n"
+        "Write it now, in first person, as me. "
         "Ground every claim in the LEAD facts and CV context above; if a field is empty, "
         "work around it instead of inventing anything. Keep it warm and specific, and "
         "stay inside the SPEC's word count. Use no em dashes. Read it back once and cut "
@@ -229,6 +312,8 @@ def build_chat_draft_user(asset_key: str, target: dict, request: str,
     _, spec = ASSET_SPECS[asset_key]
     facts = {k: str(target.get(k, "") or "") for k in (
         "full_name", "job_title", "company_name", "city")}
+    who = who_is_who(_first(facts["full_name"]), facts["company_name"], candidate,
+                     letter=asset_key == "cover_letter")
     playbook = playbook_for(asset_key)
     playbook_block = (
         "WRITING PLAYBOOK (guidance on HOW to write, never facts about me or the "
@@ -242,9 +327,8 @@ def build_chat_draft_user(asset_key: str, target: dict, request: str,
         f"RECIPIENT (only what I told you; empty means unknown):\n{json.dumps(facts, indent=2)}\n\n"
         f"CANDIDATE (sender):\n{json.dumps(candidate, indent=2)}\n\n"
         f"CANDIDATE CV CONTEXT:\n{base_cv or '(none)'}\n\n"
-        "Write it now, in first person, as me. If the recipient's name is unknown, "
-        "greet with a plain 'Hi,' or 'Hi <company> team,'; never invent a name or "
-        "leave a placeholder. Claim nothing about me that is not in the CV context "
+        f"WHO IS WHO: {who}\n\n"
+        "Write it now, in first person, as me. Claim nothing about me that is not in the CV context "
         "and nothing about the recipient or company beyond the facts above (do not "
         "say they are hiring, have an opening, or work on anything unless I said "
         "so). Say what I asked to say and nothing more: the SPEC sets the length "
@@ -286,3 +370,21 @@ def tmpl_asset(asset_key: str, lead: dict, candidate: dict, hook: str) -> str:
             f"- I'll lead with the experience closest to {lead.get('industry') or 'this domain'}.\n"
             f"- I'll mirror the keywords from the '{role}' title.\n"
             "- (Dry run placeholder. Nemotron writes specific notes once a key is set.)")
+
+
+def write_asset(client, asset_key: str, user: str, *, recipient_first: str,
+                candidate: dict, company: str = "", temperature: float = 0.3) -> str:
+    """Write one asset and make sure it is addressed to the reader, not to the
+    sender: the greeting is corrected in code, and a draft that mixed the two
+    people up (or left a placeholder) is written once more."""
+    me = _first(candidate.get("name", ""))
+    text = ""
+    for attempt in range(2):
+        raw = client.complete_text(system=SYSTEM_ASSET,
+                                   user=user + (REWRITE_NOTE if attempt else ""),
+                                   temperature=temperature, max_tokens=1600)
+        text, again = fix_greeting(strip_dashes(raw.strip()), asset_key,
+                                   recipient_first, me, company)
+        if not again:
+            break
+    return _PLACEHOLDER.sub("", text) if asset_key != "cv_notes" else text

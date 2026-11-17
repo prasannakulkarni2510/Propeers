@@ -86,14 +86,15 @@ def make_asset_node(asset_key: str, cfg: Config, client: NemotronClient, store):
         if state.get("dry_run") or not client.available:
             text = prompts.tmpl_asset(asset_key, lead, _candidate(cfg), hook)
         else:
-            text = client.complete_text(
-                system=prompts.SYSTEM_ASSET,
-                user=prompts.build_asset_user(
+            text = prompts.write_asset(
+                client, asset_key,
+                prompts.build_asset_user(
                     asset_key, lead, _candidate(cfg), _base_cv(cfg), hook, domain_read),
+                recipient_first=lead.get("first_name", ""), candidate=_candidate(cfg),
+                company=lead.get("company_name", ""),
                 # low temperature: creative sampling is where invented facts
                 # come from; grounded assets beat varied ones
                 temperature=0.3,
-                max_tokens=1600,
             )
         text = prompts.strip_dashes(text)
 

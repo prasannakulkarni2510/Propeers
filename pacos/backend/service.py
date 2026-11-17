@@ -187,12 +187,13 @@ class Service:
         from pacos.graph import prompts
         from pacos.graph.nodes import _base_cv, _candidate
 
-        return self._llm().complete_text(
-            system=prompts.SYSTEM_ASSET,
-            user=prompts.build_chat_draft_user(
-                asset, to, request, _candidate(self.cfg), _base_cv(self.cfg)),
+        me = _candidate(self.cfg)
+        return prompts.write_asset(
+            self._llm(), asset,
+            prompts.build_chat_draft_user(asset, to, request, me, _base_cv(self.cfg)),
+            recipient_first=(str(to.get("full_name") or "").split() or [""])[0],
+            candidate=me, company=str(to.get("company_name") or ""),
             temperature=0.3,  # same as first-pass assets: grounded over varied
-            max_tokens=1600,
         ).strip()
 
     def discover(self, company: str, role: str = "", city: str = "",
