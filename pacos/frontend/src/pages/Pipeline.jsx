@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useLeads } from "../hooks/useLeads";
 import { useStore } from "../store";
 import { api } from "../services/api";
-import { LEAD_STAGES, isFollowUpDue, isPerson, leadStage } from "../lib/pipeline";
+import { LEAD_STAGES, isFollowUpDue, isPerson, isReadyToSend, leadStage } from "../lib/pipeline";
 import { leadSearch } from "../components/LeadModal.jsx";
 import AddLead from "../components/AddLead.jsx";
 import CvEditor from "../components/CvEditor.jsx";
@@ -63,6 +63,48 @@ function Column({ stage, items, openId, action }) {
             Show {Math.min(PAGE, items.length - shown)} more
           </button>
         )}
+      </div>
+    </section>
+  );
+}
+
+const DAY = 86_400_000;
+const TODAY_MAX = 6;
+
+function dueLabel(lead) {
+  const late = Math.round((Date.parse(new Date().toISOString().slice(0, 10)) - Date.parse(lead.follow_up_due)) / DAY);
+  if (late <= 0) return "follow up today";
+  return `follow-up ${late} day${late === 1 ? "" : "s"} late`;
+}
+
+// What to do today, above the board: late follow-ups first, then messages
+// ready to send. Each opens that person.
+function TodayStrip({ leads }) {
+  const navigate = useNavigate();
+  const due = leads.filter(isFollowUpDue).sort((a, b) => a.follow_up_due.localeCompare(b.follow_up_due));
+  const ready = leads.filter(isReadyToSend);
+  if (due.length + ready.length === 0) return null;
+  const items = [
+    ...due.map((l) => ({ l, label: dueLabel(l), due: true })),
+    ...ready.map((l) => ({ l, label: "ready to send", due: false })),
+  ];
+  const more = items.length - TODAY_MAX;
+  return (
+    <section className="today" aria-label="Today">
+      <h2 className="today-title">Today</h2>
+      <div className="today-items">
+        {items.slice(0, TODAY_MAX).map(({ l, label, due: late }) => (
+          <button
+            key={l.lead_id}
+            type="button"
+            className={`today-chip ${late ? "is-due" : ""}`}
+            onClick={() => navigate({ search: leadSearch(l.lead_id) })}
+          >
+            <span className="today-name">{l.full_name || l.company_name}</span>
+            <span className="today-what">{label}</span>
+          </button>
+        ))}
+        {more > 0 && <span className="today-more">and {more} more on the board</span>}
       </div>
     </section>
   );
@@ -150,6 +192,8 @@ export default function Pipeline() {
           <button className="btn btn-accent" onClick={() => setAdding(true)}>Add your first person</button>
         </div>
       ) : (
+        <>
+        {!q.trim() && <TodayStrip leads={leads} />}
         <div className="kb-board pipe-board">
           {LEAD_STAGES.map((st) => (
             <Column
@@ -172,6 +216,7 @@ export default function Pipeline() {
             />
           ))}
         </div>
+        </>
       )}
     </div>
   );

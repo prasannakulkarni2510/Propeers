@@ -16,6 +16,7 @@ in both so behaviour is identical.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -98,6 +99,11 @@ _TABLES = [
     created_at TEXT DEFAULT '',
     updated_at TEXT DEFAULT ''
 )""",
+    # Small named values, e.g. the saved demo state.
+    """CREATE TABLE IF NOT EXISTS kv (
+    key TEXT PRIMARY KEY,
+    value TEXT DEFAULT ''
+)""",
     """CREATE TABLE IF NOT EXISTS cvs (
     cv_id TEXT PRIMARY KEY,
     name TEXT DEFAULT '',
@@ -123,6 +129,16 @@ class _Conn:
             sql = _to_pg_paramstyle(sql)
         return self._raw.execute(sql, params)
 
+    def executemany(self, sql: str, rows: list) -> None:
+        """One statement over many rows (one round trip batch on Postgres)."""
+        if not rows:
+            return
+        if self._is_pg:
+            with self._raw.cursor() as cur:
+                cur.executemany(_to_pg_paramstyle(sql), rows)
+        else:
+            self._raw.executemany(sql, rows)
+
 
 def _to_pg_paramstyle(sql: str) -> str:
     """sqlite '?' placeholders -> psycopg '%s'. Quote-aware: a '?' inside a
@@ -140,6 +156,30 @@ def _to_pg_paramstyle(sql: str) -> str:
         else:
             out.append(ch)
     return "".join(out)
+
+
+_DATE_COLS = ("outreach_sent_date", "last_reply_date", "follow_up_due", "generated_at")
+_NOTE_DATE = re.compile(r"^(\d{4}-\d{2}-\d{2})(?=:)", re.M)
+
+
+def _move(day: str, by: timedelta) -> str:
+    try:
+        return (date.fromisoformat(day) + by).isoformat()
+    except ValueError:
+        return day
+
+
+def _shift_dates(row: dict, by: timedelta) -> dict:
+    """The row with its dates (and dated note lines) moved by `by`."""
+    if not by:
+        return row
+    for k in _DATE_COLS:
+        v = row.get(k) or ""
+        if len(v) >= 10:
+            row[k] = _move(v[:10], by) + v[10:]
+    if row.get("notes"):
+        row["notes"] = _NOTE_DATE.sub(lambda m: _move(m.group(1), by), row["notes"])
+    return row
 
 
 class PacosStore:
@@ -434,6 +474,66 @@ class PacosStore:
             c.execute("DELETE FROM tracker WHERE lead_id=?", (lead_id,))
             cur = c.execute("DELETE FROM leads WHERE lead_id=?", (lead_id,))
             return cur.rowcount > 0
+
+    # ── demo state ───────────────────────────────────────────────────────
+    # A saved copy of the people, their tracker rows and drafts. Restoring it
+    # also clears chats and unmatched replies, and moves every date by the
+    # days since it was saved, so follow-ups fall due around the demo day.
+    _DEMO_TABLES = {
+        "leads": ("lead_id", "full_name", "first_name", "job_title", "company_name",
+                  "city", "linkedin_url", "persona_tag", "domain_tag", "email",
+                  "company_size", "industry", "company_website", "funding_stage",
+                  "folder_name", "predicted_email", "email_confidence",
+                  "email_status", "lead_type"),
+        "tracker": ("lead_id", "status", "assets_generated", "personalization_hook",
+                    "outreach_sent_date", "channel", "last_reply_date",
+                    "reply_intent", "follow_up_due", "notes"),
+        "assets": ("lead_id", "name", "content", "generated_at"),
+    }
+
+    def demo_saved_on(self) -> str:
+        """The day the demo state was saved, or "" if never."""
+        raw = self._kv_get("demo_state")
+        return json.loads(raw).get("saved_on", "") if raw else ""
+
+    def save_demo(self, on: date | None = None) -> dict:
+        state: dict[str, Any] = {"saved_on": (on or date.today()).isoformat()}
+        with self._conn() as c:
+            for table, cols in self._DEMO_TABLES.items():
+                rows = c.execute(f"SELECT {', '.join(cols)} FROM {table}").fetchall()
+                state[table] = [[r[k] for k in cols] for r in rows]
+        self._kv_set("demo_state", json.dumps(state))
+        return {"saved_on": state["saved_on"], "people": len(state["leads"])}
+
+    def reset_demo(self, on: date | None = None) -> dict | None:
+        """Put the saved demo state back. None when nothing was saved."""
+        raw = self._kv_get("demo_state")
+        if not raw:
+            return None
+        state = json.loads(raw)
+        shift = (on or date.today()) - date.fromisoformat(state["saved_on"])
+        moved = {table: [_shift_dates(dict(zip(cols, row)), shift) for row in state[table]]
+                 for table, cols in self._DEMO_TABLES.items()}
+        with self._conn() as c:  # one transaction: all of it or none of it
+            for table in ("assets", "tracker", "leads", "chats", "unmatched_replies"):
+                c.execute(f"DELETE FROM {table}")
+            for table, cols in self._DEMO_TABLES.items():
+                c.executemany(
+                    f"INSERT INTO {table}({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
+                    [tuple(r[k] for k in cols) for r in moved[table]],
+                )
+        return {"saved_on": state["saved_on"], "people": len(moved["leads"]),
+                "days_moved": shift.days}
+
+    def _kv_get(self, key: str) -> str:
+        with self._conn() as c:
+            row = c.execute("SELECT value FROM kv WHERE key=?", (key,)).fetchone()
+        return (row["value"] if row else "") or ""
+
+    def _kv_set(self, key: str, value: str) -> None:
+        with self._conn() as c:
+            c.execute("INSERT INTO kv(key, value) VALUES (?, ?) "
+                      "ON CONFLICT(key) DO UPDATE SET value=excluded.value", (key, value))
 
     # ── generated assets ─────────────────────────────────────────────────
     def save_assets(self, lead_id: str, files: dict[str, str]) -> None:

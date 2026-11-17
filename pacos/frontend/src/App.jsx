@@ -9,6 +9,7 @@ import FindPeople from "./pages/FindPeople.jsx";
 import MyCv from "./pages/MyCv.jsx";
 import About from "./pages/About.jsx";
 import AuthGate from "./components/AuthGate.jsx";
+import DemoReset from "./components/DemoReset.jsx";
 import Icon from "./components/Icon.jsx";
 import ChatList from "./components/ChatList.jsx";
 import LeadPanel from "./components/LeadModal.jsx";
@@ -162,6 +163,7 @@ function Shell() {
             <NavLink to="/about" onClick={onNavigate} className={({ isActive }) => `nav-quiet ${isActive ? "active" : ""}`}>
               About
             </NavLink>
+            <DemoReset />
             {authToken.get() && (
               <button className="nav-quiet" onClick={() => { authToken.set(""); window.location.reload(); }}>
                 Log out

@@ -297,6 +297,23 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .pipe-tools { display: flex; align-items: center; gap: var(--s-2); }
 .pipe-tools .input { width: 240px; }
 @media (max-width: 900px) { .pipe-tools { flex-wrap: wrap; width: 100%; } .pipe-tools .input { flex: 1 1 100%; } }
+
+/* Today, above the board: late follow-ups, then drafts ready to send. */
+.today { display: flex; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; margin-bottom: var(--s-4); padding: var(--s-3) var(--s-4); border: 1px solid var(--line); border-radius: var(--r-md); background: var(--raise); }
+.today-title { font-family: var(--font-ui); font-size: var(--t-sm); font-weight: 600; letter-spacing: 0; }
+.today-items { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; min-width: 0; }
+.today-chip { display: inline-flex; align-items: baseline; gap: var(--s-2); padding: 4px 10px; border: 1px solid var(--line-2); border-radius: 999px; background: var(--surface); color: var(--text); font-size: var(--t-sm); cursor: pointer; text-align: left; max-width: 100%; }
+.today-chip:hover { border-color: var(--accent-edge); background: var(--accent-wash); }
+.today-name { font-weight: 600; overflow-wrap: anywhere; }
+.today-what { font-size: var(--t-xs); color: var(--muted); white-space: nowrap; }
+.today-chip.is-due .today-what { color: var(--due); font-weight: 600; }
+.today-more { font-size: var(--t-xs); color: var(--muted); }
+
+/* Demo reset, in the sidebar foot (public demo only). */
+.demo-ask { padding: var(--s-2) var(--s-3); border-radius: var(--r-md); background: var(--raise); font-size: var(--t-xs); color: var(--text-2); display: flex; flex-direction: column; gap: var(--s-2); }
+.demo-ask-row { display: flex; gap: var(--s-2); }
+.demo-msg { font-size: var(--t-xs); color: var(--muted); padding: 0 var(--s-3); }
+
 .kb-board {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-3); align-items: start;
 }

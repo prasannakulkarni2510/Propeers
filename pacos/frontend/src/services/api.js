@@ -108,6 +108,11 @@ export const api = {
   useCv: (id) => req(`/api/cvs/${id}/use`, { method: "POST" }),
   deleteCv: (id) => req(`/api/cvs/${id}`, { method: "DELETE" }),
 
+  // Public demo only: save the current state as the demo, or put it back.
+  demo: () => req("/api/demo"),
+  saveDemo: () => req("/api/demo/save", { method: "POST" }),
+  resetDemo: () => req("/api/demo/reset", { method: "POST" }),
+
   getCv: () => req("/api/settings/cv"),
   saveCv: (content) =>
     req("/api/settings/cv", { method: "PUT", body: JSON.stringify({ content }) }),

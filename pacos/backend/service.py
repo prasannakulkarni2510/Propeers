@@ -49,6 +49,16 @@ class Service:
             self._pipeline = Pipeline(self.cfg, self.store, client=self._llm())
         return self._pipeline
 
+    # ── demo ─────────────────────────────────────────────────────────────
+    def demo_status(self, enabled: bool) -> dict:
+        return {"enabled": enabled, "saved_on": self.store.demo_saved_on() if enabled else ""}
+
+    def save_demo(self) -> dict:
+        return self.store.save_demo()
+
+    def reset_demo(self) -> dict | None:
+        return self.store.reset_demo()
+
     # ── leads / assets ───────────────────────────────────────────────────
     def leads_with_state(self) -> list[dict]:
         return self.store.get_leads()
