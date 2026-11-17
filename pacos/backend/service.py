@@ -7,7 +7,7 @@ from datetime import datetime
 
 from dataclasses import asdict
 
-from pacos.chat import SCREENSHOT_MARK, asks_which_cv, chat_turn
+from pacos.chat import SCREENSHOT_MARK, asks_how_to_use, asks_which_cv, chat_turn
 from pacos.config import Config, load
 from pacos.discovery import build_searches
 from pacos.inbox_monitor import run_monitor
@@ -63,21 +63,37 @@ class Service:
         Images on the latest message are read first, and their text joins
         that message, so a screenshot of a rejection email is looked up and
         turned into a change card like the typed sentence would be. Returns
-        chat_turn's tuple plus the text read from the images and a CV card
-        (only when the question was which CV is in use)."""
+        chat_turn's tuple plus the text read from the images, a CV card (only
+        when the question was which CV is in use) and a help video card (only
+        when it was how to use PACOS). Those two never reach the model."""
         last = messages[-1] if messages else {}
-        if last.get("role") == "user" and not last.get("images") and asks_which_cv(last.get("content") or ""):
+        said = last.get("content") or "" if last.get("role") == "user" and not last.get("images") else ""
+        if said and asks_which_cv(said):
             reply, card = self.cv_in_use(cv_text)
-            return reply, None, [], False, None, [], None, "", card
+            return reply, None, [], False, None, [], None, "", card, None
+        chapter = asks_how_to_use(said) if said else None
+        if chapter is not None:
+            return self._HELP_REPLY.get(chapter, self._HELP_REPLY[""]), None, [], False, None, [], None, "", None, {"chapter": chapter}
         messages, image_text, error = self._read_images(messages)
         if error:
-            return error, None, [], False, None, [], None, "", None
+            return error, None, [], False, None, [], None, "", None, None
         day = self._operator_today(today)
         with using_cv(cv_text):
             return (*chat_turn(self._llm(), self.stats(), messages,
                                drafter=self._draft,
                                retriever=lambda m: self._retrieve(m, day),
-                               today=day), image_text, None)
+                               today=day), image_text, None, None)
+
+    _HELP_REPLY = {
+        "": ("Here's a three-minute walkthrough of PACOS. It has four parts: this chat, where you "
+             "ask and report; My people, a board of everyone you're writing to; Find people, which "
+             "finds the hiring managers and recruiters at a company; and My CV, which every draft "
+             "is written from. Each one is below, with a button to watch that part or open it."),
+        "chat": "Here's the walkthrough, starting with the chat.",
+        "people": "Here's the walkthrough, starting at My people: the board, writing messages, sending, and follow-ups.",
+        "find": "Here's the walkthrough, starting at Find people: building searches and importing people.",
+        "cv": "Here's the walkthrough, starting at My CV.",
+    }
 
     def cv_in_use(self, cv_text: str | None = None) -> tuple[str, dict]:
         """The CV every draft is written from, as a reply and a card. A

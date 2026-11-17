@@ -47,6 +47,7 @@ const PATHS = {
   ),
   layers: <path d="M12 4l8.5 4.5L12 13 3.5 8.5 12 4zM3.5 12.5L12 17l8.5-4.5M3.5 16.5L12 21l8.5-4.5" />,
   download: <path d="M12 4v11M7 10.5l5 5 5-5M5 19.5h14" />,
+  play: <path d="M8 5.5v13l10.5-6.5z" />,
   external: <path d="M8 16L16.5 7.5M9.5 7.5h7v7" />,
   linkedin: (
     <>

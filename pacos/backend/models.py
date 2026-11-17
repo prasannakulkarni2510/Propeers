@@ -324,6 +324,11 @@ class ChatCv(BaseModel):
     total: int = 0
 
 
+class ChatVideo(BaseModel):
+    """Show the intro video. chapter: "" (start) | chat | people | find | cv."""
+    chapter: str = ""
+
+
 class ChatDraft(BaseModel):
     asset: str  # cold_email | cold_dm | cover_letter
     text: str
@@ -384,6 +389,8 @@ class ChatResult(BaseModel):
     image_text: str = ""
     # The CV in use, when the question was which one that is.
     cv: Optional[ChatCv] = None
+    # The intro video, when the question was how to use PACOS.
+    video: Optional[ChatVideo] = None
     warnings: list[str] = []
     llm_used: bool
     model: str

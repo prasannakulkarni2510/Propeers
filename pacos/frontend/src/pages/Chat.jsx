@@ -161,6 +161,64 @@ function CvInUseCard({ cv }) {
   );
 }
 
+// Where each part starts in public/pacos-intro.mp4 (from build_demo.py's
+// timeline; update if the video is rebuilt with different scenes).
+const FEATURES = [
+  { key: "chat", title: "Chat", to: "/", at: 13,
+    body: "Ask who to follow up with, say what happened, ask for a draft, or paste a job post or a screenshot. Every change comes back as a card you apply." },
+  { key: "people", title: "My people", to: "/pipeline", at: 51,
+    body: "Everyone on one board, from To write to Finished. Open a person to copy their email, LinkedIn DM, cover letter and CV notes; follow-ups are flagged when due." },
+  { key: "find", title: "Find people", to: "/find", at: 119,
+    body: "Name a company and get LinkedIn and Google searches for its hiring managers and recruiters, then import them with a likely work email." },
+  { key: "cv", title: "My CV", to: "/cv", at: 168,
+    body: "Keep a CV for each kind of role. Every draft is written from the one in use." },
+];
+
+// "How do I use this?": the walkthrough video, opened at the part asked
+// about, and what each part of PACOS does.
+function HelpVideoCard({ video }) {
+  const ref = useRef(null);
+  const start = FEATURES.find((f) => f.key === video.chapter)?.at || 0;
+  const [active, setActive] = useState(video.chapter || "");
+  const jump = (f) => {
+    const el = ref.current;
+    if (!el) return;
+    el.currentTime = f.at;
+    setActive(f.key);
+    el.play().catch(() => {});
+  };
+  return (
+    <div className="help-card">
+      <video
+        ref={ref}
+        className="help-video"
+        src={`/pacos-intro.mp4${start ? `#t=${start}` : ""}`}
+        poster={start ? undefined : "/pacos-intro-poster.jpg"}
+        controls
+        preload="metadata"
+        playsInline
+        aria-label="PACOS walkthrough video, with narration"
+      />
+      <ul className="help-features">
+        {FEATURES.map((f) => (
+          <li key={f.key} className={active === f.key ? "is-active" : ""}>
+            <div>
+              <b>{f.title}</b>
+              <p>{f.body}</p>
+            </div>
+            <div className="help-actions">
+              <button className="btn btn-ghost btn-sm" onClick={() => jump(f)}>
+                <Icon name="play" size={13} /> Watch
+              </button>
+              <Link className="btn btn-ghost btn-sm" to={f.to}>Open</Link>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 const EXAMPLES = [
   "Who should I follow up with this week?",
   "Priya from Razorpay replied, she’s interested",
@@ -304,6 +362,7 @@ export default function Chat() {
             )}
             {m.draft && <DraftCard draft={m.draft} />}
             {m.cv && <CvInUseCard cv={m.cv} />}
+            {m.video && <HelpVideoCard video={m.video} />}
             {m.proposal && (
               <ProposalCard
                 proposal={m.proposal}

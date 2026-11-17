@@ -262,6 +262,19 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .cv-pop-meta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: end; margin-bottom: var(--s-3); }
 @media (max-width: 640px) { .cv-pop-meta { grid-template-columns: minmax(0, 1fr); } }
 .cv-swatches { display: flex; gap: var(--s-2); align-items: center; min-height: var(--h); }
+/* "how do I use this?": the walkthrough video and what each part does */
+.help-card { width: min(680px, 100%); margin-top: var(--s-3); overflow: hidden; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--line-2); box-shadow: 0 1px 2px oklch(20% 0.01 35 / 0.06); }
+.help-video { display: block; width: 100%; aspect-ratio: 16 / 9; background: var(--well); border-bottom: 1px solid var(--line-2); }
+.help-features { list-style: none; margin: 0; padding: var(--s-2) 0; }
+.help-features li { display: flex; gap: var(--s-4); align-items: center; padding: var(--s-2) var(--s-4);
+  border-left: 2px solid transparent; transition: background 200ms var(--ease), border-color 200ms var(--ease); }
+.help-features li.is-active { background: var(--raise); border-left-color: var(--brand); }
+.help-features b { font-size: var(--t-sm); }
+.help-features p { margin: 2px 0 0; font-size: var(--t-xs); line-height: 1.5; color: var(--text-2); }
+.help-actions { display: flex; gap: var(--s-1); margin-left: auto; flex: none; }
+@media (max-width: 560px) { .help-features li { flex-direction: column; align-items: flex-start; gap: var(--s-2); } .help-actions { margin-left: 0; } }
+
 /* the CV in use, as a card in the chat */
 .cv-chat { --tint: oklch(90% 0.06 30); --tint-ink: oklch(36% 0.1 30);
   width: min(340px, 100%); margin-top: var(--s-3); overflow: hidden; border-radius: var(--r-lg);

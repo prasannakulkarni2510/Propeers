@@ -456,6 +456,39 @@ def asks_which_cv(question: str) -> bool:
     return bool(_CV_ASK.search(q))
 
 
+# "this"/"it" only count at the end ("how do I use this?"), not "how do I use this email".
+_APP = r"(pacos|(the|this) (app|platform|site|tool|website|thing)|(this|it)(?=\W*$))"
+_PART = r"(chat|my people|find people|my cv|the board|the pipeline)"
+_HELP = re.compile(r"\b(" + "|".join([
+    rf"how (do|can|should|would) (i|we|one) (use|start( using)?|get started( with)?|work with) {_APP}\b",
+    r"how (do|can|should) (i|we) (use|start)\W*$",
+    rf"how (does|do) ({_APP}|this|it) work",
+    rf"how (does|do) {_PART} work",
+    rf"how (to|do i|can i) use {_PART}",
+    rf"how to use {_APP}",
+    r"how to use\W*$",
+    r"getting started|get started|tutorial|walk ?through|walk me through|intro(duction)? video|demo video",
+    r"show me (how|around)|guide me|user guide|help me (use|get started)",
+    r"what (can|do) you do|what (is|'s) pacos|what does pacos do|how (this|it) works",
+]) + r")", re.I)
+_CHAPTERS = [  # first match wins: the part of the video a question is about
+    ("find", re.compile(r"\bfind(ing)?\b|\bdiscover|\bsearch(es)?\b|\bimport\b|\brecruiters?\b|\bhiring managers?\b", re.I)),
+    ("people", re.compile(r"\bmy people\b|\bboard\b|\bpipeline\b|\bfollow.?ups?\b|\bleads?\b", re.I)),
+    ("cv", re.compile(r"\b(my )?cvs?\b|\bresumes?\b", re.I)),
+    ("chat", re.compile(r"\bchat\b", re.I)),
+]
+
+
+def asks_how_to_use(question: str) -> str | None:
+    """"How do I use this platform?" and the like: answered with the intro
+    video, not the model. Returns the chapter to start at ("" for the
+    beginning), or None when it isn't such a question."""
+    q = question.strip()
+    if not q or len(q) > 160 or not _HELP.search(q):
+        return None
+    return next((key for key, rx in _CHAPTERS if rx.search(q)), "")
+
+
 _NOT_FOUND = re.compile(
     r"couldn'?t find|could not find|can'?t find"
     r"|(isn'?t|is not|not|aren'?t) (yet )?(in|found in) (your )?(pacos|records|leads|tracker)"
