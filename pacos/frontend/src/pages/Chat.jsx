@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Icon from "../components/Icon.jsx";
+import SocialIcons from "../components/SocialIcons.jsx";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useStore } from "../store";
 import { useChat } from "../store/chat";
@@ -277,6 +278,8 @@ export default function Chat() {
   };
 
   return (
+    <>
+    <SocialIcons className="chat-social" />
     <div
       className={`chat-page ${dragging ? "chat-dragging" : ""}`}
       onDragOver={(e) => {
@@ -452,5 +455,6 @@ export default function Chat() {
         </button>
       </div>
     </div>
+    </>
   );
 }

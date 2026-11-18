@@ -130,7 +130,7 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .nav-quiet:hover, .nav-quiet.active { color: var(--text); background: var(--raise); }
 .backdrop { display: none; }
 
-.content { flex: 1; min-width: 0; padding: var(--s-6) var(--s-6) var(--s-8); }
+.content { flex: 1; min-width: 0; padding: var(--s-6) var(--s-6) var(--s-8); position: relative; }
 .content > * { max-width: 1120px; margin-inline: auto; }
 .content > .wide { max-width: none; }
 .app.nav-closed .content { padding-left: calc(var(--s-6) + 44px); }
@@ -553,13 +553,7 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 .about-list li { line-height: 1.6; margin-bottom: var(--s-2); }
 .about-flow-step { font-size: var(--t-sm); font-weight: 500; display: inline-flex; align-items: center; gap: var(--s-2); }
 .about-flow-branch { font-size: var(--t-sm); color: var(--muted); }
-.about-author { display: flex; gap: var(--s-5); align-items: center; flex-wrap: wrap; }
-.about-author-photo img, .about-avatar-fallback { width: 96px; height: 96px; border-radius: var(--r-pill); object-fit: cover; }
-.about-avatar-fallback { display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: var(--t-xl); background: var(--accent); color: var(--on-accent); }
-.about-author-body h3 { font-size: var(--t-lg); }
-.about-social { list-style: none; padding: 0; margin: var(--s-3) 0 0; display: grid; gap: var(--s-1); }
-.about-social li { display: flex; gap: var(--s-3); align-items: baseline; font-size: var(--t-sm); }
-.about-social-label { min-width: 68px; color: var(--muted); }
+.about-avatar-fallback { width: 96px; height: 96px; border-radius: var(--r-pill); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: var(--t-xl); background: var(--accent); color: var(--on-accent); }
 .about-project-image { margin-top: var(--s-4); }
 .about-project-image img { width: 100%; border-radius: var(--r-lg); }
 .about-foot { margin: var(--s-8) 0 0; text-align: center; }
@@ -600,3 +594,58 @@ button.kb-card:hover { border-color: var(--line-2); background: var(--raise); }
 .contact-hp { position: absolute; left: -10000px; width: 1px; height: 1px; opacity: 0; }
 .about-contact { margin-top: var(--s-5); }
 .about-contact .contact-card { max-width: 480px; }
+
+/* LinkedIn / GitHub / email icons, top right of the Chat page. */
+.social-icons { display: flex; flex-direction: row; gap: var(--s-1); }
+.social-icon { color: var(--text-2); }
+.social-icon:hover { color: var(--accent-text); }
+.content > .chat-social { position: absolute; top: var(--s-4); right: var(--s-5); max-width: none; margin: 0; z-index: 2; }
+/* Keep "New chat" clear of the icons when the chat column reaches the corner. */
+@media (max-width: 1500px) { .chat-top { padding-right: 132px; } }
+@media (max-width: 900px) {
+  .content > .chat-social { top: var(--s-4); right: var(--s-4); }
+  .chat-top { padding-right: 0; }
+}
+
+/* About: the story on the left, the author on the right. */
+.about-layout { display: grid; grid-template-columns: minmax(0, 1fr) 272px; gap: var(--s-7); align-items: start; }
+.about-layout .about { max-width: 860px; }
+.about-aside { position: sticky; top: var(--s-6); padding-top: var(--s-6); }
+@media (max-width: 1180px) {
+  .about-layout { grid-template-columns: minmax(0, 1fr); gap: 0; }
+  .about-aside { position: static; order: -1; padding-top: var(--s-2); max-width: 480px; }
+}
+
+.author-card { margin: 0; padding: var(--s-5); display: flex; flex-direction: column; align-items: center; text-align: center; }
+.author-photo { position: relative; width: 148px; height: 148px; display: grid; place-items: center; margin-bottom: var(--s-5); }
+.author-photo img, .author-photo .about-avatar-fallback {
+  position: relative; width: 132px; height: 132px; border-radius: var(--r-pill); object-fit: cover; object-position: 50% 30%;
+  border: 3px solid var(--surface);
+}
+/* A slowly turning green ring with a bright arc: "open to work" at a glance. */
+.author-ring {
+  position: absolute; inset: 0; border-radius: var(--r-pill);
+  background: conic-gradient(from 0deg, var(--good) 0deg, var(--good-wash) 150deg, var(--good) 210deg, var(--good) 360deg);
+  animation: ring-turn 6s linear infinite;
+}
+.author-ring::after { content: ""; position: absolute; inset: -6px; border-radius: inherit; border: 2px solid var(--good); opacity: 0; animation: ring-ping 2.8s var(--ease) infinite; }
+.open-badge {
+  position: absolute; bottom: -12px; left: 50%; transform: translateX(-50%);
+  display: inline-flex; align-items: center; gap: 6px; white-space: nowrap;
+  padding: 3px 10px 3px 8px; border-radius: var(--r-pill);
+  background: var(--good); color: var(--surface); font-size: var(--t-xs); font-weight: 600; letter-spacing: 0.01em;
+  box-shadow: 0 2px 8px color-mix(in oklch, var(--good) 35%, transparent);
+  animation: badge-rise 600ms var(--ease) 300ms both;
+}
+.open-dot { position: relative; width: 7px; height: 7px; border-radius: var(--r-pill); background: var(--surface); }
+.open-dot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--surface); animation: dot-ping 1.6s var(--ease) infinite; }
+@keyframes ring-turn { to { transform: rotate(360deg); } }
+@keyframes ring-ping { 0% { opacity: 0.55; transform: scale(0.96); } 100% { opacity: 0; transform: scale(1.12); } }
+@keyframes dot-ping { 0% { opacity: 0.8; transform: scale(1); } 100% { opacity: 0; transform: scale(2.6); } }
+@keyframes badge-rise { from { opacity: 0; transform: translate(-50%, 8px); } }
+.author-name { font-size: var(--t-lg); margin: 0; }
+.author-role { color: var(--text-2); font-size: var(--t-sm); margin: var(--s-1) 0 0; }
+.author-seeking { color: var(--good); font-size: var(--t-sm); font-weight: 500; margin: var(--s-3) 0 0; }
+.author-links { list-style: none; padding: 0; margin: var(--s-4) 0 0; display: grid; gap: var(--s-1); width: 100%; border-top: 1px solid var(--line); padding-top: var(--s-4); }
+.author-link { display: flex; align-items: center; gap: var(--s-2); font-size: var(--t-xs); color: var(--text-2); text-decoration: none; padding: var(--s-1) var(--s-2); border-radius: var(--r-sm); overflow-wrap: anywhere; text-align: left; }
+.author-link:hover { background: var(--raise); color: var(--accent-text); }

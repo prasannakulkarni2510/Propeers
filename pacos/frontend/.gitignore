@@ -3,7 +3,8 @@ dist/
 .env
 *.local
 
-# Personal photo — never push online (local About page only)
+# Full-size original stays local; the About page uses public/author-photo.jpg,
+# a small cropped copy that is published.
 public/prasanna-photo.png
 
 .impeccable/
