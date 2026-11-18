@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Icon from "../components/Icon.jsx";
+import ContactForm from "../components/ContactForm.jsx";
 
 // "Know more about the project" — the PACOS story as a single scrollable page
 // (the interview deck, rendered as HTML). Static content; no API calls.
@@ -226,6 +227,10 @@ export default function About() {
               ))}
             </ul>
           </div>
+        </div>
+
+        <div className="about-contact">
+          <ContactForm page="about" title="Get in touch" />
         </div>
 
         {/* Slot for a project image you provide — drop it at

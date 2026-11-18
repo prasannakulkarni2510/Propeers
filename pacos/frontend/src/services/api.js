@@ -58,6 +58,9 @@ export const api = {
   login: (email, password) =>
     req("/api/login", { method: "POST", body: JSON.stringify({ email, password }) }),
   loginTrial: () => req("/api/login/trial"),
+  contactStatus: () => req("/api/contact"),
+  contact: (body) =>
+    req("/api/contact", { method: "POST", body: JSON.stringify(body) }),
   stats: () => req("/api/stats"),
   leads: () => req("/api/leads"),
   assets: (id) => req(`/api/assets/${id}`),

@@ -24,13 +24,15 @@ from pacos.config import REPO_ROOT
 # The auth middleware reads os.environ, but config.load() only pulls .env in
 # lazily, which left the very first request unauthenticated. Load just the auth
 # keys up front (real environment variables still win, as with load_dotenv).
+# The contact-form keys ride along: the form is used before anyone logs in.
 _AUTH_KEYS = ("PACOS_LOGIN_EMAIL", "PACOS_LOGIN_PASSWORD", "PACOS_LOGIN_TRIAL",
-              "PACOS_AUTH_TOKEN")
+              "PACOS_AUTH_TOKEN", "PACOS_CONTACT_SHEET_URL",
+              "PACOS_CONTACT_SHEET_SECRET")
 for _k, _v in dotenv_values(REPO_ROOT / ".env").items():
     if _k in _AUTH_KEYS and _v is not None:
         os.environ.setdefault(_k, _v)
 
-from .routes import (agents, approvals, assets, chat, chats, cvs, demo,
+from .routes import (agents, approvals, assets, chat, chats, contact, cvs, demo,
                      discovery, inbox, leads, settings, tracker)
 
 app = FastAPI(
@@ -59,9 +61,10 @@ app.add_middleware(
 # is derived from the credentials, so it needs no server-side storage and
 # changing the password logs every browser out. PACOS_AUTH_TOKEN still works
 # as a raw bearer token for scripts. Nothing set (the default) keeps local/exe
-# usage frictionless. /api/health and /api/login stay open; OPTIONS passes so
-# CORS preflights (which never carry credentials) still work.
-_OPEN_PATHS = {"/api/health", "/api/login", "/api/login/trial"}
+# usage frictionless. /api/health, /api/login and the visitor contact form
+# (/api/contact) stay open; OPTIONS passes so CORS preflights (which never
+# carry credentials) still work.
+_OPEN_PATHS = {"/api/health", "/api/login", "/api/login/trial", "/api/contact"}
 
 
 def _login_creds() -> tuple[str, str]:
@@ -130,6 +133,7 @@ app.include_router(settings.router)
 app.include_router(chats.router)
 app.include_router(cvs.router)
 app.include_router(demo.router)
+app.include_router(contact.router)
 
 
 @app.get("/api/health")

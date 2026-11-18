@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, authToken } from "../services/api";
 import LoaderMark from "./LoaderMark.jsx";
+import ContactForm from "./ContactForm.jsx";
 
 // The loading screen stays up for at least this long so it reads as a
 // deliberate splash rather than a flicker, then fades out.
@@ -78,55 +79,58 @@ export default function AuthGate({ children }) {
     <>
     {splashScreen}
     <div className="authgate">
-      <form className="panel authgate-card" onSubmit={login}>
-        <div className="brand">
-          PAC<span className="brand-accent">OS</span>
-        </div>
-        <h1>Log in</h1>
-        <input
-          className="input"
-          type="email"
-          aria-label="Email"
-          placeholder="Email"
-          autoComplete="username"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoFocus
-        />
-        <input
-          className="input"
-          type="password"
-          aria-label="Password"
-          placeholder="Password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-        {error && <p className="jd-error" role="alert">{error}</p>}
-        <button
-          className="btn btn-accent"
-          type="submit"
-          disabled={busy || !email.trim() || !password}
-        >
-          {busy ? "Logging in…" : "Log in"}
-        </button>
-        {trial && (
-          <div className="authgate-trial">
-            <p>Just looking? Use the trial login:</p>
-            <dl>
-              <dt>Email</dt><dd>{trial.email}</dd>
-              <dt>Password</dt><dd>{trial.password}</dd>
-            </dl>
-            <button
-              type="button"
-              className="authgate-trial-fill"
-              onClick={() => { setEmail(trial.email); setPassword(trial.password); setError(""); }}
-            >
-              Fill them in
-            </button>
+      <div className="authgate-stack">
+        <form className="panel authgate-card" onSubmit={login}>
+          <div className="brand">
+            PAC<span className="brand-accent">OS</span>
           </div>
-        )}
-      </form>
+          <h1>Log in</h1>
+          <input
+            className="input"
+            type="email"
+            aria-label="Email"
+            placeholder="Email"
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoFocus
+          />
+          <input
+            className="input"
+            type="password"
+            aria-label="Password"
+            placeholder="Password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          {error && <p className="jd-error" role="alert">{error}</p>}
+          <button
+            className="btn btn-accent"
+            type="submit"
+            disabled={busy || !email.trim() || !password}
+          >
+            {busy ? "Logging in…" : "Log in"}
+          </button>
+          {trial && (
+            <div className="authgate-trial">
+              <p>Just looking? Use the trial login:</p>
+              <dl>
+                <dt>Email</dt><dd>{trial.email}</dd>
+                <dt>Password</dt><dd>{trial.password}</dd>
+              </dl>
+              <button
+                type="button"
+                className="authgate-trial-fill"
+                onClick={() => { setEmail(trial.email); setPassword(trial.password); setError(""); }}
+              >
+                Fill them in
+              </button>
+            </div>
+          )}
+        </form>
+        <ContactForm page="login" collapsed />
+      </div>
     </div>
     </>
   );
