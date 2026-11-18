@@ -134,6 +134,7 @@ app.include_router(chats.router)
 app.include_router(cvs.router)
 app.include_router(demo.router)
 app.include_router(contact.router)
+app.include_router(contact.link_router)  # /in, /ig, /r: before the SPA fallback
 
 
 @app.get("/api/health")
